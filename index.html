@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Demo Nhắc Việc Shop</title>
+<style>
+  :root{--bg:#f4f6fb;--card:#fff;--text:#172033;--muted:#657089;--line:#dde3ee;--pri:#2563eb;--ok:#16a34a;--bad:#dc2626;--warn:#f59e0b;--soft:#eef4ff}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text);font-size:14px}
+  .top{position:sticky;top:0;z-index:5;background:#0f172a;color:white;padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 2px 10px #0002}
+  .brand{font-size:18px;font-weight:800}.device{font-size:12px;color:#cbd5e1}.wrap{padding:12px;max-width:1500px;margin:auto}
+  .tabs,.filters,.panel,.table-wrap{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 4px #0000000d}
+  .tabs{padding:8px;display:flex;gap:8px;margin-bottom:10px}.tab{border:0;border-radius:9px;padding:9px 14px;background:#eef2f7;font-weight:700;cursor:pointer}.tab.active{background:var(--pri);color:white}
+  .filters{padding:10px;display:grid;grid-template-columns:130px 160px 150px 1fr 120px 130px;gap:8px;align-items:end;margin-bottom:10px}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px} input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;background:white;font-size:14px} textarea{min-height:70px;resize:vertical}
+  button{border:0;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer}.btn{background:var(--pri);color:white}.btn2{background:#e5e7eb;color:#111827}.btn-ok{background:var(--ok);color:white}.btn-bad{background:var(--bad);color:white}.btn-warn{background:var(--warn);color:#111827}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:10px}.panel{padding:12px}.panel h3{margin:0 0 10px;font-size:16px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{grid-column:1/-1}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}.stat{background:white;border:1px solid var(--line);border-radius:12px;padding:10px}.stat b{font-size:22px}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .table-wrap{overflow:auto}.task-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1180px}.task-table th{position:sticky;top:55px;background:#f8fafc;z-index:2;text-align:left;color:#475569;font-size:12px;border-bottom:1px solid var(--line);padding:9px}.task-table td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}.task-table tr:hover{background:#f8fbff}
+  .time{font-weight:800;color:#111827}.title{font-weight:800}.small{font-size:12px;color:var(--muted)}.content{max-width:230px;line-height:1.35}.note{max-width:180px;white-space:pre-wrap}.badge{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}.todo{background:#fee2e2;color:#991b1b}.done{background:#dcfce7;color:#166534}.late{background:#ffedd5;color:#9a3412}.wait{background:#e0f2fe;color:#075985}.repeat{background:#ede9fe;color:#5b21b6}.imgthumb{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#f1f5f9}
+  .actions{display:flex;gap:5px;flex-wrap:wrap}.actions button{padding:7px 9px;font-size:12px}.hidden{display:none!important}
+  .modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:20;padding:16px}.modal.show{display:flex}.box{background:white;border-radius:16px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:16px;box-shadow:0 20px 60px #0006}.box h2{margin:0 0 8px}.box img{max-width:100%;border-radius:12px;border:1px solid var(--line)}.log{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0;font-size:13px}.toast{position:fixed;right:14px;bottom:14px;background:#111827;color:white;border-radius:14px;padding:14px;z-index:30;display:none;max-width:340px;box-shadow:0 10px 35px #0005}.toast.show{display:block}.toast h3{margin:0 0 6px}.toast .actions{margin-top:10px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}.brand{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div><div class="brand">🔔 Demo Nhắc Việc Shop</div><div class="device" id="deviceText"></div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <select id="role" style="width:130px"><option value="admin">Admin</option><option value="staff">Nhân viên</option></select>
+    <button class="btn2" onclick="resetDemo()">Reset demo</button>
+  </div>
+</div>
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="today" onclick="setTab('today')">Hôm nay</button>
+    <button class="tab" data-tab="repeat" onclick="setTab('repeat')">Việc lặp lại</button>
+    <button class="tab" data-tab="devices" onclick="setTab('devices')">Thiết bị online</button>
+  </div>
+  <div class="filters">
+    <div><label>Ngày</label><input type="date" id="filterDate"></div>
+    <div><label>Nhân viên</label><select id="filterStaff"></select></div>
+    <div><label>Trạng thái</label><select id="filterStatus"><option value="all">Tất cả</option><option value="todo">Chưa làm</option><option value="done">Đã xong</option><option value="late">Quá giờ</option></select></div>
+    <div><label>Tìm kiếm</label><input id="filterSearch" placeholder="Tên CV / nội dung / ghi chú"></div>
+    <button class="btn" onclick="render()">Lọc</button>
+    <button class="btn2" onclick="showAllToday()">Hôm nay</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="grid" id="mainGrid">
+    <div class="panel admin-only" id="formPanel">
+      <h3 id="formTitle">Thêm việc theo ngày</h3>
+      <div class="form-grid">
+        <div><label>Thời gian</label><input type="time" id="time"></div>
+        <div><label>Nhân viên</label><select id="staff"></select></div>
+        <div class="full"><label>Tên CV</label><input id="title" placeholder="VD: Gọi đơn nháp"></div>
+        <div class="full"><label>Nội dung cần làm</label><textarea id="content"></textarea></div>
+        <div class="full"><label>Ảnh hiển thị URL hoặc chọn ảnh</label><input id="imageUrl" placeholder="Dán link ảnh hoặc bỏ trống"></div>
+        <div class="full"><input type="file" id="imageFile" accept="image/*"></div>
+        <div class="full"><label>Admin ghi chú</label><textarea id="adminNote"></textarea></div>
+        <div class="full" id="repeatOptions"><label><input type="checkbox" id="isRepeat" style="width:auto"> Lặp lại mỗi ngày</label></div>
+        <div class="full actions"><button class="btn" onclick="saveTask()">Lưu việc</button><button class="btn2" onclick="clearForm()">Xóa form</button></div>
+      </div>
+    </div>
+    <div>
+      <div class="table-wrap"><table class="task-table"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="detailModal"><div class="box"><div id="detailBody"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const LS='shop_tasks_demo_v1';
+const staffs=['An','Nguyệt','Thủy','Linh','Tất cả'];
+let state={tab:'today',editId:null,deviceId:null};
+function today(){return new Date().toISOString().slice(0,10)}
+function nowTime(){return new Date().toTimeString().slice(0,5)}
+function uid(){return 'id_'+Date.now()+'_'+Math.random().toString(16).slice(2)}
+function load(){let d=localStorage.getItem(LS); if(d) return JSON.parse(d); const data=seed(); localStorage.setItem(LS,JSON.stringify(data)); return data}
+function save(data){localStorage.setItem(LS,JSON.stringify(data))}
+function seed(){const t=today(); return {employees:['An','Nguyệt','Thủy','Linh'], devices:{}, daily:[
+{id:uid(),date:t,time:'08:00',title:'Check tin nhắn mới',content:'Kiểm tra tin nhắn khách chưa trả lời, ưu tiên khách hỏi size và đổi địa chỉ.',staff:'An',image:'',adminNote:'Làm trước khi in bill.',staffNote:'',status:'todo',logs:[logText('Admin tạo việc')]},
+{id:uid(),date:t,time:'09:00',title:'Gọi đơn nháp',content:'Gọi lại toàn bộ đơn hôm qua chưa nghe máy.',staff:'Nguyệt',image:'',adminNote:'Ghi chú lý do khách chưa chốt.',staffNote:'',status:'todo',logs:[logText('Admin tạo việc')]},
+{id:uid(),date:t,time:'15:00',title:'Check DVVC',content:'Kiểm tra các đơn giao thất bại và báo shop xử lý.',staff:'Thủy',image:'',adminNote:'Ưu tiên Viettel và GHN.',staffNote:'',status:'done',logs:[logText('Admin tạo việc'),logText('Thủy bấm đã xong')]}
+], repeat:[
+{id:uid(),time:'08:30',title:'In bill đơn hôm qua',content:'Lọc đơn đã chốt, in bill chuẩn bị soạn hàng.',staff:'Linh',image:'',adminNote:'Ngày nào cũng làm.',active:true,logs:[logText('Admin tạo mẫu lặp')]},
+{id:uid(),time:'17:30',title:'Đóng ca cuối ngày',content:'Check tin mới, đơn nháp, DVVC, backup dữ liệu.',staff:'An',image:'',adminNote:'Không được bỏ qua.',active:true,logs:[logText('Admin tạo mẫu lặp')]}
+]}}
+function logText(action){return {time:new Date().toLocaleString('vi-VN'),action}}
+function init(){let id=localStorage.getItem('task_device_id'); if(!id){id='PC-'+Math.random().toString(36).slice(2,6).toUpperCase(); localStorage.setItem('task_device_id',id)} state.deviceId=id; document.getElementById('deviceText').textContent='ID đang mở: '+id+' • Online demo'; document.getElementById('filterDate').value=today(); fillStaffs(); touchDevice(); setInterval(touchDevice,30000); ['role','filterDate','filterStaff','filterStatus','filterSearch'].forEach(x=>document.getElementById(x).addEventListener('input',render)); render(); setInterval(checkReminders,20000)}
+function fillStaffs(){const data=load(); const opts=['Tất cả',...data.employees]; for(const id of ['filterStaff','staff']){document.getElementById(id).innerHTML=opts.map(s=>`<option value="${s}">${s}</option>`).join('')} document.getElementById('filterStaff').value='Tất cả'}
+function touchDevice(){const data=load(); data.devices[state.deviceId]={name:state.deviceId,lastSeen:Date.now(),online:true}; save(data)}
+function setTab(tab){state.tab=tab; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); document.getElementById('formTitle').textContent=tab==='repeat'?'Thêm mẫu lặp lại':'Thêm việc theo ngày'; document.getElementById('repeatOptions').classList.toggle('hidden',tab==='repeat'); render()}
+function isAdmin(){return document.getElementById('role').value==='admin'}
+function taskList(){const data=load(); let arr=state.tab==='repeat'?data.repeat:data.daily; if(state.tab==='devices') return []; if(state.tab==='today'){const d=document.getElementById('filterDate').value; arr=arr.filter(x=>x.date===d)} const staff=document.getElementById('filterStaff').value, st=document.getElementById('filterStatus').value, q=document.getElementById('filterSearch').value.toLowerCase().trim(); if(staff!=='Tất cả') arr=arr.filter(x=>x.staff===staff); if(st!=='all' && state.tab!=='repeat') arr=arr.filter(x=>calcStatus(x)===st); if(q) arr=arr.filter(x=>(x.title+x.content+x.adminNote+(x.staffNote||'')).toLowerCase().includes(q)); return arr.sort((a,b)=>a.time.localeCompare(b.time))}
+function calcStatus(x){if(x.status==='done')return 'done'; if(x.date===today() && x.time<nowTime()) return 'late'; return 'todo'}
+function renderStats(){const data=load(); const todayTasks=data.daily.filter(x=>x.date===document.getElementById('filterDate').value); const todo=todayTasks.filter(x=>calcStatus(x)==='todo').length, late=todayTasks.filter(x=>calcStatus(x)==='late').length, done=todayTasks.filter(x=>calcStatus(x)==='done').length; const online=Object.values(data.devices).filter(d=>Date.now()-d.lastSeen<90000).length; document.getElementById('stats').innerHTML=`<div class="stat"><b>${todayTasks.length}</b><span>Tổng việc ngày</span></div><div class="stat"><b>${todo}</b><span>Chưa làm</span></div><div class="stat"><b>${late}</b><span>Quá giờ</span></div><div class="stat"><b>${done}</b><span>Đã xong</span></div><div class="stat"><b>${online}</b><span>Thiết bị online</span></div>`}
+function render(){renderStats(); document.querySelectorAll('.admin-only').forEach(e=>e.classList.toggle('hidden',!isAdmin())); if(state.tab==='devices') return renderDevices(); document.getElementById('mainGrid').classList.toggle('grid',true); document.getElementById('thead').innerHTML=state.tab==='repeat'?`<tr><th>Giờ</th><th>Tên CV</th><th>Nội dung</th><th>Nhân viên</th><th>Ảnh</th><th>Admin ghi chú</th><th>Bật/Tắt</th><th>Lịch sử</th><th>Thao tác</th></tr>`:`<tr><th>Giờ</th><th>Tên CV</th><th>Nội dung</th><th>Nhân viên</th><th>Ảnh</th><th>Admin ghi chú</th><th>NV ghi chú</th><th>Trạng thái</th><th>Lịch sử</th><th>Thao tác</th></tr>`;
+ const rows=taskList(); document.getElementById('tbody').innerHTML=rows.map(rowHtml).join('')||`<tr><td colspan="10" class="small">Không có việc phù hợp bộ lọc.</td></tr>`}
+function rowHtml(x){let img=x.image?`<img class="imgthumb" src="${x.image}" onclick="openDetail('${x.id}')">`:'<span class="small">Không có</span>'; if(state.tab==='repeat') return `<tr><td class="time">${x.time}</td><td class="title">${x.title}<div class="badge repeat">Lặp hằng ngày</div></td><td class="content">${x.content}</td><td>${x.staff}</td><td>${img}</td><td class="note">${x.adminNote||''}</td><td>${x.active?'🟢 Bật':'🔴 Tắt'}</td><td>${x.logs?.length||0} dòng</td><td><div class="actions"><button class="btn2" onclick="openDetail('${x.id}')">Chi tiết</button>${isAdmin()?`<button class="btn2" onclick="editTask('${x.id}')">Sửa</button><button class="btn-bad" onclick="deleteTask('${x.id}')">Xóa</button>`:''}</div></td></tr>`;
+ const st=calcStatus(x), cls=st==='done'?'done':st==='late'?'late':'todo', name=st==='done'?'Đã xong':st==='late'?'Quá giờ':'Chưa làm'; return `<tr><td class="time">${x.time}</td><td class="title">${x.title}</td><td class="content">${x.content}</td><td>${x.staff}</td><td>${img}</td><td class="note">${x.adminNote||''}</td><td class="note">${x.staffNote||''}</td><td><span class="badge ${cls}">${name}</span></td><td>${x.logs?.length||0} dòng</td><td><div class="actions"><button class="btn2" onclick="openDetail('${x.id}')">Chi tiết</button>${st!=='done'?`<button class="btn-ok" onclick="doneTask('${x.id}')">Đã xong</button>`:''}<button class="btn-warn" onclick="staffNote('${x.id}')">Ghi chú</button>${isAdmin()?`<button class="btn2" onclick="editTask('${x.id}')">Sửa</button><button class="btn-bad" onclick="deleteTask('${x.id}')">Xóa</button>`:''}</div></td></tr>`}
+function renderDevices(){document.getElementById('mainGrid').classList.remove('grid'); document.getElementById('formPanel').classList.add('hidden'); document.getElementById('thead').innerHTML='<tr><th>ID thiết bị</th><th>Trạng thái</th><th>Lần cuối mở</th></tr>'; const data=load(), rows=Object.entries(data.devices).map(([id,d])=>{const diff=Math.round((Date.now()-d.lastSeen)/1000), on=diff<90; return `<tr><td class="title">${id}</td><td>${on?'🟢 Online':'🔴 Offline '+Math.round(diff/60)+' phút'}</td><td>${new Date(d.lastSeen).toLocaleString('vi-VN')}</td></tr>`}).join(''); document.getElementById('tbody').innerHTML=rows||'<tr><td colspan="3">Chưa có thiết bị.</td></tr>'}
+function fileToDataUrl(file){return new Promise(res=>{if(!file)return res(''); const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file)})}
+async function saveTask(){const data=load(), file=document.getElementById('imageFile').files[0]; const img=(await fileToDataUrl(file))||document.getElementById('imageUrl').value.trim(); const obj={id:state.editId||uid(),time:val('time'),title:val('title'),content:val('content'),staff:val('staff'),image:img,adminNote:val('adminNote'),logs:[logText(state.editId?'Admin sửa việc':'Admin tạo việc')]}; if(!obj.time||!obj.title||!obj.content){alert('Nhập đủ thời gian, tên CV, nội dung');return} if(state.tab==='repeat'){obj.active=true; const i=data.repeat.findIndex(x=>x.id===obj.id); i>=0?data.repeat[i]={...data.repeat[i],...obj,logs:[...(data.repeat[i].logs||[]),logText('Admin sửa mẫu lặp')]}:data.repeat.push(obj)} else {obj.date=document.getElementById('filterDate').value; obj.staffNote=''; obj.status='todo'; const i=data.daily.findIndex(x=>x.id===obj.id); i>=0?data.daily[i]={...data.daily[i],...obj,logs:[...(data.daily[i].logs||[]),logText('Admin sửa việc')]}:data.daily.push(obj)} save(data); clearForm(); render()}
+function val(id){return document.getElementById(id).value.trim()}
+function clearForm(){state.editId=null; ['time','title','content','imageUrl','adminNote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('imageFile').value=''}
+function findTask(id){const data=load(); return {data,tab:data.daily.some(x=>x.id===id)?'daily':'repeat',task:[...data.daily,...data.repeat].find(x=>x.id===id)}}
+function doneTask(id){const {data,task}=findTask(id); task.status='done'; task.logs.push(logText('Nhân viên '+task.staff+' bấm đã xong trên '+state.deviceId)); save(data); render()}
+function staffNote(id){const {data,task}=findTask(id); const note=prompt('Nhân viên ghi chú:',task.staffNote||''); if(note!==null){task.staffNote=note; task.logs.push(logText('Nhân viên ghi chú')); save(data); render()}}
+function editTask(id){const {task,tab}=findTask(id); if(tab==='repeat') setTab('repeat'); else setTab('today'); state.editId=id; document.getElementById('time').value=task.time; document.getElementById('staff').value=task.staff; document.getElementById('title').value=task.title; document.getElementById('content').value=task.content; document.getElementById('imageUrl').value=task.image||''; document.getElementById('adminNote').value=task.adminNote||''}
+function deleteTask(id){if(!confirm('Xóa việc này?'))return; const data=load(); data.daily=data.daily.filter(x=>x.id!==id); data.repeat=data.repeat.filter(x=>x.id!==id); save(data); render()}
+function openDetail(id){const {task,tab}=findTask(id); if(tab==='daily') task.logs.push(logText('Đã mở chi tiết trên '+state.deviceId)); const img=task.image?`<p><img src="${task.image}"></p>`:''; document.getElementById('detailBody').innerHTML=`<h2>${task.title}</h2><p><b>Giờ:</b> ${task.time} ${task.date?(' • <b>Ngày:</b> '+task.date):''}</p><p><b>Nhân viên:</b> ${task.staff}</p><p><b>Nội dung:</b><br>${task.content}</p>${img}<p><b>Admin ghi chú:</b><br>${task.adminNote||''}</p>${tab==='daily'?`<p><b>Nhân viên ghi chú:</b><br>${task.staffNote||''}</p>`:''}<h3>Lịch sử thao tác</h3>${(task.logs||[]).map(l=>`<div class="log"><b>${l.time}</b><br>${l.action}</div>`).join('')}<div class="actions"><button class="btn2" onclick="closeDetail()">Đóng</button>${tab==='daily'&&task.status!=='done'?`<button class="btn-ok" onclick="doneTask('${task.id}');closeDetail()">Đã xong</button>`:''}</div>`; save(load()); document.getElementById('detailModal').classList.add('show');}
+function closeDetail(){document.getElementById('detailModal').classList.remove('show')}
+document.getElementById('detailModal').addEventListener('click',e=>{if(e.target.id==='detailModal') closeDetail()})
+function resetDemo(){localStorage.removeItem(LS); location.reload()}
+function showAllToday(){document.getElementById('filterDate').value=today(); document.getElementById('filterStaff').value='Tất cả'; document.getElementById('filterStatus').value='all'; document.getElementById('filterSearch').value=''; render()}
+function checkReminders(){if(state.tab!=='today')return; const data=load(); const due=data.daily.find(x=>x.date===today()&&x.status!=='done'&&x.time<=nowTime()&&!x.notified); if(due){due.notified=true; due.logs.push(logText('Hệ thống popup nhắc việc')); save(data); showToast(due); render()}}
+function showToast(t){const el=document.getElementById('toast'); el.innerHTML=`<h3>🔔 ${t.time} - ${t.title}</h3><div>${t.content}</div><div class="small">Nhân viên: ${t.staff}</div><div class="actions"><button class="btn2" onclick="openDetail('${t.id}');hideToast()">Chi tiết</button><button class="btn-ok" onclick="doneTask('${t.id}');hideToast()">Đã xong</button><button class="btn-warn" onclick="hideToast()">Ẩn</button></div>`; el.classList.add('show'); try{new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=').play()}catch(e){}}
+function hideToast(){document.getElementById('toast').classList.remove('show')}
+init();
+</script>
+</body>
+</html>
