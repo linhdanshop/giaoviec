@@ -2,128 +2,716 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Nhắc Việc Shop - Firebase V1</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nhắc Việc Shop - V27</title>
 <style>
-:root{--bg:#f3f6fb;--navy:#0f172a;--blue:#2563eb;--line:#d9e2ef;--text:#172033;--muted:#667085;--red:#dc2626;--orange:#f59e0b;--green:#16a34a}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:14px}button,input,select,textarea{font-family:inherit;font-size:14px}button{cursor:pointer}.top{height:56px;background:var(--navy);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 14px;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px #0003}.brand h1{font-size:21px;margin:0}.brand p{margin:2px 0 0;color:#cbd5e1;font-size:12px}.topright{display:flex;gap:8px;align-items:center}.pillTop{background:#1e293b;border:1px solid #334155;border-radius:999px;padding:8px 12px;font-weight:800}.btn{height:38px;border:0;border-radius:10px;padding:0 14px;font-weight:800;background:#e9eef6}.btn.blue{background:var(--blue);color:white}.btn.green{background:var(--green);color:white}.btn.red{background:var(--red);color:white}.btn.orange{background:var(--orange);color:#111}.btn.dark{background:#334155;color:white}.wrap{max-width:1880px;margin:10px auto;padding:0 8px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px #0f172a0e}.row1{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;flex-wrap:wrap}.tabs,.emps{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tab,.empfilter{border:0;border-radius:10px;padding:10px 14px;font-weight:900;background:#eef2f7}.tab.active,.empfilter.active{background:var(--blue);color:white}.filters{display:flex;gap:8px;align-items:center;padding:0 10px 10px;flex-wrap:wrap}.filters input{height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:white}.filters .search{min-width:360px;flex:1}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0}.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;box-shadow:0 6px 18px #0f172a0a;text-align:left}.stat.active{outline:2px solid var(--blue)}.stat b{font-size:24px;display:block}.stat span{color:#667085}.tablebox{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px #0f172a0e;max-height:calc(100vh - 250px);min-height:430px}.tasktable{width:100%;min-width:1720px;border-collapse:separate;border-spacing:0;table-layout:fixed}.tasktable th{background:#edf3fa;position:sticky;top:0;z-index:4;height:42px;text-align:left;border-bottom:1px solid #b9c7d8;color:#111827;font-size:13px;text-transform:uppercase;padding:0 8px}.tasktable td{border-bottom:1px solid #e7edf5;padding:10px 8px;vertical-align:top;background:#fff}.tasktable tr.overdue td{background:#fff6ea}.tasktable tr.done td{background:#f6fff9}.tasktable tr:hover td{background:#f8fbff}.c-time{width:76px}.c-title{width:220px}.c-content{width:420px}.c-emp{width:115px}.c-img{width:82px}.c-note{width:230px}.c-status{width:110px}.c-duration{width:95px}.c-remind{width:135px}.c-act{width:70px}.timebig{font-size:18px;font-weight:900;color:#0f172a}.titlepill{display:block;border-left:7px solid var(--empColor,#64748b);background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 9px;font-weight:900;font-size:15px;line-height:1.25;cursor:pointer}.kind{display:inline-block;margin-top:6px;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900}.kind.daily{background:#dbeafe;color:#1d4ed8}.kind.once{background:#ffedd5;color:#c2410c}.contentText{color:#dc2626;font-weight:800;line-height:1.45}.clip3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.more{border:0;background:transparent;color:#2563eb;font-weight:900;padding:4px 0}.empList{display:flex;flex-direction:column;gap:4px;align-items:flex-start}.empchip{border:2px solid var(--empColor,#64748b);background:color-mix(in srgb,var(--empColor,#64748b) 18%,white);border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;line-height:1.1}.noteview{min-height:38px;border:1px solid #e3eaf4;border-radius:9px;background:#fff;padding:7px;line-height:1.3;cursor:pointer;max-height:64px;overflow:hidden}.noteview.empty{color:#98a2b3}.imgbtn{border:0;background:#eef2ff;color:#1d4ed8;border-radius:999px;padding:7px 9px;font-weight:900}.imgbtn.empty{display:none}.status{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:900}.status.todo{background:#fef3c7;color:#a16207}.status.done{background:#dcfce7;color:#15803d}.lateText{display:block;color:#dc2626;font-weight:900;margin-top:4px}.remindBox{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.remindBox input{width:58px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0 6px}.smallBtn{height:30px;border:0;border-radius:8px;padding:0 8px;font-weight:900;background:#eef2f7}.smallBtn.bell{background:#fee2e2;color:#b91c1c}.action{position:relative}.dotbtn{width:36px;height:32px;border:0;border-radius:9px;background:#eef2f7;font-weight:900;font-size:19px}.menu{display:none;position:absolute;right:5px;top:36px;width:145px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 12px 30px #0002;z-index:10;overflow:hidden}.menu.open{display:block}.menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;font-weight:800}.menu button:hover{background:#f1f5f9}.menu .danger{color:#dc2626}.modal{display:none;position:fixed;inset:0;background:#0f172a88;z-index:50;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}.panel{background:#f8fafc;border-radius:16px;width:min(980px,96vw);max-height:92vh;overflow:auto;box-shadow:0 30px 80px #0006}.panelhead{background:#fff;border-bottom:1px solid #e5edf6;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}.panelhead h3{margin:0;font-size:19px}.x{border:0;background:#eef2f7;border-radius:9px;width:36px;height:34px;font-weight:900}.form{background:#fff;margin:14px;border:1px solid #e5edf6;border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.form label{display:block;font-size:12px;color:#667085;font-weight:900;margin-bottom:5px}.form input,.form select,.form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.form textarea{min-height:82px;resize:vertical}.empPick{display:flex;gap:8px;flex-wrap:wrap}.empPick label{border:1px solid #dbe3ef;border-radius:999px;padding:8px 12px;background:#f8fafc;color:#111;display:flex;gap:6px;align-items:center}.panelfoot{padding:14px 16px;border-top:1px solid #e5edf6;display:flex;justify-content:flex-end;gap:8px;background:#fff}.detailBody{padding:14px}.detailMeta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.meta{background:#fff;border:1px solid #dbe3ef;border-radius:999px;padding:8px 12px;font-weight:900}.detailMain{background:#fff;border:1px solid #dbe3ef;border-radius:14px;padding:14px;margin-bottom:12px}.detailLine{display:grid;grid-template-columns:95px 1fr;gap:12px;align-items:center;margin-bottom:12px}.detailTime{font-size:26px;font-weight:900}.detailTitle{font-size:22px;font-weight:900}.detailContent{color:#dc2626;font-weight:800;font-size:17px;line-height:1.55;white-space:pre-wrap}.detailSection{background:#fff;border:1px solid #dbe3ef;border-radius:14px;padding:14px;margin-bottom:12px}.detailSection h4{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.4px}.editArea{width:100%;min-height:82px;border:1px solid #dbe3ef;border-radius:10px;padding:10px;resize:vertical}.gallery{display:flex;gap:8px;flex-wrap:wrap}.thumb{width:115px;height:85px;object-fit:cover;border:1px solid #dbe3ef;border-radius:10px;cursor:pointer}.pastebox{border:2px dashed #cbd5e1;border-radius:12px;background:#f8fafc;color:#64748b;font-weight:800;padding:9px;margin-top:8px}.miniTable{width:100%;border-collapse:collapse;background:#fff}.miniTable th,.miniTable td{border-bottom:1px solid #e7edf5;padding:10px;text-align:left}.miniTable th{background:#f3f6fb}.masterbox{padding:14px}.loginChoices{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:16px}.loginChoices button{height:58px;border:1px solid #dbe3ef;border-radius:14px;background:#fff;font-weight:900;font-size:16px}.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:white;border-radius:12px;padding:12px 14px;font-weight:800;z-index:100;display:none}.toast.show{display:block}.alertOverlay{position:fixed;inset:0;background:#7f1d1dcc;z-index:80;display:none;align-items:center;justify-content:center;padding:18px}.alertOverlay.open{display:flex}.alertCard{width:min(820px,96vw);background:#fff;border-radius:22px;box-shadow:0 40px 100px #0008;overflow:hidden;animation:pulse 1.2s infinite}.alertHead{background:#dc2626;color:white;padding:22px;text-align:center}.alertHead h2{font-size:34px;margin:0}.alertBody{padding:24px;text-align:center}.alertBody .atime{font-size:42px;font-weight:900}.alertBody .atitle{font-size:30px;font-weight:900;margin:8px 0}.alertBody .acontent{font-size:20px;color:#dc2626;font-weight:800;white-space:pre-wrap}.alertActions{padding:18px;display:flex;justify-content:center;background:#fff7f7}.alertActions button{height:54px;font-size:18px;border-radius:14px;padding:0 28px}.hidden{display:none!important}.banner{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:12px;padding:10px 12px;font-weight:800;margin:10px 0}@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.015)}100%{transform:scale(1)}}@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.filters .search{min-width:200px}.form{grid-template-columns:1fr}.loginChoices{grid-template-columns:1fr}}
+:root{--navy:#0f172a;--blue:#2563eb;--bg:#f3f6fb;--line:#d9e2ef;--text:#172033;--muted:#667085;--green:#16a34a;--red:#dc2626;--orange:#f59e0b;--softred:#fff4e8;--softgreen:#f2fff6;--softyellow:#fff9e9}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:14px}button,input,select,textarea{font-family:inherit;font-size:14px}.top{height:54px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;box-shadow:0 2px 10px #0002;position:sticky;top:0;z-index:20}.brand{line-height:1.05}.brand h1{font-size:22px;margin:0;font-weight:800}.brand p{margin:2px 0 0;color:#cbd5e1;font-size:12px}.topright{display:flex;gap:8px;align-items:center}.top select,.top button{height:38px;border:0;border-radius:10px;padding:0 14px;font-weight:700}.wrap{max-width:1660px;margin:14px auto;padding:0 12px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px #0f172a10}.tabs{display:flex;gap:8px;padding:10px}.tab{border:0;border-radius:11px;padding:12px 22px;font-weight:800;background:#eef2f7;cursor:pointer}.tab.active{background:var(--blue);color:#fff}.filters{padding:12px;display:grid;grid-template-columns:150px 180px 170px 170px 1fr 130px 140px 140px;gap:10px;align-items:end;margin-top:10px}.field label{display:block;font-size:12px;color:#637083;font-weight:800;margin:0 0 5px}.field input,.field select{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff}.btn{height:40px;border:0;border-radius:10px;padding:0 16px;font-weight:800;cursor:pointer}.btn.blue{background:var(--blue);color:#fff}.btn.gray{background:#e9eef6}.btn.green{background:#16a34a;color:white}.btn.red{background:#dc2626;color:#fff}.btn.orange{background:#f59e0b;color:#111}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:10px 0}.stat{padding:13px 16px;cursor:pointer}.stat.active{outline:2px solid #2563eb}.stat b{font-size:27px;display:block}.stat span{color:#667085}.section-title{display:flex;justify-content:space-between;align-items:center;margin:14px 4px 8px}.section-title h2{font-size:18px;margin:0}.hint{font-size:12px;color:#667085}.tablebox{overflow:auto;border-radius:14px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px #0f172a10;max-height:calc(100vh - 320px);min-height:360px}.tasktable{width:100%;min-width:1450px;border-collapse:separate;border-spacing:0;table-layout:fixed}.tasktable th{background:#f0f4f9;color:#111827;text-transform:uppercase;font-size:13px;letter-spacing:.3px;height:42px;border-bottom:1px solid #b9c7d8;text-align:left;padding:0 10px;position:sticky;top:0;z-index:5}.tasktable td{padding:12px 10px;border-bottom:1px solid #e7edf5;vertical-align:top;background:#fff}.tasktable tr.overdue td{background:#fff5e8}.tasktable tr.done td{background:#f7fffa}.tasktable tr:hover td{background:#f8fbff}.w-time{width:72px}.w-title{width:190px}.w-emp{width:105px}.w-img{width:80px}.w-status{width:105px}.w-log{width:80px}.w-act{width:95px}.titlecell{font-weight:800;font-size:15px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;margin-top:6px}.daily{background:#dbeafe;color:#1d4ed8}.once{background:#eef2f7;color:#475569}.status{display:inline-flex;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.status.done{background:#dcfce7;color:#15803d}.status.late{background:#ffedd5;color:#c2410c}.status.todo{background:#fef3c7;color:#a16207}.clip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}.more{border:0;background:transparent;color:#2563eb;font-weight:800;padding:3px 0;cursor:pointer}.noteview{min-height:38px;max-height:44px;overflow:hidden;border:1px solid #e3eaf4;border-radius:9px;background:#fff;padding:8px;line-height:1.3}.noteview.empty{color:#98a2b3}.action{position:relative}.dotbtn{width:38px;height:34px;border:0;border-radius:9px;background:#eef2f7;font-weight:900;font-size:20px;cursor:pointer}.menu{display:none;position:absolute;right:8px;top:42px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 12px 30px #0002;z-index:15;width:145px;overflow:hidden}.menu.open{display:block}.menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;font-weight:700;cursor:pointer}.menu button:hover{background:#f1f5f9}.menu button.danger{color:#dc2626}.modal{display:none;position:fixed;inset:0;background:#0f172a88;z-index:50;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.panel{background:#fff;border-radius:16px;width:min(760px,96vw);max-height:90vh;overflow:auto;box-shadow:0 30px 80px #0005}.panelhead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #e5edf6}.panelhead h3{margin:0;font-size:19px}.x{border:0;background:#eef2f7;border-radius:9px;width:36px;height:34px;font-weight:900}.form{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.form .full{grid-column:1/-1}.form label{font-size:12px;font-weight:800;color:#667085;display:block;margin-bottom:5px}.form input,.form select,.form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.form textarea{min-height:80px;resize:vertical}.panelfoot{padding:14px 16px;border-top:1px solid #e5edf6;display:flex;justify-content:flex-end;gap:8px}.miniTable{width:100%;border-collapse:collapse}.miniTable th,.miniTable td{border-bottom:1px solid #e7edf5;padding:10px;text-align:left}.miniTable th{background:#f3f6fb}.masterbox{padding:14px}.hidden{display:none!important}@media(max-width:1100px){.filters{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* V10 focus fixes */
+:root{--an:#60a5fa;--nguyet:#f472b6;--thuy:#34d399;}
+.tasktable{min-width:1580px;}
+.tasktable th:nth-child(1),.tasktable td:nth-child(1){width:86px;font-size:18px;font-weight:900;color:#0f172a;}
+.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:235px;}
+.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:430px;}
+.tasktable th:nth-child(6),.tasktable td:nth-child(6){width:260px;}
+.tasktable th:nth-child(7),.tasktable td:nth-child(7){width:240px;}
+.clip{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45;}
+.contentText{color:#dc2626;font-weight:750;font-size:15px;}
+.titlepill{display:block;border-left:7px solid var(--empColor,#64748b);background:#eff6ff;border-radius:10px;padding:9px 10px;font-weight:900;font-size:16px;line-height:1.25;}
+.empchip{display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--empColor,#64748b);background:color-mix(in srgb,var(--empColor,#64748b) 18%,white);border-radius:999px;padding:7px 14px;font-weight:900;min-width:72px;}
+.imgbadge{display:inline-flex;align-items:center;gap:5px;border:0;background:#eef2ff;color:#1d4ed8;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer}.imgbadge.empty{background:#f1f5f9;color:#64748b;cursor:default}
+.detailWrap{padding:0;background:#eef3f9}.detailTop{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid #dbe3ef;padding:12px 16px}.detailTop .info{background:#f8fafc;border:1px solid #dbe3ef;border-radius:999px;padding:8px 13px;font-weight:900}.detailMain{padding:16px}.detailCore{background:#fff;border:1px solid #dbe3ef;border-radius:14px;padding:16px;display:grid;grid-template-columns:110px 270px 1fr;gap:16px;margin-bottom:14px}.detailCore .bigtime{font-size:30px;font-weight:900}.detailCore .bigtitle{font-size:24px}.detailCore .bigcontent{font-size:18px;color:#dc2626;font-weight:800;line-height:1.55}.detailSection{background:#fff;border:1px solid #dbe3ef;border-radius:14px;padding:14px;margin-bottom:12px}.detailSection h4{margin:0 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:.5px}.gallery{display:flex;flex-wrap:wrap;gap:10px}.thumb{width:120px;height:90px;object-fit:cover;border-radius:10px;border:1px solid #dbe3ef;cursor:pointer}.imageViewer .panel{width:min(1100px,96vw);background:#111827}.imageViewer .panelhead{color:#fff;border-color:#334155}.imageViewer .x{background:#334155;color:#fff}.imageViewer img{display:block;max-width:100%;max-height:78vh;margin:0 auto}.pastebox{border:2px dashed #cbd5e1;border-radius:12px;background:#f8fafc;padding:10px;color:#64748b;font-weight:800}.previewImgs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.previewImgs img{width:80px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef}.mutedSmall{font-size:12px;color:#64748b;margin-top:4px}.panel{background:#f8fafc}.panelhead{background:#fff}.form{background:#fff;margin:14px;border-radius:14px;border:1px solid #e5edf6}.dailyFocusNote{color:#64748b;font-size:12px;font-weight:700}.w-time,.w-title{width:auto}.noteview{cursor:pointer}
+
+/* V11 detail + gallery fixes */
+.detailCore{grid-template-columns:95px 360px minmax(420px,1fr);align-items:center;}
+.detailCore>div{min-width:0;}
+.detailCore .bigtime{font-size:28px;white-space:nowrap;}
+.detailCore .bigtitle{font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.detailCore .bigcontent{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35;}
+.galleryHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.galleryNav{display:flex;align-items:center;gap:8px}
+.galleryNav button{border:0;border-radius:10px;background:#334155;color:#fff;font-weight:900;height:34px;min-width:42px;cursor:pointer}
+.imageCounter{color:#cbd5e1;font-weight:800}
+.reportImgsLink{border:0;background:transparent;color:#2563eb;font-weight:900;padding:3px 0;cursor:pointer}
+@media(max-width:1200px){.detailCore{grid-template-columns:90px 280px minmax(300px,1fr)}}
+
+
+/* V12 layout theo yêu cầu */
+.topFilters{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}.filterChip{border:1px solid #dbe3ef;background:#f1f5f9;border-radius:999px;padding:9px 14px;font-weight:900;cursor:pointer}.filterChip.active{background:#2563eb;color:#fff;border-color:#2563eb}.filterChip.emp{background:#fff}.filterChip.emp.active{box-shadow:0 0 0 3px #dbeafe;color:#0f172a}.filterChip.an.active{border-color:#60a5fa}.filterChip.nguyet.active{border-color:#f472b6}.filterChip.thuy.active{border-color:#34d399}.quickFilters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:14px;margin-top:10px}.quickFilters .label{font-weight:900;color:#475569;margin-right:2px}.filters{grid-template-columns:150px 1fr 120px 120px 140px}.hideField{display:none!important}.titlepill{background:#fff!important;border:2px solid var(--empColor)!important;border-left-width:7px!important;color:#0f172a!important}.badge.daily{background:#1d4ed8!important;color:#fff!important;box-shadow:0 2px 8px #1d4ed833}.adminQuickNote{width:100%;min-height:42px;max-height:76px;border:1px solid #dbe3ef;border-radius:10px;padding:8px 10px;background:#fff;resize:vertical;line-height:1.35}.adminQuickNote:focus{outline:2px solid #bfdbfe;border-color:#60a5fa}.detailCore{grid-template-columns:140px minmax(400px,1fr)!important;gap:14px!important;align-items:start!important}.detailCore .bigtime{font-size:28px!important}.detailCore .bigtitle{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.detailContentFull{grid-column:1/-1;border-top:1px solid #e5edf6;padding-top:12px}.detailContentFull .bigcontent{white-space:pre-wrap!important;overflow:visible!important;text-overflow:clip!important;font-size:18px!important;line-height:1.55!important}.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:250px}.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:520px}.tasktable th:nth-child(6),.tasktable td:nth-child(6){width:280px}
+
+
+
+/* V13 compact filter layout */
+.quickFilters{display:none!important}
+.filters{grid-template-columns:150px 1fr 120px 120px 120px 140px!important;align-items:end}
+.stats{margin:10px 0 8px}
+.stat{cursor:pointer;border:2px solid transparent;transition:.15s}
+.stat:hover{transform:translateY(-1px);box-shadow:0 12px 30px #0f172a18}
+.stat.active{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe;background:#f8fbff}
+.stat.active b{color:#2563eb}
+@media(max-width:1100px){.filters{grid-template-columns:repeat(2,1fr)!important}.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* V14: full width + compact notes + resizable columns */
+.wrap{max-width:none!important;width:calc(100vw - 28px)!important;margin:14px auto!important;}
+.tablebox{width:100%!important;max-height:calc(100vh - 300px)!important;}
+.tasktable{min-width:1180px!important;width:100%;table-layout:fixed;}
+.tasktable th{position:sticky;top:0;user-select:none;}
+.colResizer{position:absolute;right:-3px;top:0;width:7px;height:100%;cursor:col-resize;z-index:20;}
+.colResizer:hover{background:#60a5fa55;}
+.tasktable th{position:sticky!important;}
+.quickText{width:100%;min-height:44px;max-height:62px;border:1px solid #dbe3ef;border-radius:10px;padding:9px 10px;background:#fff;resize:vertical;line-height:1.35;font:inherit;}
+.quickText:focus{outline:2px solid #bfdbfe;border-color:#60a5fa;}
+.quickText::placeholder{color:#98a2b3;}
+.colHint{font-size:12px;color:#64748b;font-weight:700;margin-left:8px;}
+@media(max-width:1400px){.wrap{width:calc(100vw - 14px)!important}.tasktable{min-width:1100px!important}}
+
+
+
+/* V15 detail + compact note fixes */
+.quickText{min-height:44px!important;height:44px!important;max-height:44px!important;resize:none!important;overflow:auto!important;}
+.titlepill{background:#fff!important;cursor:pointer;}
+.titlepill:hover{box-shadow:0 0 0 3px color-mix(in srgb,var(--empColor,#64748b) 16%,transparent);}
+.detailWrap{background:#eaf1f8!important;}
+.detailMain{padding:14px!important;}
+.detailTop{background:#f8fbff!important;}
+.detailCore{display:grid!important;grid-template-columns:130px minmax(400px,1fr)!important;gap:14px!important;background:#fff!important;border:1px solid #cfd9e8!important;border-radius:15px!important;padding:16px!important;margin-bottom:12px!important;}
+.detailCore .detailContentFull{grid-column:1/-1!important;background:#fff7ed!important;border:1px solid #fed7aa!important;border-radius:12px!important;padding:12px 14px!important;margin-top:2px!important;}
+.detailCore .bigcontent{white-space:pre-wrap!important;overflow:visible!important;text-overflow:clip!important;color:#dc2626!important;font-size:19px!important;line-height:1.55!important;font-weight:850!important;}
+.detailCore .bigtitle{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;background:#fff!important;}
+.detailSection:nth-of-type(2){background:#f8fbff!important;}
+.detailSection:nth-of-type(3){background:#fffaf0!important;}
+.detailSection:nth-of-type(4){background:#f0fdf4!important;}
+.detailSection:nth-of-type(5){background:#f8fafc!important;}
+.detailSection{border-color:#cfd9e8!important;}
+.tasktable td:nth-child(6) .quickText,.tasktable td:nth-child(7) .quickText{font-size:14px;line-height:1.25;}
+
+
+/* V16: admin note/report quick images + detail actions */
+.noteImgsLink{border:0;background:transparent;color:#2563eb;font-weight:900;padding:3px 0;cursor:pointer;display:block;text-align:left}
+.detailActions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid #dbe3ef}
+.detailEditGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.detailEditGrid .detailSection{margin-bottom:0}
+.detailEditGrid textarea{width:100%;min-height:120px;border:1px solid #cfd9e8;border-radius:12px;padding:10px;background:#fff;font:inherit;resize:vertical;line-height:1.45}
+.detailPasteHint{font-size:12px;color:#64748b;font-weight:800;margin-top:6px}
+.detailSection.adminBox{background:#fffaf0!important}
+.detailSection.reportBox{background:#f0fdf4!important}
+.detailSection.activePaste{outline:3px solid #bfdbfe}
+@media(max-width:1000px){.detailEditGrid{grid-template-columns:1fr}}
+
+.previewImgs .imgbadge{width:auto;height:34px;margin-right:8px}.noteImgsLink:empty,.reportImgsLink:empty{display:none}.deviceInput{width:100%;height:38px;border:1px solid #d9e3f0;border-radius:9px;padding:0 10px;font-weight:700}
+
+/* V20 chỉnh nhân viên gọn + chọn nhân viên cân đối */
+.empchips{display:flex;flex-direction:column;gap:4px;align-items:flex-start;max-width:92px}.empchip{min-width:auto!important;padding:4px 9px!important;font-size:13px!important;line-height:1.1;border-width:1.5px!important;white-space:nowrap}.empchip.moreEmp{background:#f1f5f9!important;border-color:#cbd5e1!important;color:#334155!important}.tasktable th:nth-child(4),.tasktable td:nth-child(4){width:90px!important}.checkrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.checkrow label{display:flex!important;align-items:center;gap:8px;border:1px solid #dbe3ef;border-radius:12px;background:#fff;padding:10px 12px;font-weight:900;color:#0f172a;min-height:44px}.checkrow input{width:18px!important;height:18px!important;accent-color:#2563eb}.defaultPick{display:flex;align-items:center;gap:8px}.defaultPick input{width:18px;height:18px;accent-color:#2563eb}.defaultBadge{display:inline-flex;border-radius:999px;background:#dcfce7;color:#15803d;padding:4px 9px;font-weight:900;font-size:12px;margin-left:8px}.masterHint{font-size:12px;color:#64748b;margin-top:3px}.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:240px!important}.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:560px!important}
+
+.statusStack{display:flex;flex-direction:column;gap:4px;align-items:flex-start}.status.second{font-size:11px;padding:4px 8px}.empManage{display:flex;gap:8px;margin-bottom:10px}.empManage input{height:40px;border:1px solid #d9e3f0;border-radius:10px;padding:0 12px;min-width:240px}
+
+/* V26 final workflow */
+.tasktable{min-width:1500px!important;}
+.tasktable th:nth-child(8),.tasktable td:nth-child(8){width:105px!important}
+.tasktable th:nth-child(9),.tasktable td:nth-child(9){width:95px!important}
+.tasktable th:nth-child(10),.tasktable td:nth-child(10){width:125px!important}
+.tasktable th:nth-child(11),.tasktable td:nth-child(11){width:78px!important}
+.tasktable th:nth-child(12),.tasktable td:nth-child(12){width:78px!important}
+.durationBadge{display:inline-flex;border-radius:999px;background:#f1f5f9;color:#334155;padding:6px 9px;font-weight:900;font-size:12px;white-space:nowrap}
+.remindBox{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.remindBtn{height:30px;border:0;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:900;padding:0 8px;cursor:pointer}.remindMini{width:54px;height:30px;border:1px solid #dbe3ef;border-radius:8px;padding:0 6px;font-size:12px}.copyBox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;white-space:pre-wrap;font-family:Arial,Tahoma,sans-serif}.toast{position:fixed;right:18px;bottom:18px;background:#0f172a;color:white;border-radius:12px;padding:12px 16px;font-weight:800;z-index:9999;box-shadow:0 14px 35px #0004;display:none}.toast.show{display:block}.whoSmall{font-size:12px;color:#64748b;margin-top:5px}
+
+/* V27 strong reminder + late note */
+.statusStack{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.status.second{margin-top:0}
+.tasktable tr.done.overdue td{background:#fffaf0}
+.attentionPanel{width:min(760px,96vw)!important;background:#fff!important;border:4px solid #ef4444;border-radius:22px!important;overflow:hidden}
+.attentionHead{background:#dc2626;color:#fff;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.attentionHead h3{margin:0;font-size:28px;font-weight:900}
+.attentionBody{padding:22px;background:#fff7ed}
+.attentionTime{font-size:42px;font-weight:900;color:#111827;margin-bottom:8px}
+.attentionTitle{font-size:30px;font-weight:900;color:#dc2626;margin-bottom:10px}
+.attentionContent{font-size:18px;line-height:1.55;color:#111827;background:#fff;border:1px solid #fed7aa;border-radius:14px;padding:14px;margin:12px 0}
+.attentionMeta{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.attentionMeta span{background:#fff;border:1px solid #fed7aa;border-radius:999px;padding:8px 12px;font-weight:900}
+.attentionFoot{padding:16px 22px;background:#fff;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #fed7aa}
+
+.loginGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}
+.loginChoice{height:54px;border:1px solid #d8e2f0;border-radius:14px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 14px;font-weight:900;cursor:pointer;box-shadow:0 6px 14px #0f172a08}
+.loginChoice input{width:20px;height:20px;accent-color:#2563eb}.loginChoice.active{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 2px #bfdbfe}
+.loginChoice.admin{background:#fff7ed;border-color:#fed7aa}.loginChoice.admin.active{border-color:#f97316;box-shadow:0 0 0 2px #fed7aa}
 </style>
 </head>
 <body>
-<div class="top"><div class="brand"><h1>🔔 Nhắc Việc Shop</h1><p id="dbMode">Đang khởi động...</p></div><div class="topright"><span class="pillTop" id="whoText">Chưa đăng nhập</span><button class="btn dark" onclick="openLogin(true)">Đổi người</button></div></div>
-<div class="wrap">
-  <div id="configBanner" class="banner hidden">Đang chạy chế độ DEMO localStorage. Muốn realtime Firebase: dán firebaseConfig thật trong file, phần <b>FIREBASE_CONFIG</b>.</div>
-  <div class="card"><div class="row1"><div class="tabs"><button class="tab active" data-tab="tasks" onclick="setTab('tasks')">Công việc</button><button class="tab" data-tab="daily" onclick="setTab('daily')">Việc hằng ngày</button><button class="tab" data-tab="masters" onclick="setTab('masters')">Danh sách CV</button><button class="tab" data-tab="devices" onclick="setTab('devices')">Thiết bị online</button></div><div class="emps" id="empFilters"></div></div><div class="filters"><input type="date" id="dateFilter" onchange="render()"><input class="search" id="searchFilter" placeholder="Tìm kiếm tên CV / nội dung / ghi chú..." oninput="render()"><button class="btn" onclick="setToday(0)">Hôm nay</button><button class="btn" onclick="setToday(-1)">Hôm qua</button><button class="btn blue adminOnly" onclick="openTaskForm()">+ Thêm việc</button></div></div>
-  <div class="stats" id="stats"></div>
-  <div id="tasksView"><div class="tablebox"><table class="tasktable"><thead><tr><th class="c-time">Giờ</th><th class="c-title">Tên CV</th><th class="c-content">Nội dung</th><th class="c-emp">Nhân viên</th><th class="c-img">Ảnh</th><th class="c-note">Admin ghi chú</th><th class="c-note">Báo cáo NV</th><th class="c-status">Trạng thái</th><th class="c-duration">TG xử lý</th><th class="c-remind">Nhắc việc</th><th class="c-act">⋮</th></tr></thead><tbody id="taskRows"></tbody></table></div></div>
-  <div id="dailyView" class="hidden"><div class="masterbox card"><h3>Mẫu việc hằng ngày</h3><p class="hint">Mỗi mẫu hằng ngày chỉ sinh 1 việc/ngày. Sửa mẫu sẽ cập nhật lại việc ngày đó, không tạo trùng.</p><div id="dailyRows"></div></div></div>
-  <div id="mastersView" class="hidden"><div class="masterbox card"><h3>Danh sách công việc mẫu</h3><p class="hint">Chọn “Mặc định” để khi bấm thêm việc tự chọn mẫu đó.</p><div id="masterRows"></div><button class="btn blue adminOnly" onclick="openMasterForm()">+ Thêm mẫu CV</button><hr><h3>Nhân viên</h3><div id="employeeRows"></div><button class="btn blue adminOnly" onclick="addEmployeePrompt()">+ Thêm nhân viên</button></div></div>
-  <div id="devicesView" class="hidden"><div class="masterbox card"><h3>Thiết bị online</h3><p class="hint">Mã thiết bị cố định theo trình duyệt bằng localStorage. Đổi mạng không đổi mã. IP chỉ là ghi chú để dễ nhận biết.</p><div id="deviceRows"></div></div></div>
+<div class="top">
+  <div class="brand"><h1>🔔 Nhắc Việc Shop</h1><p>ID đang mở: <b id="deviceId"></b> · Online demo</p></div>
+  <div class="topright"><select id="role"><option>Admin</option><option>Nhân viên</option></select><select id="currentEmp"></select><button onclick="resetDemo()">Reset demo</button></div>
 </div>
-<div id="taskModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="taskFormTitle">Thêm việc</h3><button class="x" onclick="closeModal('taskModal')">×</button></div><div class="form"><div><label>Ngày</label><input type="date" id="fDate"></div><div><label>Giờ bắt đầu</label><input type="time" id="fTime"></div><div><label>Mẫu công việc</label><select id="fMaster" onchange="applyMaster()"></select></div><div><label>Loại việc</label><select id="fKind"><option value="once">Phát sinh</option><option value="daily">Hằng ngày</option></select></div><div class="full"><label>Tên công việc</label><input id="fTitle"></div><div class="full"><label>Nội dung cần làm</label><textarea id="fContent"></textarea></div><div class="full"><label>Nhân viên cùng làm</label><div id="fEmployees" class="empPick"></div></div><div class="full"><label>Admin ghi chú</label><textarea id="fAdminNote"></textarea></div><div><label>Nhắc lại mỗi X phút</label><input type="number" id="fRemind" min="0" placeholder="VD: 10"></div><div><label>Ảnh công việc</label><div class="pastebox">Mở popup này rồi Ctrl+V ảnh vào đây</div><div id="fImages" class="gallery"></div></div></div><div class="panelfoot"><button class="btn" onclick="closeModal('taskModal')">Hủy</button><button class="btn blue" onclick="saveTask()">Lưu việc</button></div></div></div>
-<div id="detailModal" class="modal"><div class="panel"><div class="panelhead"><h3>Chi tiết công việc</h3><button class="x" onclick="closeModal('detailModal')">×</button></div><div id="detailBody" class="detailBody"></div></div></div>
-<div id="noteModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="noteTitle">Ghi chú</h3><button class="x" onclick="closeModal('noteModal')">×</button></div><div class="form"><div class="full"><label id="noteLabel">Nội dung</label><textarea id="noteText"></textarea></div><div class="full"><label>Ảnh</label><div class="pastebox">Mở popup này rồi Ctrl+V ảnh vào đây</div><div id="noteImages" class="gallery"></div></div></div><div class="panelfoot"><button class="btn" onclick="closeModal('noteModal')">Hủy</button><button class="btn blue" onclick="saveNote()">Lưu</button></div></div></div>
-<div id="masterModal" class="modal"><div class="panel"><div class="panelhead"><h3>Mẫu công việc</h3><button class="x" onclick="closeModal('masterModal')">×</button></div><div class="form"><div class="full"><label>Tên CV</label><input id="mTitle"></div><div class="full"><label>Nội dung mẫu</label><textarea id="mContent"></textarea></div><div class="full"><label>Ghi chú mẫu</label><textarea id="mNote"></textarea></div><div><label>Loại mặc định</label><select id="mKind"><option value="once">Phát sinh</option><option value="daily">Hằng ngày</option></select></div><div><label><input type="checkbox" id="mDefault"> Làm mặc định khi thêm việc</label></div></div><div class="panelfoot"><button class="btn" onclick="closeModal('masterModal')">Hủy</button><button class="btn blue" onclick="saveMaster()">Lưu mẫu</button></div></div></div>
-<div id="loginModal" class="modal"><div class="panel"><div class="panelhead"><h3>Chọn người đang sử dụng</h3></div><div class="loginChoices" id="loginChoices"></div><div class="form"><div class="full"><label>Tên máy / vị trí máy</label><input id="deviceName" placeholder="VD: Máy soạn hàng 01"></div><div class="full"><label>IP ghi chú</label><input id="deviceIp" placeholder="VD: 192.168.1.22 hoặc mạng khác"></div></div></div></div>
-<div id="operatorModal" class="modal"><div class="panel"><div class="panelhead"><h3>Xác nhận người thao tác</h3></div><div class="loginChoices" id="operatorChoices"></div></div></div>
-<div id="imageModal" class="modal"><div class="panel" style="background:#111827"><div class="panelhead" style="background:#111827;color:white;border-color:#334155"><h3 id="imageTitle">Ảnh</h3><button class="x" style="background:#334155;color:white" onclick="closeModal('imageModal')">×</button></div><div style="padding:12px;text-align:center"><img id="bigImage" style="max-width:100%;max-height:78vh;border-radius:12px"></div></div></div>
-<div id="alertOverlay" class="alertOverlay"><div class="alertCard"><div class="alertHead"><h2>🔔 NHẮC VIỆC</h2><div>Máy nào bấm đã nhận trước thì các máy khác tự tắt</div></div><div class="alertBody" id="alertBody"></div><div class="alertActions"><button class="btn red" onclick="ackReminder()">ĐÃ NHẬN NHẮC</button></div></div></div>
+<div class="wrap">
+  <div class="card tabs">
+    <button class="tab active" data-tab="today" onclick="switchTab('today')">Công việc</button>
+    <button class="tab" data-tab="daily" onclick="switchTab('daily')">Việc hằng ngày</button>
+    <button class="tab" data-tab="master" onclick="switchTab('master')">Danh sách CV</button>
+    <button class="tab" data-tab="devices" onclick="switchTab('devices')">Thiết bị online</button>
+    <div class="topFilters" id="empChips"></div>
+  </div>
+
+  <div id="todayTab">
+    <div class="card filters">
+      <div class="field"><label>Ngày</label><input id="fDate" type="date" onchange="render()"></div>
+      <div class="field hideField"><label>Nhân viên</label><select id="fEmp"></select></div>
+      <div class="field hideField"><label>Trạng thái</label><select id="fStatus"><option>Tất cả</option><option>Chưa làm</option><option>Quá giờ</option><option>Đã xong</option></select></div>
+      <div class="field hideField"><label>Loại việc</label><select id="fType"><option>Tất cả</option><option>Hằng ngày</option><option>Phát sinh</option></select></div>
+      <div class="field"><label>Tìm kiếm</label><input id="fSearch" placeholder="Tên CV / nội dung / ghi chú" oninput="render()"></div>
+      <button class="btn blue" onclick="render()">Lọc</button><button class="btn gray" onclick="today()">Hôm nay</button><button class="btn gray" onclick="yesterday()">Hôm qua</button><button class="btn blue adminOnly" onclick="openTaskForm()">+ Thêm việc</button>
+    </div>
+    <div class="stats" id="statsRow">
+      <div class="card stat active" data-metric="total" onclick="setMetricFilter('total')"><b id="stTotal">0</b><span>Tổng việc</span></div>
+      <div class="card stat" data-metric="Chưa làm" onclick="setMetricFilter('Chưa làm')"><b id="stTodo">0</b><span>Chưa làm</span></div>
+      <div class="card stat" data-metric="Quá giờ" onclick="setMetricFilter('Quá giờ')"><b id="stLate">0</b><span>Quá giờ</span></div>
+      <div class="card stat" data-metric="Đã xong" onclick="setMetricFilter('Đã xong')"><b id="stDone">0</b><span>Đã xong</span></div>
+      <div class="card stat" data-metric="Hằng ngày" onclick="setMetricFilter('Hằng ngày')"><b id="stDaily">0</b><span>Hằng ngày</span></div>
+      <div class="card stat" data-metric="Phát sinh" onclick="setMetricFilter('Phát sinh')"><b id="stOnce">0</b><span>Phát sinh</span></div>
+    </div>
+    <div class="section-title"><h2>📋 Danh sách công việc</h2><span class="hint">Ưu tiên việc chưa xong/quá giờ lên trên · Kéo mép tiêu đề cột để đổi kích cỡ, máy tự nhớ</span></div>
+    <div class="tablebox"><table class="tasktable" id="taskTable"><colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="img"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time" class="w-time">Giờ</th><th data-col="title" class="w-title">Tên CV</th><th data-col="content">Nội dung</th><th data-col="emp" class="w-emp">Nhân viên</th><th data-col="img" class="w-img">Ảnh</th><th data-col="admin">Admin ghi chú</th><th data-col="report">Báo cáo NV</th><th data-col="status" class="w-status">Trạng thái</th><th data-col="duration">TG xử lý</th><th data-col="remind">Nhắc việc</th><th data-col="log" class="w-log">Lịch sử</th><th data-col="act" class="w-act">Thao tác</th></tr></thead><tbody id="taskBody"></tbody></table></div>
+  </div>
+
+  <div id="dailyTab" class="hidden"><div class="section-title"><h2>🔁 Việc hằng ngày</h2><button class="btn blue adminOnly" onclick="openTaskForm(null,'Hằng ngày')">+ Tạo việc hằng ngày</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th>Giờ</th><th>Tên CV</th><th>Nhân viên</th><th>Nội dung</th><th>Ghi chú admin</th><th>Trạng thái</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="dailyBody"></tbody></table></div></div>
+  <div id="masterTab" class="hidden"><div class="section-title"><h2>🧾 Danh sách CV mẫu</h2><span class="hint">Lưu sẵn các việc hay dùng để tạo nhanh, không phải gõ lại mỗi ngày</span><button class="btn blue adminOnly" onclick="openMasterForm()">+ Thêm mẫu CV</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th style="width:90px">Mặc định</th><th>Tên CV</th><th>Nội dung mẫu</th><th>NV mặc định</th><th>Ghi chú mẫu</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="masterBody"></tbody></table></div><div class="section-title"><h2>👥 Nhân viên</h2><span class="hint">Admin thêm/xóa nhân viên, bộ lọc và form tự cập nhật</span></div><div class="card masterbox"><div class="empManage adminOnly"><input id="newEmpName" placeholder="Tên nhân viên mới"><button class="btn blue" onclick="addEmployee()">+ Thêm nhân viên</button></div><table class="miniTable"><thead><tr><th>Tên nhân viên</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="empManageBody"></tbody></table></div></div>
+  <div id="devicesTab" class="hidden">
+  <div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Mỗi trình duyệt có 1 mã thiết bị cố định. IP chỉ để ghi chú vì đổi mạng sẽ đổi IP.</span></div>
+  <div class="card masterbox">
+    <table class="miniTable">
+      <thead><tr><th>Tên máy</th><th>Người dùng</th><th>Thiết bị ID</th><th>IP / địa chỉ mạng</th><th>Trạng thái</th><th>Online lần cuối</th></tr></thead>
+      <tbody><tr>
+        <td><input id="devName" class="deviceInput" oninput="saveDeviceInfo()" placeholder="VD: SOAN-01 / GOI-NHAP-02"></td>
+        <td><b id="devUser">-</b></td>
+        <td><code id="d1"></code></td>
+        <td><input id="devIp" class="deviceInput" oninput="saveDeviceInfo()" placeholder="VD: 192.168.1.25 / 4G / Nhà"></td>
+        <td><span class="status done">Online</span></td>
+        <td id="devLastSeen">Vừa xong</td>
+      </tr></tbody>
+    </table>
+    <div class="hint" style="padding:12px 16px">Web không lấy được MAC thật của máy. Muốn nhận diện máy ổn định thì dùng <b>Thiết bị ID</b> tự tạo + đặt <b>Tên máy</b>. ID này lưu trên trình duyệt, F5 không đổi; chỉ đổi khi xóa dữ liệu trình duyệt hoặc mở trình duyệt khác.</div>
+  </div>
+</div>
+</div>
+
+<div id="taskModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="taskModalTitle">Thêm việc</h3><button class="x" onclick="closeModal('taskModal')">×</button></div><div class="form"><input type="hidden" id="editId"><div><label>Chọn từ danh sách CV</label><select id="mMaster" onchange="fillFromMaster()"></select></div><div><label>Ngày</label><input id="mDate" type="date"></div><div><label>Thời gian</label><input id="mTime" type="time"></div><div><label>Nhân viên <small style="color:#667085">(chọn được nhiều)</small></label><div id="mEmpGroup" class="checkrow"></div></div><div><label>Loại việc</label><select id="mType"><option>Phát sinh</option><option>Hằng ngày</option></select></div><div><label>Nhắc sau phút <small style="color:#667085">VD: 10,20,30</small></label><input id="mRemind" placeholder="10,20,30"></div><div><label>Ảnh URL</label><input id="mImg" placeholder="Dán link ảnh hoặc bỏ trống"></div><div><label>Dán ảnh</label><div class="pastebox">Mở popup này rồi Ctrl+V ảnh vào đâu cũng được</div><div id="taskPreview" class="previewImgs"></div></div><div class="full"><label>Tên CV</label><input id="mTitle"></div><div class="full"><label>Nội dung cần làm</label><textarea id="mContent"></textarea></div><div class="full"><label>Admin ghi chú</label><textarea id="mAdminNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('taskModal')">Đóng</button><button class="btn blue" onclick="saveTask()">Lưu việc</button></div></div></div>
+<div id="reportModal" class="modal"><div class="panel"><div class="panelhead"><h3>Báo cáo nhân viên</h3><button class="x" onclick="closeModal('reportModal')">×</button></div><div class="form"><input type="hidden" id="rId"><div class="full"><label>Nội dung báo cáo</label><textarea id="rText" style="min-height:160px" placeholder="Nhân viên nhập báo cáo việc ở đây..."></textarea><div class="pastebox" style="margin-top:10px">Ctrl+V ảnh báo cáo vào popup này</div><div id="reportPreview" class="previewImgs"></div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('reportModal')">Đóng</button><button class="btn blue" onclick="saveReport()">Lưu báo cáo</button></div></div></div>
+
+<div id="adminNoteModal" class="modal"><div class="panel"><div class="panelhead"><h3>Admin ghi chú</h3><button class="x" onclick="closeModal('adminNoteModal')">×</button></div><div class="form"><input type="hidden" id="aId"><div class="full"><label>Nội dung admin ghi chú</label><textarea id="aText" style="min-height:160px" placeholder="Admin nhập ghi chú ở đây..."></textarea><div class="pastebox" style="margin-top:10px">Ctrl+V ảnh ghi chú admin vào popup này</div><div id="adminPreview" class="previewImgs"></div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('adminNoteModal')">Đóng</button><button class="btn blue" onclick="saveAdminNote()">Lưu ghi chú</button></div></div></div>
+<div id="detailModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="detailTitle">Chi tiết</h3><button class="x" onclick="closeModal('detailModal')">×</button></div><div id="detailBody" style="line-height:1.55"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button></div></div></div>
+<div id="masterModal" class="modal"><div class="panel"><div class="panelhead"><h3>Thêm mẫu công việc</h3><button class="x" onclick="closeModal('masterModal')">×</button></div><div class="form"><input type="hidden" id="msId"><div class="full"><label>Tên CV</label><input id="msTitle"></div><div><label>Nhân viên mặc định</label><select id="msEmp"></select></div><div><label>Giờ mặc định</label><input id="msTime" type="time"></div><div class="full"><label>Nội dung mẫu</label><textarea id="msContent"></textarea></div><div class="full"><label>Ghi chú mẫu</label><textarea id="msNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('masterModal')">Đóng</button><button class="btn blue" onclick="saveMaster()">Lưu mẫu</button></div></div></div>
+
+
+<div id="actorModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Bạn là ai đang thao tác?</h3></div><div class="form"><div class="full"><label>Chọn người thao tác</label><select id="actorSelect"></select></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('actorModal')">Đóng</button><button class="btn blue" onclick="confirmActor()">Xác nhận</button></div></div></div>
+<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Tích chọn Admin hoặc tên nhân viên. Nhân viên vẫn xem được tất cả việc; chỉ khác quyền thao tác. Admin demo mật khẩu: 123456</small></div></div></div></div>
+<div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div style="padding:14px"><img id="bigImage" src=""></div></div></div>
+
+
+<div id="attentionModal" class="modal"><div class="panel attentionPanel"><div class="attentionHead"><h3>🔔 NHẮC VIỆC</h3><button class="x" onclick="closeAttention()">×</button></div><div id="attentionBody" class="attentionBody"></div><div class="attentionFoot"><button class="btn gray" onclick="closeAttention()">Để sau</button><button class="btn orange" onclick="attentionAck()">Đã nhận nhắc</button></div></div></div>
 <div id="toast" class="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script>
-/* ============ FIREBASE_CONFIG: DÁN CONFIG FIREBASE CỦA MÀY Ở ĐÂY ============ */
+const K='task_reminder_v27_firebase';
+// ================= FIREBASE CONFIG =================
+// Dán config Firebase Web App của mày vào đây.
+// Nếu chưa dán, file vẫn chạy demo bằng localStorage.
 const firebaseConfig = {
-  apiKey: "DAN_API_KEY_VAO_DAY",
-  authDomain: "DAN_PROJECT.firebaseapp.com",
-  databaseURL: "https://DAN_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "DAN_PROJECT",
-  storageBucket: "DAN_PROJECT.appspot.com",
-  messagingSenderId: "DAN_SENDER_ID",
-  appId: "DAN_APP_ID"
+  apiKey: "AIzaSyAolG3b4LGGu_ra74QmtAeszDfSntdazjM",
+  authDomain: "giaoviec-5ac66.firebaseapp.com",
+  databaseURL: "https://giaoviec-5ac66-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "giaoviec-5ac66",
+  storageBucket: "giaoviec-5ac66.firebasestorage.app",
+  messagingSenderId: "454020086133",
+  appId: "1:454020086133:web:36c0b520b25cd75b3a3b3c"
 };
-const ADMIN_PASS = '123456';
-const DB_ROOT = 'taskReminderShopV1';
-const EMP_COLORS = ['#60a5fa','#f472b6','#34d399','#f59e0b','#a78bfa','#fb7185','#2dd4bf'];
-let useFirebase = firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('DAN_');
-let db = null;
-let state = {tasks:{},masters:{},employees:{},devices:{}};
-let currentTab='tasks', empFilter='all', statFilter='all', editingTask=null, editingMaster=null, noteCtx=null, pendingImages=[], noteImages=[], currentReminder=null, audioCtx=null, beepTimer=null;
-const $ = id => document.getElementById(id);
-const todayStr=(off=0)=>{let d=new Date();d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)};
-const nowTime=()=>new Date().toTimeString().slice(0,5);
-const nowMs=()=>Date.now();
-const deviceId = (()=>{let x=localStorage.getItem('taskDeviceId'); if(!x){x='DEV-'+Math.random().toString(16).slice(2,8).toUpperCase();localStorage.setItem('taskDeviceId',x)} return x})();
-let session = JSON.parse(localStorage.getItem('taskSession')||'null') || null;
-let deviceMeta = JSON.parse(localStorage.getItem('taskDeviceMeta')||'{}');
-$('dateFilter').value=todayStr();
-function defaults(){return {employees:{e1:{id:'e1',name:'An',color:EMP_COLORS[0]},e2:{id:'e2',name:'Nguyệt',color:EMP_COLORS[1]},e3:{id:'e3',name:'Thủy',color:EMP_COLORS[2]}},masters:{m1:{id:'m1',title:'Check tin nhắn mới',content:'Kiểm tra tin nhắn khách chưa trả lời. Ưu tiên khách hỏi size, đổi địa chỉ, đổi thông tin.',note:'Báo lại nếu có khách cần xử lý gấp.',kind:'daily',isDefault:true},m2:{id:'m2',title:'Gọi đơn nháp',content:'Gọi lại toàn bộ đơn chưa nghe máy và cập nhật kết quả.',note:'Ưu tiên đơn COD cao.',kind:'once'}},tasks:{}}}
-function toast(t){let el=$('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200)}
-function saveLocal(){localStorage.setItem('taskReminderState',JSON.stringify(state));}
-function write(path,val){ if(useFirebase) return db.ref(DB_ROOT+'/'+path).set(val); let parts=path.split('/'); let obj=state; for(let i=0;i<parts.length-1;i++){obj[parts[i]]=obj[parts[i]]||{}; obj=obj[parts[i]]} obj[parts.at(-1)]=val; saveLocal(); render(); }
-function update(path,val){ if(useFirebase) return db.ref(DB_ROOT+'/'+path).update(val); let parts=path.split('/'); let obj=state; for(let i=0;i<parts.length;i++){obj[parts[i]]=obj[parts[i]]||{}; if(i<parts.length-1)obj=obj[parts[i]]} Object.assign(obj,val); saveLocal(); render(); }
-function remove(path){ if(useFirebase) return db.ref(DB_ROOT+'/'+path).remove(); let parts=path.split('/'); let obj=state; for(let i=0;i<parts.length-1;i++)obj=obj[parts[i]]||{}; delete obj[parts.at(-1)]; saveLocal(); render(); }
-function init(){ if(useFirebase){ firebase.initializeApp(firebaseConfig); db=firebase.database(); $('dbMode').textContent='Firebase Realtime Database'; db.ref(DB_ROOT).on('value',snap=>{state=snap.val()||defaults(); ensureData(false); render();}); } else { $('dbMode').textContent='DEMO localStorage'; $('configBanner').classList.remove('hidden'); state=JSON.parse(localStorage.getItem('taskReminderState')||'null')||defaults(); ensureData(true); render(); } setInterval(heartbeat,15000); heartbeat(); setInterval(checkReminders,10000); document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'))}); document.addEventListener('paste',handlePaste); if(!session) openLogin(false); else updateWho(); }
-function ensureData(save){state.employees=state.employees||{};state.masters=state.masters||{};state.tasks=state.tasks||{};state.devices=state.devices||{}; if(!Object.keys(state.employees).length){Object.assign(state,defaults())} if(save) saveLocal();}
-function heartbeat(){deviceMeta.name=deviceMeta.name||'Chưa đặt tên máy'; deviceMeta.ip=deviceMeta.ip||''; localStorage.setItem('taskDeviceMeta',JSON.stringify(deviceMeta)); let data={id:deviceId,name:deviceMeta.name,ip:deviceMeta.ip,user:session?session.name:'Chưa chọn',role:session?session.role:'none',lastSeen:nowMs(),online:true}; write('devices/'+deviceId,data);}
-function updateWho(){ $('whoText').textContent=session?`${session.role==='admin'?'Admin':session.name} | ${deviceMeta.name||deviceId}`:'Chưa đăng nhập'; document.querySelectorAll('.adminOnly').forEach(el=>el.style.display=session&&session.role==='admin'?'':'none'); }
-function openLogin(canClose){renderLogin();$('deviceName').value=deviceMeta.name||'';$('deviceIp').value=deviceMeta.ip||'';$('loginModal').classList.add('open'); if(canClose) $('loginModal').onclick=e=>{if(e.target.id==='loginModal')closeModal('loginModal')}}
-function renderLogin(){let emps=Object.values(state.employees); $('loginChoices').innerHTML=`<button onclick="loginAs('admin')">Admin<br><small>Cần mật khẩu</small></button>`+emps.map(e=>`<button onclick="loginAs('${e.id}')">${e.name}<br><small>Nhân viên</small></button>`).join('')}
-function loginAs(id){deviceMeta.name=$('deviceName').value.trim()||deviceMeta.name||deviceId; deviceMeta.ip=$('deviceIp').value.trim()||deviceMeta.ip||''; localStorage.setItem('taskDeviceMeta',JSON.stringify(deviceMeta)); if(id==='admin'){let p=prompt('Nhập mật khẩu Admin'); if(p!==ADMIN_PASS){alert('Sai mật khẩu');return} session={role:'admin',id:'admin',name:'Admin'} } else {let e=state.employees[id]; session={role:'employee',id:e.id,name:e.name};} localStorage.setItem('taskSession',JSON.stringify(session)); closeModal('loginModal'); updateWho(); heartbeat(); render();}
-function setTab(t){currentTab=t; document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t)); ['tasks','daily','masters','devices'].forEach(x=>$(x+'View').classList.toggle('hidden',x!==t)); render();}
-function setToday(o){$('dateFilter').value=todayStr(o); render();}
-function empColor(id){return (state.employees[id]||{}).color||'#64748b'} function empName(id){return (state.employees[id]||{}).name||id}
-function render(){updateWho(); renderEmpFilters(); renderStats(); renderTasks(); renderMasters(); renderDevices();}
-function filteredTasks(){let date=$('dateFilter').value, q=$('searchFilter').value.toLowerCase().trim(); let arr=Object.values(state.tasks||{}).filter(t=>t.date===date); if(empFilter!=='all') arr=arr.filter(t=>(t.employees||[]).includes(empFilter)); if(q) arr=arr.filter(t=>[t.title,t.content,t.adminNote,t.reportNote].join(' ').toLowerCase().includes(q)); if(statFilter!=='all') arr=arr.filter(t=>statFilter==='late'?isLate(t):statFilter==='done'?t.status==='done':statFilter==='todo'?t.status!=='done':t.kind===statFilter); return arr.sort((a,b)=>(a.time||'').localeCompare(b.time||''));}
-function renderEmpFilters(){let html=`<button class="empfilter ${empFilter==='all'?'active':''}" onclick="empFilter='all';render()">Tất cả</button>`+Object.values(state.employees).map(e=>`<button class="empfilter ${empFilter===e.id?'active':''}" onclick="empFilter='${e.id}';render()">${e.name}</button>`).join(''); $('empFilters').innerHTML=html;}
-function renderStats(){let all=Object.values(state.tasks||{}).filter(t=>t.date===$('dateFilter').value); let data=[['all','Tổng việc',all.length],['todo','Chưa làm',all.filter(t=>t.status!=='done').length],['late','Quá giờ',all.filter(isLate).length],['done','Đã xong',all.filter(t=>t.status==='done').length],['daily','Hằng ngày',all.filter(t=>t.kind==='daily').length],['once','Phát sinh',all.filter(t=>t.kind==='once').length]]; $('stats').innerHTML=data.map(x=>`<button class="stat ${statFilter===x[0]?'active':''}" onclick="statFilter='${statFilter===x[0]?'all':x[0]}';render()"><b>${x[2]}</b><span>${x[1]}</span></button>`).join('');}
-function nextTaskTimeFor(t){let emps=t.employees||[]; let same=Object.values(state.tasks||{}).filter(x=>x.date===t.date&&x.id!==t.id&&x.time>t.time&&(x.employees||[]).some(e=>emps.includes(e))).sort((a,b)=>a.time.localeCompare(b.time)); return same[0]?same[0].time:null;}
-function dateTimeMs(date,time){return new Date(date+'T'+time+':00').getTime()}
-function isLate(t){let next=nextTaskTimeFor(t); if(!next) return false; let nextMs=dateTimeMs(t.date,next); if(t.status==='done') return (t.doneAt||0)>nextMs; return nowMs()>nextMs;}
-function durationText(t){if(!t.doneAt)return ''; let start=dateTimeMs(t.date,t.time); let m=Math.max(0,Math.round((t.doneAt-start)/60000)); let h=Math.floor(m/60), mm=m%60; return h?`${h}h${mm?String(mm).padStart(2,'0'):'00'}`:`${mm}p`}
-function renderTasks(){let rows=filteredTasks(); $('taskRows').innerHTML=rows.map(t=>{let late=isLate(t);let emps=(t.employees||[]).map(id=>`<span class="empchip" style="--empColor:${empColor(id)}">${empName(id)}</span>`).join('');let first=(t.employees||[])[0];let imgs=(t.images||[]).length;let adminImgs=(t.adminImages||[]).length;let reportImgs=(t.reportImages||[]).length;let canAdmin=session&&session.role==='admin';let canEmp=session&&session.role==='employee';return `<tr class="${late?'overdue':''} ${t.status==='done'?'done':''}"><td><div class="timebig">${t.time}</div></td><td><span class="titlepill" style="--empColor:${empColor(first)}" onclick="openDetail('${t.id}')">${esc(t.title)}</span><span class="kind ${t.kind==='daily'?'daily':'once'}">${t.kind==='daily'?'Hằng ngày':'Phát sinh'}</span></td><td><div class="contentText clip3">${esc(t.content)}</div>${t.content&&t.content.length>120?`<button class="more" onclick="openDetail('${t.id}')">Xem thêm</button>`:''}</td><td><div class="empList">${emps}</div></td><td>${imgs?`<button class="imgbtn" onclick="openImage('${t.id}','images',0)">📷 ${imgs}</button>`:''}</td><td><div class="noteview ${!t.adminNote?'empty':''}" onclick="${canAdmin?`openNote('${t.id}','admin')`:`openDetail('${t.id}')`}">${esc(t.adminNote||'Chưa có')}</div>${adminImgs?`<button class="imgbtn" onclick="openImage('${t.id}','adminImages',0)">📷 ${adminImgs}</button>`:''}</td><td><div class="noteview ${!t.reportNote?'empty':''}" onclick="openNote('${t.id}','report')">${esc(t.reportNote||'Chưa có')}</div>${reportImgs?`<button class="imgbtn" onclick="openImage('${t.id}','reportImages',0)">📷 ${reportImgs}</button>`:''}</td><td><span class="status ${t.status==='done'?'done':'todo'}">${t.status==='done'?'Đã xong':'Chưa làm'}</span>${late?'<span class="lateText">Quá giờ</span>':''}</td><td><b>${durationText(t)}</b></td><td><div class="remindBox"><input type="number" min="0" value="${t.remindEvery||''}" placeholder="phút" onchange="setRemindEvery('${t.id}',this.value)"><button class="smallBtn bell" onclick="manualRemind('${t.id}')">🔔</button></div></td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${t.id}')">⋮</button><div class="menu" id="menu-${t.id}"><button onclick="openDetail('${t.id}')">Chi tiết</button>${t.status==='done'?`<button onclick="reopenTask('${t.id}')">Mở lại</button>`:`<button onclick="doneTask('${t.id}')">Đã xong</button>`}${canAdmin?`<button onclick="openTaskForm('${t.id}')">Sửa việc</button><button class="danger" onclick="deleteTask('${t.id}')">Xóa</button>`:''}</div></td></tr>`}).join('')||`<tr><td colspan="11" style="text-align:center;color:#667085;padding:30px">Không có công việc</td></tr>`;}
-function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function toggleMenu(e,id){e.stopPropagation();document.querySelectorAll('.menu').forEach(m=>m.id!==`menu-${id}`&&m.classList.remove('open'));$('menu-'+id).classList.toggle('open')} document.body.addEventListener('click',()=>document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open')));
-function openTaskForm(id=null){if(session?.role!=='admin')return toast('Chỉ Admin được thêm/sửa việc'); editingTask=id; pendingImages=[]; let t=id?state.tasks[id]:null; $('taskFormTitle').textContent=id?'Sửa việc':'Thêm việc'; $('fDate').value=t?.date||todayStr(); $('fTime').value=id?(t.time||nowTime()):nowTime(); renderMasterSelect(t?.masterId); $('fKind').value=t?.kind||'once'; $('fTitle').value=t?.title||''; $('fContent').value=t?.content||''; $('fAdminNote').value=t?.adminNote||''; $('fRemind').value=t?.remindEvery||''; pendingImages=[...(t?.images||[])]; renderImageList('fImages',pendingImages); renderEmpPick(t?.employees||[]); if(!id){let def=Object.values(state.masters).find(m=>m.isDefault); if(def){$('fMaster').value=def.id; applyMaster(); $('fTime').value=nowTime(); $('fDate').value=todayStr(); $('fKind').value='once';}} $('taskModal').classList.add('open');}
-function renderMasterSelect(sel){$('fMaster').innerHTML='<option value="">-- Không chọn --</option>'+Object.values(state.masters).map(m=>`<option value="${m.id}" ${sel===m.id?'selected':''}>${esc(m.title)}</option>`).join('')}
-function applyMaster(){let m=state.masters[$('fMaster').value]; if(!m)return; $('fTitle').value=m.title; $('fContent').value=m.content||''; $('fAdminNote').value=m.note||''; $('fKind').value=m.kind||'once';}
-function renderEmpPick(selected){$('fEmployees').innerHTML=Object.values(state.employees).map(e=>`<label style="border-color:${e.color}"><input type="checkbox" value="${e.id}" ${selected.includes(e.id)?'checked':''}> ${e.name}</label>`).join('')}
-function saveTask(){let emps=[...document.querySelectorAll('#fEmployees input:checked')].map(x=>x.value); if(!emps.length)return alert('Chọn ít nhất 1 nhân viên'); let data={id:editingTask||'t'+Date.now(),date:$('fDate').value,time:$('fTime').value,title:$('fTitle').value.trim(),content:$('fContent').value.trim(),kind:$('fKind').value,masterId:$('fMaster').value||'',employees:emps,images:pendingImages,adminNote:$('fAdminNote').value.trim(),remindEvery:Number($('fRemind').value||0),status:state.tasks[editingTask]?.status||'todo',createdAt:state.tasks[editingTask]?.createdAt||nowMs(),updatedAt:nowMs(),adminImages:state.tasks[editingTask]?.adminImages||[],reportNote:state.tasks[editingTask]?.reportNote||'',reportImages:state.tasks[editingTask]?.reportImages||[],logs:state.tasks[editingTask]?.logs||[]}; data.logs=[...(data.logs||[]),logObj(editingTask?'Sửa việc':'Tạo việc')]; // daily only one/day/master or title+time
- if(data.kind==='daily'){let dup=Object.values(state.tasks).find(x=>x.id!==data.id&&x.date===data.date&&x.kind==='daily'&&((data.masterId&&x.masterId===data.masterId)||(!data.masterId&&x.title===data.title&&x.time===data.time))); if(dup){data.id=dup.id; data.status=dup.status; data.doneAt=dup.doneAt||null; data.reportNote=dup.reportNote||''; data.reportImages=dup.reportImages||[]; data.logs=[...(dup.logs||[]),logObj('Cập nhật việc hằng ngày')];}}
- write('tasks/'+data.id,data); closeModal('taskModal'); toast('Đã lưu việc');}
-function logObj(action,extra=''){return {time:nowMs(),user:session?.name||'Không rõ',role:session?.role||'',deviceName:deviceMeta.name||deviceId,deviceId,action,extra}}
-function openNote(id,type){let t=state.tasks[id]; if(!t)return; if(type==='admin' && session?.role!=='admin')return toast('Chỉ Admin sửa Admin ghi chú'); noteCtx={id,type}; $('noteTitle').textContent=type==='admin'?'Admin ghi chú':'Báo cáo nhân viên'; $('noteLabel').textContent=type==='admin'?'Admin ghi chú':'Báo cáo NV'; $('noteText').value=type==='admin'?(t.adminNote||''):(t.reportNote||''); noteImages=[...(type==='admin'?(t.adminImages||[]):(t.reportImages||[]))]; renderImageList('noteImages',noteImages); $('noteModal').classList.add('open');}
-async function requireOperator(){let op=JSON.parse(localStorage.getItem('taskOperator')||'null'); if(op&&op.expire>nowMs())return op; return new Promise(resolve=>{let emps=Object.values(state.employees); $('operatorChoices').innerHTML=emps.map(e=>`<button onclick="chooseOperator('${e.id}')">${e.name}</button>`).join(''); window._opResolve=resolve; $('operatorModal').classList.add('open');});}
-function chooseOperator(id){let e=state.employees[id]; let op={id:e.id,name:e.name,expire:nowMs()+3600000}; localStorage.setItem('taskOperator',JSON.stringify(op)); closeModal('operatorModal'); if(window._opResolve)window._opResolve(op);}
-async function saveNote(){let {id,type}=noteCtx; let t=state.tasks[id]; let op = type==='report' ? await requireOperator() : {name:session?.name||'Admin'}; let obj={}; if(type==='admin'){obj.adminNote=$('noteText').value; obj.adminImages=noteImages; obj.logs=[...(t.logs||[]),logObj('Sửa Admin ghi chú')];} else {obj.reportNote=$('noteText').value; obj.reportImages=noteImages; obj.logs=[...(t.logs||[]),{...logObj('Cập nhật báo cáo NV'),user:op.name}];} update('tasks/'+id,obj); closeModal('noteModal'); toast(`Đã lưu. Người thao tác: ${type==='report'?op.name:(session?.name||'Admin')}`);}
-async function doneTask(id){let t=state.tasks[id]; let op=session?.role==='employee'?await requireOperator():{name:session?.name||'Admin'}; update('tasks/'+id,{status:'done',doneAt:nowMs(),logs:[...(t.logs||[]),{...logObj('Đánh dấu đã xong'),user:op.name}]}); toast('Đã xong: '+op.name)}
-function reopenTask(id){let t=state.tasks[id]; update('tasks/'+id,{status:'todo',doneAt:null,logs:[...(t.logs||[]),logObj('Mở lại việc')]})}
-function deleteTask(id){if(confirm('Xóa việc này?'))remove('tasks/'+id)}
-function setRemindEvery(id,v){let t=state.tasks[id]; update('tasks/'+id,{remindEvery:Number(v||0),logs:[...(t.logs||[]),logObj('Cập nhật nhắc lặp',v+' phút')]})}
-function manualRemind(id){let t=state.tasks[id]; update('tasks/'+id,{manualPing:nowMs(),manualAck:null,logs:[...(t.logs||[]),logObj('Nhắc thủ công')]}); toast('Đã gửi nhắc việc')}
-function checkReminders(){ if(!session||session.role==='admin')return; let assigned=Object.values(state.tasks).filter(t=>t.date===todayStr()&&t.status!=='done'&&(t.employees||[]).includes(session.id)); let due=null, key=null; for(let t of assigned){ if(t.manualPing && (!t.manualAck || t.manualAck.ping!==t.manualPing)){due=t; key='manual:'+t.manualPing; break;} let n=Number(t.remindEvery||0); if(n>0){let start=dateTimeMs(t.date,t.time); if(nowMs()>=start+n*60000){let slot=Math.floor((nowMs()-start)/(n*60000)); key='auto:'+slot; if(!(t.acks||{})[key]){due=t;break;}} }} if(due && (!currentReminder || currentReminder.key!==key)){showReminder(due,key)} if(currentReminder){let t=state.tasks[currentReminder.id]; if(!t || t.status==='done' || (t.acks&&t.acks[currentReminder.key]) || (currentReminder.key.startsWith('manual')&&t.manualAck&&t.manualAck.ping===t.manualPing)) hideReminder();}}
-function showReminder(t,key){currentReminder={id:t.id,key}; $('alertBody').innerHTML=`<div class="atime">${t.time}</div><div class="atitle">${esc(t.title)}</div><div class="acontent">${esc(t.content)}</div><p><b>Nhân viên:</b> ${(t.employees||[]).map(empName).join(', ')}</p>`; $('alertOverlay').classList.add('open'); startBeep(); if(Notification && Notification.permission==='default')Notification.requestPermission(); if(Notification && Notification.permission==='granted') new Notification('🔔 Nhắc việc: '+t.title,{body:t.content});}
-async function ackReminder(){ if(!currentReminder)return; let t=state.tasks[currentReminder.id]; let op=await requireOperator(); let obj={logs:[...(t.logs||[]),{...logObj('Đã nhận nhắc'),user:op.name,extra:currentReminder.key}]}; if(currentReminder.key.startsWith('manual')) obj.manualAck={ping:t.manualPing,user:op.name,deviceId,time:nowMs()}; else obj.acks={...(t.acks||{}),[currentReminder.key]:{user:op.name,deviceId,deviceName:deviceMeta.name,time:nowMs()}}; update('tasks/'+t.id,obj); hideReminder(); toast('Đã nhận nhắc: '+op.name);}
-function hideReminder(){currentReminder=null; $('alertOverlay').classList.remove('open'); stopBeep();}
-function startBeep(){stopBeep(); const beep=()=>{try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); let o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='square'; o.frequency.value=880; g.gain.value=0.07; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>o.stop(),350)}catch(e){}}; beep(); beepTimer=setInterval(beep,1400)} function stopBeep(){if(beepTimer)clearInterval(beepTimer);beepTimer=null}
-function openDetail(id){let t=state.tasks[id]; if(!t)return; let late=isLate(t); let canAdmin=session?.role==='admin'; $('detailBody').innerHTML=`<div class="detailMeta"><span class="meta">NV: ${(t.employees||[]).map(empName).join(', ')}</span><span class="meta">Loại: ${t.kind==='daily'?'Hằng ngày':'Phát sinh'}</span><span class="meta">Trạng thái: ${t.status==='done'?'Đã xong':'Chưa làm'}${late?' / Quá giờ':''}</span><span class="meta">TG xử lý: ${durationText(t)||'--'}</span></div><div class="detailMain"><div class="detailLine"><div class="detailTime">${t.time}</div><div class="detailTitle">${esc(t.title)}</div></div><div class="detailContent">${esc(t.content)}</div></div><div class="detailSection"><h4>Ảnh công việc</h4>${galleryHtml(t,'images')}</div><div class="detailSection"><h4>Admin ghi chú</h4><textarea class="editArea" id="detailAdmin" ${canAdmin?'':'readonly'}>${esc(t.adminNote||'')}</textarea>${galleryHtml(t,'adminImages')}</div><div class="detailSection"><h4>Báo cáo nhân viên</h4><textarea class="editArea" id="detailReport">${esc(t.reportNote||'')}</textarea><div class="pastebox">Đang mở chi tiết: Ctrl+V ảnh sẽ thêm vào báo cáo NV</div>${galleryHtml(t,'reportImages')}</div><div class="detailSection"><h4>Thao tác nhanh</h4><button class="btn green" onclick="doneTask('${t.id}')">Đã xong</button> <button class="btn orange" onclick="manualRemind('${t.id}')">🔔 Nhắc ngay</button> ${canAdmin?`<button class="btn blue" onclick="openTaskForm('${t.id}')">Sửa việc</button> <button class="btn" onclick="saveDetailNotes('${t.id}')">Lưu ghi chú</button>`:`<button class="btn blue" onclick="saveDetailNotes('${t.id}')">Lưu báo cáo</button>`} <button class="btn dark" onclick="copyZalo('${t.id}')">Copy gửi Zalo</button></div><div class="detailSection"><h4>Lịch sử</h4>${(t.logs||[]).slice().reverse().map(l=>`<div>• ${new Date(l.time).toLocaleString('vi-VN')} - <b>${esc(l.user)}</b> (${esc(l.deviceName||'')}/${esc(l.deviceId||'')}) - ${esc(l.action)} ${l.extra?'- '+esc(l.extra):''}</div>`).join('')||'Chưa có'}</div>`; $('detailModal').classList.add('open');}
-function galleryHtml(t,field){let arr=t[field]||[]; return arr.length?`<div class="gallery">${arr.map((src,i)=>`<img class="thumb" src="${src}" onclick="openImage('${t.id}','${field}',${i})">`).join('')}</div>`:'<div style="color:#98a2b3">Chưa có ảnh</div>'}
-function saveDetailNotes(id){let t=state.tasks[id]; let obj={reportNote:$('detailReport').value,logs:[...(t.logs||[]),logObj('Lưu trong chi tiết')]}; if(session?.role==='admin')obj.adminNote=$('detailAdmin').value; update('tasks/'+id,obj); toast('Đã lưu')}
-function copyZalo(id){let t=state.tasks[id]; let txt=`🔔 NHẮC VIỆC\n\nTên CV: ${t.title}\nNhân viên: ${(t.employees||[]).map(empName).join(', ')}\nThời gian: ${t.date} ${t.time}\nTrạng thái: ${t.status==='done'?'Đã xong':'Chưa làm'}${isLate(t)?' / Quá giờ':''}\nTG xử lý: ${durationText(t)||'--'}\n\nNội dung:\n${t.content}\n\nAdmin ghi chú:\n${t.adminNote||''}\n\nBáo cáo NV:\n${t.reportNote||''}\n\nẢnh công việc: ${(t.images||[]).length} ảnh\nẢnh báo cáo: ${(t.reportImages||[]).length} ảnh`; navigator.clipboard?.writeText(txt); toast('Đã copy thông tin gửi Zalo')}
-function openImage(id,field,i){let arr=state.tasks[id]?.[field]||[]; if(!arr[i])return; $('bigImage').src=arr[i]; $('imageTitle').textContent=`Ảnh ${i+1}/${arr.length}`; $('imageModal').classList.add('open')}
-function renderImageList(id,arr){$(id).innerHTML=arr.map((src,i)=>`<img class="thumb" src="${src}" onclick="document.getElementById('bigImage').src='${src}';document.getElementById('imageModal').classList.add('open')">`).join('')}
-function handlePaste(e){let file=[...(e.clipboardData?.items||[])].find(it=>it.type.startsWith('image/')); if(!file)return; let blob=file.getAsFile(); let r=new FileReader(); r.onload=()=>{let src=r.result; if($('taskModal').classList.contains('open')){pendingImages.push(src);renderImageList('fImages',pendingImages);toast('Đã dán ảnh công việc')} else if($('noteModal').classList.contains('open')){noteImages.push(src);renderImageList('noteImages',noteImages);toast('Đã dán ảnh')} else if($('detailModal').classList.contains('open')){let id=(/openTaskForm\('([^']+)'\)/.exec($('detailBody').innerHTML)||[])[1]; /* fallback */ let openId=Object.values(state.tasks).find(t=>$('detailBody').innerText.includes(t.title))?.id; if(openId){let t=state.tasks[openId]; update('tasks/'+openId,{reportImages:[...(t.reportImages||[]),src],logs:[...(t.logs||[]),logObj('Dán ảnh báo cáo trong chi tiết')]}); openDetail(openId); toast('Đã dán ảnh báo cáo')}}}; r.readAsDataURL(blob);}
-function closeModal(id){$(id).classList.remove('open')} document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{if(e.target===m) m.classList.remove('open')}));
-function renderMasters(){renderDaily(); let rows=Object.values(state.masters).map(m=>`<tr><td><b>${esc(m.title)}</b>${m.isDefault?' <span class="kind daily">Mặc định</span>':''}</td><td>${esc(m.content||'')}</td><td>${m.kind==='daily'?'Hằng ngày':'Phát sinh'}</td><td><button class="smallBtn adminOnly" onclick="openMasterForm('${m.id}')">Sửa</button> <button class="smallBtn adminOnly" onclick="setDefaultMaster('${m.id}')">Mặc định</button> <button class="smallBtn adminOnly" onclick="remove('masters/${m.id}')">Xóa</button></td></tr>`).join(''); $('masterRows').innerHTML=`<table class="miniTable"><tr><th>Tên CV</th><th>Nội dung</th><th>Loại</th><th>Thao tác</th></tr>${rows}</table>`; $('employeeRows').innerHTML=Object.values(state.employees).map(e=>`<div style="display:inline-flex;gap:8px;align-items:center;margin:5px;padding:8px 12px;border:1px solid #dbe3ef;border-radius:999px;background:#fff"><span class="empchip" style="--empColor:${e.color}">${e.name}</span><button class="smallBtn adminOnly" onclick="renameEmployee('${e.id}')">Sửa</button><button class="smallBtn adminOnly" onclick="deleteEmployee('${e.id}')">Xóa</button></div>`).join('')}
-function renderDaily(){let rows=Object.values(state.masters).filter(m=>m.kind==='daily').map(m=>`<div class="detailSection"><b>${esc(m.title)}</b><div class="contentText">${esc(m.content)}</div><div>${esc(m.note||'')}</div></div>`).join(''); $('dailyRows').innerHTML=rows||'Chưa có mẫu hằng ngày'}
-function openMasterForm(id=null){editingMaster=id; let m=state.masters[id]||{}; $('mTitle').value=m.title||'';$('mContent').value=m.content||'';$('mNote').value=m.note||'';$('mKind').value=m.kind||'once';$('mDefault').checked=!!m.isDefault;$('masterModal').classList.add('open')}
-function saveMaster(){let id=editingMaster||'m'+Date.now(); let data={id,title:$('mTitle').value,content:$('mContent').value,note:$('mNote').value,kind:$('mKind').value,isDefault:$('mDefault').checked}; if(data.isDefault) Object.values(state.masters).forEach(m=>update('masters/'+m.id,{isDefault:false})); write('masters/'+id,data); closeModal('masterModal')}
-function setDefaultMaster(id){Object.values(state.masters).forEach(m=>update('masters/'+m.id,{isDefault:m.id===id}))}
-function addEmployeePrompt(){let name=prompt('Tên nhân viên'); if(!name)return; let id='e'+Date.now(); write('employees/'+id,{id,name,color:EMP_COLORS[Object.keys(state.employees).length%EMP_COLORS.length]})}
-function renameEmployee(id){let name=prompt('Tên mới',state.employees[id].name); if(name)update('employees/'+id,{name})}
-function deleteEmployee(id){if(confirm('Xóa nhân viên?'))remove('employees/'+id)}
-function renderDevices(){let rows=Object.values(state.devices||{}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d=>{let online=nowMs()-(d.lastSeen||0)<45000;return `<tr><td><b>${esc(d.name||'Chưa đặt')}</b></td><td>${esc(d.user||'')}</td><td>${esc(d.id)}</td><td>${esc(d.ip||'')}</td><td>${online?'🟢 Online':'🔴 Offline'}</td><td>${d.lastSeen?new Date(d.lastSeen).toLocaleString('vi-VN'):''}</td></tr>`}).join(''); $('deviceRows').innerHTML=`<table class="miniTable"><tr><th>Tên máy</th><th>Người dùng</th><th>Mã thiết bị</th><th>IP ghi chú</th><th>Trạng thái</th><th>Online lần cuối</th></tr>${rows}</table><div class="detailSection"><b>Máy hiện tại:</b> ${deviceId}<br><button class="btn" onclick="openLogin(true)">Đổi tên máy / IP</button></div>`}
-init();
+const FIREBASE_ENABLED = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'DAN_API_KEY' && firebaseConfig.databaseURL && firebaseConfig.databaseURL !== 'DAN_DATABASE_URL';
+let db=null, remoteReady=false, savingRemote=false;
+let state=JSON.parse(localStorage.getItem(K)||'null');
+const todayStr=()=>new Date().toISOString().slice(0,10);function fmtDate(d){let [y,m,da]=d.split('-');return `${da}/${m}/${y}`}
+function seed(){let d=todayStr();return{employees:['An','Nguyệt','Thủy'],defaultMasterId:'m1',masters:[{id:'m1',title:'Check tin nhắn mới',time:'08:00',emp:'An',content:'Kiểm tra tin nhắn khách chưa trả lời, ưu tiên khách hỏi size và đổi địa chỉ.',note:'Làm trước khi in bill.'},{id:'m2',title:'Gọi đơn nháp',time:'09:00',emp:'Nguyệt',content:'Gọi lại toàn bộ đơn hôm qua chưa nghe máy.',note:'Ghi chú lý do khách chưa chốt.'},{id:'m3',title:'Check DVVC',time:'15:00',emp:'Thủy',content:'Kiểm tra các đơn giao thất bại và báo shop xử lý.',note:'Ưu tiên Viettel và GHN.'}],tasks:[{id:'t1',date:d,time:'08:00',title:'Check tin nhắn mới',emp:'An',type:'Hằng ngày',img:'',content:'Kiểm tra tin nhắn khách chưa trả lời, ưu tiên khách hỏi size và đổi địa chỉ.',adminNote:'Làm trước khi in bill.',report:'',status:'Quá giờ',logs:['08:00 Hệ thống nhắc','08:03 Admin xem']},{id:'t2',date:d,time:'09:00',title:'Gọi đơn nháp',emp:'Nguyệt',type:'Hằng ngày',img:'',content:'Gọi lại toàn bộ đơn hôm qua chưa nghe máy.',adminNote:'Ghi chú lý do khách chưa chốt.',report:'',status:'Quá giờ',logs:['09:00 Hệ thống nhắc']},{id:'t3',date:d,time:'15:00',title:'Check DVVC',emp:'Thủy',type:'Phát sinh',img:'',content:'Kiểm tra các đơn giao thất bại và báo shop xử lý.',adminNote:'Ưu tiên Viettel và GHN.',report:'Đã xử lý các đơn cần báo.',status:'Đã xong',logs:['15:00 Tạo việc','15:30 Nhân viên báo cáo','15:40 Đã xong']}]} }
+function normalizeState(){
+  if(!state) state=seed();
+  if(!state.employees) state.employees=['An','Nguyệt','Thủy'];
+  if(!state.masters) state.masters=[];
+  if(!state.tasks) state.tasks=[];
+  state.tasks.forEach(t=>{
+    if(t.status==='Quá giờ') t.status='Chưa làm';
+    if(!t.logs) t.logs=[];
+    if(!t.firedReminders) t.firedReminders=[];
+  });
+}
+normalizeState();
+function saveLocal(){localStorage.setItem(K,JSON.stringify(state))}
+function save(){
+  normalizeState();
+  saveLocal();
+  if(db && !savingRemote){
+    db.ref('taskReminder/state').set(state).catch(e=>showToast('Firebase lỗi ghi: '+e.message));
+  }
+}
+function resetDemo(){
+  if(confirm('Xóa dữ liệu demo trên máy này?')){localStorage.removeItem(K);location.reload()}
+}
+function initFirebase(){
+  if(!FIREBASE_ENABLED){console.warn('Chưa dán firebaseConfig, đang chạy localStorage');return;}
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    db.ref('taskReminder/state').on('value',snap=>{
+      const val=snap.val();
+      if(val){
+        savingRemote=true;
+        state=val; normalizeState(); saveLocal();
+        try{refreshEmployeeUI();render();renderDevices();}catch(e){}
+        savingRemote=false;
+      }else{
+        db.ref('taskReminder/state').set(state);
+      }
+    });
+    db.ref('.info/connected').on('value',snap=>{ if(snap.val()) writeDevicePresence(); });
+    console.log('Firebase đã bật');
+  }catch(e){console.error(e);showToast('Firebase config lỗi, đang chạy localStorage');}
+}
+let device=localStorage.getItem('task_device_id_v23');
+if(!device){device='PC-'+Math.random().toString(36).slice(2,6).toUpperCase();localStorage.setItem('task_device_id_v23',device)}
+document.getElementById('deviceId').textContent=device;document.getElementById('fDate').value=todayStr();
+function getDeviceInfo(){return JSON.parse(localStorage.getItem('task_device_info_v23')||'{}')}
+function saveDeviceInfo(){let info={name:document.getElementById('devName')?.value||'',ip:document.getElementById('devIp')?.value||''};localStorage.setItem('task_device_info_v23',JSON.stringify(info));writeDevicePresence();renderDevices()}
+function currentUserLabel(){return (document.getElementById('role')?.value||'')==='Admin'?'Admin':(document.getElementById('currentEmp')?.value||'-')}
+function writeDevicePresence(){
+  let info=getDeviceInfo();
+  const data={id:device,name:info.name||'Máy đang mở',ip:info.ip||'',user:currentUserLabel(),lastSeen:Date.now(),online:true};
+  localStorage.setItem('task_device_last_presence',JSON.stringify(data));
+  if(db) db.ref('taskReminder/devices/'+device).set(data).catch(()=>{});
+}
+function renderDevices(){let info=getDeviceInfo();let d1=document.getElementById('d1');if(!d1)return;d1.textContent=device;let dn=document.getElementById('devName'); if(dn) dn.value=info.name||'Máy đang mở';let dip=document.getElementById('devIp'); if(dip) dip.value=info.ip||'';let du=document.getElementById('devUser'); if(du) du.textContent=currentUserLabel();let ls=document.getElementById('devLastSeen'); if(ls) ls.textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});writeDevicePresence();}
+function empClassName(e){return e==='An'?'an':e==='Nguyệt'?'nguyet':e==='Thủy'?'thuy':''}
+function refreshEmployeeUI(){
+  const emps=state.employees||['An','Nguyệt','Thủy'];
+  const curEmp=document.getElementById('currentEmp');
+  const old=curEmp.value||localStorage.getItem('task_user_emp_v23')||emps[0]||'An';
+  curEmp.innerHTML=emps.map(e=>`<option>${esc(e)}</option>`).join('')+'<option>Tất cả</option>';
+  curEmp.value=emps.includes(old)||old==='Tất cả'?old:(emps[0]||'An');
+  renderLoginChoices();
+  const f=document.getElementById('fEmp'); const fOld=f.value||'Tất cả'; f.innerHTML='<option>Tất cả</option>'+emps.map(e=>`<option>${esc(e)}</option>`).join(''); f.value=(emps.includes(fOld)||fOld==='Tất cả')?fOld:'Tất cả';
+  document.getElementById('empChips').innerHTML=`<span class="filterChip emp active" data-emp="Tất cả" onclick="setEmpFilter('Tất cả')">Tất cả</span>`+emps.map(e=>`<span class="filterChip emp ${empClassName(e)}" data-emp="${esc(e)}" onclick="setEmpFilter('${esc(e)}')">${esc(e)}</span>`).join('');
+  const g=document.getElementById('mEmpGroup'); if(g){g.innerHTML=emps.map(e=>`<label><input type="checkbox" value="${esc(e)}"> ${esc(e)}</label>`).join('')}
+  const ms=document.getElementById('msEmp'); if(ms){const oldMs=ms.value||emps[0]||'An'; ms.innerHTML=emps.map(e=>`<option>${esc(e)}</option>`).join(''); ms.value=emps.includes(oldMs)?oldMs:(emps[0]||'An')}
+  syncFilterChips();
+}
+function renderEmployees(){let body=document.getElementById('empManageBody'); if(!body) return; body.innerHTML=(state.employees||[]).map(e=>`<tr><td><b>${esc(e)}</b></td><td class="adminOnly"><button class="btn red" onclick="deleteEmployee('${esc(e)}')">Xóa</button></td></tr>`).join('')}
+function addEmployee(){let inp=document.getElementById('newEmpName');let name=(inp.value||'').trim();if(!name)return;if(!state.employees.includes(name))state.employees.push(name);inp.value='';save();refreshEmployeeUI();renderEmployees();render()}
+function deleteEmployee(name){if(!confirm('Xóa nhân viên '+name+'?'))return;state.employees=state.employees.filter(e=>e!==name);save();refreshEmployeeUI();renderEmployees();render()}
+
+let selectedLoginRole='Nhân viên';
+let selectedLoginEmp='';
+function renderLoginChoices(){
+  const box=document.getElementById('loginChoices'); if(!box) return;
+  const emps=state.employees||['An','Nguyệt','Thủy'];
+  if(!selectedLoginEmp || !emps.includes(selectedLoginEmp)) selectedLoginEmp=emps[0]||'An';
+  const adminActive=selectedLoginRole==='Admin';
+  box.innerHTML=`<label class="loginChoice admin ${adminActive?'active':''}" onclick="pickLogin('Admin','Tất cả')"><input type="radio" name="loginPick" ${adminActive?'checked':''}> Admin</label>`+
+    emps.map(e=>{
+      const active=selectedLoginRole==='Nhân viên' && selectedLoginEmp===e;
+      return `<label class="loginChoice ${active?'active':''}" onclick="pickLogin('Nhân viên','${esc(e)}')"><input type="radio" name="loginPick" ${active?'checked':''}> ${esc(e)}</label>`;
+    }).join('');
+}
+function pickLogin(r,e){selectedLoginRole=r;selectedLoginEmp=e;renderLoginChoices();}
+function loginConfirm(){
+  if(selectedLoginRole==='Admin') return loginAsAdmin();
+  return loginAsEmployee(selectedLoginEmp);
+}
+function askLoginIfNeeded(){let savedRole=localStorage.getItem('task_user_role_v23');let savedEmp=localStorage.getItem('task_user_emp_v23');if(savedRole){role.value=savedRole; if(savedEmp && [...currentEmp.options].some(o=>o.value===savedEmp)) currentEmp.value=savedEmp; applyRole(); render(); return;}renderLoginChoices();openModal('loginModal')}
+function loginAsEmployee(empName){let e=empName||selectedLoginEmp||(state.employees&&state.employees[0])||'An';role.value='Nhân viên';currentEmp.value=e;localStorage.setItem('task_user_role_v23','Nhân viên');localStorage.setItem('task_user_emp_v23',e);closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()}
+function loginAsAdmin(){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='123456'){alert('Sai mật khẩu');return;}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()}
+
+
+function machineLabel(){
+  let info=getDeviceInfo ? getDeviceInfo() : {};
+  let parts=[];
+  parts.push(info.name||device||'Máy chưa đặt tên');
+  if(device) parts.push(device);
+  if(info.ip) parts.push(info.ip);
+  return parts.join(' / ');
+}
+function actorSession(){try{return JSON.parse(localStorage.getItem('task_actor_session_v25')||'{}')}catch(e){return {}}}
+function actorValid(){let a=actorSession();return a.name && a.expires && Date.now()<a.expires ? a.name : ''}
+let pendingActorCallback=null;
+function withActor(callback){
+  let name=actorValid();
+  if(name){callback(name);return;}
+  pendingActorCallback=callback;
+  let emps=(state.employees||[]).slice();
+  if(roleAdmin() && !emps.includes('Admin')) emps.unshift('Admin');
+  let current=(roleAdmin()?'Admin':(document.getElementById('currentEmp')?.value||emps[0]||'An'));
+  actorSelect.innerHTML=emps.map(e=>`<option ${e===current?'selected':''}>${esc(e)}</option>`).join('');
+  openModal('actorModal');
+}
+function confirmActor(){
+  let name=actorSelect.value||'Không rõ';
+  localStorage.setItem('task_actor_session_v25',JSON.stringify({name,expires:Date.now()+60*60*1000}));
+  closeModal('actorModal');
+  if(pendingActorCallback){let cb=pendingActorCallback; pendingActorCallback=null; cb(name);}
+}
+function logLine(action, actor){
+  return new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' '+action+' — '+(actor||actorValid()||'Không rõ')+' — '+machineLabel();
+}
+
+function roleAdmin(){return document.getElementById('role').value==='Admin'}document.getElementById('role').onchange=()=>{if(role.value==='Admin'){let p=prompt('Nhập mật khẩu Admin');if(p!=='123456'){role.value='Nhân viên';alert('Sai mật khẩu')}}localStorage.setItem('task_user_role_v23',role.value);setEmpFilter('Tất cả');applyRole();render()};document.getElementById('currentEmp').onchange=()=>{localStorage.setItem('task_user_emp_v23',currentEmp.value);renderDevices();applyRole();render()};
+function applyRole(){let is=roleAdmin();document.querySelectorAll('.adminOnly').forEach(e=>e.classList.toggle('hidden',!is));syncFilterChips();renderDevices()}
+function switchTab(t){['today','daily','master','devices'].forEach(x=>{document.getElementById(x+'Tab').classList.toggle('hidden',x!==t);document.querySelector(`[data-tab="${x}"]`).classList.toggle('active',x===t)});renderDaily();renderMaster();renderDevices();applyRole()}
+function today(){switchTab('today');document.getElementById('fDate').value=todayStr();render()}
+function yesterday(){switchTab('today');let d=new Date();d.setDate(d.getDate()-1);document.getElementById('fDate').value=d.toISOString().slice(0,10);render()}
+function setEmpFilter(v){document.getElementById('fEmp').value=v;document.querySelectorAll('[data-emp]').forEach(b=>b.classList.toggle('active',b.dataset.emp===v));render()}
+function setStatusFilter(v){document.getElementById('fStatus').value=v;document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===v));render()}
+function setTypeFilter(v){document.getElementById('fType').value=v;document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===v));render()}
+
+function setMetricFilter(metric){
+  let curStatus=document.getElementById('fStatus').value;
+  let curType=document.getElementById('fType').value;
+  if(metric==='total'){
+    document.getElementById('fStatus').value='Tất cả';
+    document.getElementById('fType').value='Tất cả';
+  }else if(['Chưa làm','Quá giờ','Đã xong'].includes(metric)){
+    // Bấm lại mục đang chọn thì quay về Tổng việc
+    if(curStatus===metric && curType==='Tất cả'){document.getElementById('fStatus').value='Tất cả'}
+    else{document.getElementById('fStatus').value=metric;document.getElementById('fType').value='Tất cả'}
+  }else if(['Hằng ngày','Phát sinh'].includes(metric)){
+    if(curType===metric && curStatus==='Tất cả'){document.getElementById('fType').value='Tất cả'}
+    else{document.getElementById('fType').value=metric;document.getElementById('fStatus').value='Tất cả'}
+  }
+  render();
+}
+function syncStatsActive(){
+  let st=document.getElementById('fStatus').value, tp=document.getElementById('fType').value;
+  let metric='total';
+  if(st!=='Tất cả' && tp==='Tất cả') metric=st;
+  if(tp!=='Tất cả' && st==='Tất cả') metric=tp;
+  document.querySelectorAll('[data-metric]').forEach(el=>el.classList.toggle('active',el.dataset.metric===metric));
+}
+function syncFilterChips(){let e=document.getElementById('fEmp').value,s=document.getElementById('fStatus').value,t=document.getElementById('fType').value;document.querySelectorAll('[data-emp]').forEach(b=>b.classList.toggle('active',b.dataset.emp===e));document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===s));document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t))}
+let noteTimers={};let detailCurrentId=null, activeDetailPaste='report';
+function quickAdminNote(id,val){clearTimeout(noteTimers[id]);noteTimers[id]=setTimeout(()=>{withActor(actor=>{let t=state.tasks.find(x=>x.id===id);if(!t)return;t.adminNote=val;t.logs=t.logs||[];t.logs.push(logLine('cập nhật Admin ghi chú',actor));save();renderDevices();});},450)}
+function quickReport(id,val){clearTimeout(noteTimers['report_'+id]);noteTimers['report_'+id]=setTimeout(()=>{withActor(actor=>{let t=state.tasks.find(x=>x.id===id);if(!t)return;t.report=val;t.logs=t.logs||[];t.logs.push(logLine('cập nhật Báo cáo NV',actor));save();renderDevices();});},450)}
+function getAdminImgs(t){return Array.isArray(t.adminImgs)?t.adminImgs:[]}
+function openAdminNote(id){if(!roleAdmin())return;aId.value=id;let t=state.tasks.find(t=>t.id===id);aText.value=t.adminNote||'';tempAdminImgs=getAdminImgs(t).slice();renderPreview('adminPreview',tempAdminImgs);openModal('adminNoteModal')}
+function saveAdminNote(){let t=state.tasks.find(x=>x.id===aId.value);if(!t)return;withActor(actor=>{t.adminNote=aText.value;t.adminImgs=tempAdminImgs;t.logs=t.logs||[];t.logs.push(logLine('cập nhật Admin ghi chú',actor));save();closeModal('adminNoteModal');render();if(detailCurrentId===t.id)detail(t.id)});}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function firstEmp(emp){return String(emp||'').split(',')[0].trim()||'An'}
+function empList(emp){return String(emp||'').split(',').map(x=>x.trim()).filter(Boolean)}
+function empColor(emp){emp=firstEmp(emp);if(emp==='An')return '#60a5fa';if(emp==='Nguyệt')return '#f472b6';if(emp==='Thủy')return '#34d399';const colors=['#a78bfa','#f59e0b','#14b8a6','#ef4444','#64748b'];let i=(state.employees||[]).indexOf(emp);return colors[(i<0?0:i)%colors.length]}
+function empChips(emp){let list=empList(emp);if(!list.length)list=['An'];let showCount=Math.min(list.length,3);let shown=list.slice(0,showCount).map(e=>`<span class="empchip" style="--empColor:${empColor(e)}">${esc(e)}</span>`).join('');if(list.length>3)shown+=`<span class="empchip moreEmp" title="${esc(list.join(', '))}">+${list.length-3}</span>`;return `<div class="empchips" title="${esc(list.join(', '))}">${shown}</div>`}
+function setModalEmps(emp){let list=empList(emp); if(!list.length) list=['An']; document.querySelectorAll('#mEmpGroup input').forEach(cb=>cb.checked=list.includes(cb.value));}
+function getModalEmps(){let list=[...document.querySelectorAll('#mEmpGroup input:checked')].map(cb=>cb.value); return list.length?list.join(', '):'An'}
+function currentTimeStr(){let d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function getImgs(t){let arr=[]; if(Array.isArray(t.imgs)) arr=arr.concat(t.imgs); if(t.img) arr.push(t.img); return arr.filter(Boolean)}
+function getReportImgs(t){return Array.isArray(t.reportImgs)?t.reportImgs:[]}
+function filtered(){let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=state.tasks.filter(t=>t.date===d);if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));if(st!=='Tất cả')arr=arr.filter(t=>t.status===st);if(tp!=='Tất cả')arr=arr.filter(t=>t.type===tp);if(q)arr=arr.filter(t=>(t.title+t.content+t.adminNote+t.report).toLowerCase().includes(q));let rank={'Quá giờ':0,'Chưa làm':1,'Đã xong':2};return arr.sort((a,b)=>(rank[a.status]??1)-(rank[b.status]??1)||a.time.localeCompare(b.time))}
+function render(){applyRole();syncFilterChips();syncStatsActive();renderDevices();let arr=filtered();stTotal.textContent=arr.length;stTodo.textContent=arr.filter(t=>t.status==='Chưa làm').length;stLate.textContent=arr.filter(t=>t.status==='Quá giờ').length;stDone.textContent=arr.filter(t=>t.status==='Đã xong').length;stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;taskBody.innerHTML=arr.map(t=>row(t)).join('')||'<tr><td colspan="10" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';renderDaily();renderMaster();renderEmployees()}
+function statusHtml(t){let isLate=t.status==='Quá giờ';let cls=t.status==='Đã xong'?'done':isLate?'late':'todo';let main=t.status==='Đã xong'?'Đã xong':'Chưa làm';return `<div class="statusStack"><span class="status ${cls}">${main}</span>${isLate?'<span class="status late second">Quá giờ</span>':''}</div>`}
+function row(t){
+let cls=t.status==='Quá giờ'?'overdue':t.status==='Đã xong'?'done':'';
+let stCls=t.status==='Đã xong'?'done':t.status==='Quá giờ'?'late':'todo';
+let imgs=getImgs(t), rimgs=getReportImgs(t);
+let cLong=(t.content||'').length>150;let nLong=(t.adminNote||'').length>100;
+let aimgs=getAdminImgs(t);return `<tr class="${cls}" style="--empColor:${empColor(t.emp)}"><td><b>${t.time}</b></td><td><span class="titlepill" onclick="detail('${t.id}')">${esc(t.title)}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${t.type}</span></td><td><div class="clip contentText">${esc(t.content)}</div>${cLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}</td><td>${empChips(t.emp)}</td><td>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery('${t.id}',0)">📷 ${imgs.length}</button>`:'<span class="imgbadge empty">Không</span>'}</td><td>${roleAdmin()?`<textarea class="quickText" placeholder="Admin ghi chú..." onclick="openAdminNote('${t.id}')" oninput="quickAdminNote('${t.id}',this.value)">${esc(t.adminNote||'')}</textarea>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`:`<div class="clip">${esc(t.adminNote||'')}</div>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}${nLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}`}</td><td><textarea class="quickText" placeholder="Bấm để nhập báo cáo..." onclick="openReport('${t.id}')" oninput="quickReport('${t.id}',this.value)">${esc(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery('${t.id}',0)">📷 ${rimgs.length} ảnh báo cáo</button>`:''}</td><td>${statusHtml(t)}</td><td>${(t.logs||[]).length} dòng</td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${t.id}')">⋮</button><div class="menu" id="menu-${t.id}"><button onclick="detail('${t.id}')">Chi tiết</button>${t.status==='Đã xong'?(roleAdmin()?`<button onclick="setStatus('${t.id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${t.id}','Đã xong')">Đánh dấu xong</button>`}${roleAdmin()?`<button onclick="openTaskForm('${t.id}')">Sửa</button><button class="danger" onclick="delTask('${t.id}')">Xóa</button>`:''}</div></td></tr>`}
+function toggleMenu(e,id){e.stopPropagation();document.querySelectorAll('.menu').forEach(m=>{if(m.id!=='menu-'+id)m.classList.remove('open')});document.getElementById('menu-'+id).classList.toggle('open')}document.body.addEventListener('click',()=>document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open')))
+function setStatus(id,s){let t=state.tasks.find(x=>x.id===id);if(!roleAdmin() && s!=='Đã xong'){alert('Nhân viên chỉ được đánh dấu đã xong');return;}withActor(actor=>{t.status=s;t.logs=t.logs||[];t.logs.push(logLine('đổi trạng thái: '+s,actor));save();render();if(document.getElementById('detailModal').classList.contains('open'))detail(id)});}
+function delTask(id){if(confirm('Xóa công việc này?')){state.tasks=state.tasks.filter(t=>t.id!==id);save();closeModal('detailModal');render()}}
+function fillMasterSelect(){mMaster.innerHTML='<option value="">-- Chọn mẫu hoặc tự nhập --</option>'+state.masters.map(m=>`<option value="${m.id}">${esc(m.title)}${state.defaultMasterId===m.id?'  ✓ mặc định':''}</option>`).join('')}
+function fillFromMaster(){let m=state.masters.find(x=>x.id===mMaster.value);if(!m)return;mTime.value=m.time;setModalEmps(m.emp);mTitle.value=m.title;mContent.value=m.content;mAdminNote.value=m.note}
+let tempTaskImgs=[], tempReportImgs=[], tempAdminImgs=[];
+function renderPreview(id,arr){
+  let el=document.getElementById(id); if(!el) return;
+  let title=id==='adminPreview'?'ảnh ghi chú':id==='reportPreview'?'ảnh báo cáo':'ảnh';
+  let btn=arr.length?`<button type="button" class="imgbadge" onclick="openGallery(tempArrayForPreview('${id}'),0,'Xem ${title}')">Mở xem ${arr.length} ${title}</button>`:'';
+  el.innerHTML=btn+arr.map((src,i)=>`<img src="${src}" onclick="openGallery(tempArrayForPreview('${id}'),${i},'Xem ${title}')">`).join('');
+}
+function tempArrayForPreview(id){
+  if(id==='adminPreview') return tempAdminImgs;
+  if(id==='reportPreview') return tempReportImgs;
+  if(id==='taskPreview') return tempTaskImgs;
+  return [];
+}
+function openTaskForm(id=null,type=null){if(!roleAdmin())return;closeModal('detailModal');document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open'));fillMasterSelect();editId.value=id||'';taskModalTitle.textContent=id?'Sửa công việc':'Thêm công việc';let t=id?state.tasks.find(x=>x.id===id):null;tempTaskImgs=t?getImgs(t).slice():[];mDate.value=t?.date||todayStr();mTime.value=t?.time||currentTimeStr();setModalEmps(t?.emp||'An');mType.value=t?.type||type||'Phát sinh';mImg.value=t?.img||'';mTitle.value=t?.title||'';mContent.value=t?.content||'';mAdminNote.value=t?.adminNote||'';mMaster.value='';if(!id && state.defaultMasterId){mMaster.value=state.defaultMasterId;fillFromMaster();mType.value=type||'Phát sinh';mTime.value=currentTimeStr();}renderPreview('taskPreview',tempTaskImgs);openModal('taskModal')}
+function saveTask(){let id=editId.value;let data={date:mDate.value,time:mTime.value,title:mTitle.value,emp:getModalEmps(),type:mType.value,img:mImg.value,imgs:tempTaskImgs,content:mContent.value,adminNote:mAdminNote.value};withActor(actor=>{if(id){let t=state.tasks.find(x=>x.id===id);Object.assign(t,data);t.logs=t.logs||[];t.logs.push(logLine('sửa việc',actor))}else{let existing=null;if(data.type==='Hằng ngày'){existing=state.tasks.find(x=>x.date===data.date && x.type==='Hằng ngày' && x.title===data.title)}if(existing){Object.assign(existing,data);existing.logs=existing.logs||[];existing.logs.push(logLine('cập nhật việc hằng ngày',actor))}else{state.tasks.push({id:'t'+Date.now(),...data,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:[logLine('tạo việc',actor)]})}}save();closeModal('taskModal');render()});}
+function openReport(id){rId.value=id;let t=state.tasks.find(t=>t.id===id);rText.value=t.report||'';tempReportImgs=getReportImgs(t).slice();renderPreview('reportPreview',tempReportImgs);openModal('reportModal')}
+function saveReport(){let t=state.tasks.find(x=>x.id===rId.value);withActor(actor=>{t.report=rText.value;t.reportImgs=tempReportImgs;t.logs=t.logs||[];t.logs.push(logLine('cập nhật Báo cáo NV',actor));save();closeModal('reportModal');render()});}
+let galleryImgs=[], galleryIndex=0;
+function showGallery(){
+  if(!galleryImgs.length) return;
+  if(galleryIndex<0) galleryIndex=galleryImgs.length-1;
+  if(galleryIndex>=galleryImgs.length) galleryIndex=0;
+  bigImage.src=galleryImgs[galleryIndex];
+  imageCounter.textContent=(galleryIndex+1)+'/'+galleryImgs.length;
+}
+function openGallery(arr,index=0,title='Xem ảnh'){
+  galleryImgs=(arr||[]).filter(Boolean);
+  galleryIndex=index||0;
+  imageTitle.textContent=title;
+  showGallery();
+  openModal('imageModal');
+}
+function nextImage(){galleryIndex++;showGallery()}
+function prevImage(){galleryIndex--;showGallery()}
+function openImage(src){openGallery([src],0,'Xem ảnh')}
+function openTaskGallery(id,index=0){let t=state.tasks.find(x=>x.id===id);openGallery(getImgs(t),index,'Ảnh công việc')}
+function openReportGallery(id,index=0){let t=state.tasks.find(x=>x.id===id);openGallery(getReportImgs(t),index,'Ảnh báo cáo nhân viên')}
+function openAdminGallery(id,index=0){let t=state.tasks.find(x=>x.id===id);openGallery(getAdminImgs(t),index,'Ảnh admin ghi chú')}
+function saveDetailAdmin(id){let t=state.tasks.find(x=>x.id===id);if(!t)return;withActor(actor=>{t.adminNote=document.getElementById('detailAdminNote').value;t.logs=t.logs||[];t.logs.push(logLine('lưu Admin ghi chú trong chi tiết',actor));save();render();});}
+function saveDetailReport(id){let t=state.tasks.find(x=>x.id===id);if(!t)return;withActor(actor=>{t.report=document.getElementById('detailReportText').value;t.logs=t.logs||[];t.logs.push(logLine('lưu Báo cáo NV trong chi tiết',actor));save();render();});}
+function detailSetPaste(target){activeDetailPaste=target;document.querySelectorAll('#detailModal .detailSection').forEach(x=>x.classList.remove('activePaste'));let el=document.getElementById(target==='admin'?'detailAdminBox':'detailReportBox');if(el)el.classList.add('activePaste')}
+function detail(id){
+  let t=state.tasks.find(x=>x.id===id);let imgs=getImgs(t), rimgs=getReportImgs(t), aimgs=getAdminImgs(t);
+  detailCurrentId=id; activeDetailPaste='report';
+  detailTitle.textContent=t.time+' - '+t.title;
+  const statusBtn = t.status==='Đã xong' ? `<button class="btn orange" onclick="setStatus('${t.id}','Chưa làm')">Mở lại</button>` : `<button class="btn green" onclick="setStatus('${t.id}','Đã xong')">Đánh dấu xong</button>`;
+  detailBody.innerHTML=`<div class="detailWrap" style="--empColor:${empColor(t.emp)}">
+    <div class="detailTop"><span class="info">Nhân viên: ${empChips(t.emp)}</span><span class="info">Loại: ${esc(t.type)}</span><span class="info">Trạng thái: <span class="status ${t.status==='Đã xong'?'done':t.status==='Quá giờ'?'late':'todo'}">${esc(t.status)}</span></span><span class="info">Lịch sử: ${(t.logs||[]).length} dòng</span></div>
+    <div class="detailActions">${statusBtn}${roleAdmin()?`<button class="btn gray" onclick="openTaskForm('${t.id}')">Sửa việc</button><button class="btn red" onclick="delTask('${t.id}')">Xóa</button>`:''}</div>
+    <div class="detailMain"><div class="detailCore"><div><b>Giờ</b><div class="bigtime">${esc(t.time)}</div></div><div><b>Tên công việc</b><div class="titlepill bigtitle">${esc(t.title)}</div></div><div class="detailContentFull"><b>Nội dung</b><div class="bigcontent">${esc(t.content).replace(/\n/g,'<br>')}</div></div></div>
+    <div class="detailSection"><div class="galleryHead"><h4>Ảnh công việc</h4>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery('${t.id}',0)">Mở xem ${imgs.length} ảnh</button>`:''}</div>${imgs.length?`<div class="gallery">${imgs.map((src,i)=>`<img class="thumb" src="${src}" onclick="openTaskGallery('${t.id}',${i})">`).join('')}</div>`:'Không có ảnh'}</div>
+    <div class="detailEditGrid">
+      <div class="detailSection adminBox" id="detailAdminBox"><div class="galleryHead"><h4>Admin ghi chú</h4>${aimgs.length?`<button class="imgbadge" onclick="openAdminGallery('${t.id}',0)">Mở xem ${aimgs.length} ảnh</button>`:''}</div>${roleAdmin()?`<textarea id="detailAdminNote" onfocus="detailSetPaste('admin')" oninput="quickAdminNote('${t.id}',this.value)">${esc(t.adminNote||'')}</textarea><div class="detailPasteHint">Click vào ô này rồi Ctrl+V để thêm ảnh admin. Tự lưu nội dung khi gõ.</div>`:`<div>${esc(t.adminNote||'Không có').replace(/\n/g,'<br>')}</div>`}<div id="detailAdminPreview" class="previewImgs">${aimgs.map((src,i)=>`<img src="${src}" onclick="openAdminGallery('${t.id}',${i})">`).join('')}</div></div>
+      <div class="detailSection reportBox" id="detailReportBox"><div class="galleryHead"><h4>Báo cáo nhân viên</h4>${rimgs.length?`<button class="imgbadge" onclick="openReportGallery('${t.id}',0)">Mở xem ${rimgs.length} ảnh báo cáo</button>`:''}</div><textarea id="detailReportText" onfocus="detailSetPaste('report')" oninput="quickReport('${t.id}',this.value)" placeholder="Nhân viên nhập báo cáo...">${esc(t.report||'')}</textarea><div class="detailPasteHint">Click vào ô này rồi Ctrl+V để thêm ảnh báo cáo. Tự lưu nội dung khi gõ.</div><div id="detailReportPreview" class="previewImgs">${rimgs.map((src,i)=>`<img src="${src}" onclick="openReportGallery('${t.id}',${i})">`).join('')}</div></div>
+    </div>
+    <div class="detailSection"><h4>Lịch sử thao tác</h4>${(t.logs||[]).map(x=>'• '+esc(x)).join('<br>')}</div></div></div>`;
+  setTimeout(()=>detailSetPaste('report'),0);
+  openModal('detailModal')
+}
+function renderDaily(){dailyBody.innerHTML=state.tasks.filter(t=>t.type==='Hằng ngày').map(t=>`<tr style="--empColor:${empColor(t.emp)}"><td><b style="font-size:18px">${t.time}</b></td><td><span class="titlepill">${esc(t.title)}</span></td><td>${empChips(t.emp)}</td><td><div class="clip contentText">${esc(t.content)}</div><div class="dailyFocusNote">Cột Giờ / Tên CV / Nội dung là dữ liệu chạy lại mỗi ngày</div></td><td>${esc(t.adminNote)}</td><td>${statusHtml(t)}</td><td class="adminOnly"><button class="btn gray" onclick="openTaskForm('${t.id}')">Sửa</button></td></tr>`).join('')}
+function renderMaster(){masterBody.innerHTML=state.masters.map(m=>`<tr><td><label class="defaultPick"><input type="radio" name="defaultMaster" ${state.defaultMasterId===m.id?'checked':''} onchange="setDefaultMaster('${m.id}')"> Mặc định</label></td><td><b>${esc(m.title)}</b>${state.defaultMasterId===m.id?'<span class="defaultBadge">Đang chọn</span>':''}<br><small>${m.time}</small><div class="masterHint">Mở popup thêm việc sẽ tự chọn mẫu này</div></td><td>${esc(m.content)}</td><td>${esc(m.emp)}</td><td>${esc(m.note)}</td><td class="adminOnly"><button class="btn gray" onclick="openMasterForm('${m.id}')">Sửa</button> <button class="btn blue" onclick="createFromMaster('${m.id}')">Tạo việc</button></td></tr>`).join('')}
+function setDefaultMaster(id){state.defaultMasterId=id;save();renderMaster();fillMasterSelect()}
+function openMasterForm(id=null){if(!roleAdmin())return;let m=id?state.masters.find(x=>x.id===id):null;msId.value=id||'';msTitle.value=m?.title||'';msEmp.value=m?.emp||'An';msTime.value=m?.time||'';msContent.value=m?.content||'';msNote.value=m?.note||'';openModal('masterModal')}
+function saveMaster(){let id=msId.value;let data={title:msTitle.value,emp:msEmp.value,time:msTime.value,content:msContent.value,note:msNote.value};if(id)Object.assign(state.masters.find(x=>x.id===id),data);else state.masters.push({id:'m'+Date.now(),...data});save();closeModal('masterModal');renderMaster()}
+function createFromMaster(id){let m=state.masters.find(x=>x.id===id);let data={date:fDate.value||todayStr(),time:m.time,title:m.title,emp:m.emp,type:'Hằng ngày',img:'',content:m.content,adminNote:m.note};let existing=state.tasks.find(x=>x.date===data.date && x.type==='Hằng ngày' && x.title===data.title);if(existing){Object.assign(existing,data);existing.logs=existing.logs||[];existing.logs.push('Cập nhật từ danh sách CV')}else state.tasks.push({id:'t'+Date.now(),...data,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:['Tạo từ danh sách CV']});save();render();switchTab('today')}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('mousedown',e=>{if(e.target===m) m.classList.remove('open')}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>m.classList.remove('open'))});
+document.addEventListener('paste',e=>{
+  const taskOpen=document.getElementById('taskModal').classList.contains('open');
+  const reportOpen=document.getElementById('reportModal').classList.contains('open');
+  const adminOpen=document.getElementById('adminNoteModal').classList.contains('open');
+  const detailOpen=document.getElementById('detailModal').classList.contains('open');
+  if(!taskOpen && !reportOpen && !adminOpen && !detailOpen) return;
+  const items=[...(e.clipboardData?.items||[])];
+  const imgItem=items.find(i=>i.type && i.type.startsWith('image/'));
+  if(!imgItem) return;
+  const file=imgItem.getAsFile(); if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    if(taskOpen){tempTaskImgs.push(rd.result); renderPreview('taskPreview',tempTaskImgs)}
+    if(reportOpen){tempReportImgs.push(rd.result); renderPreview('reportPreview',tempReportImgs)}
+    if(adminOpen){tempAdminImgs.push(rd.result); renderPreview('adminPreview',tempAdminImgs)}
+    if(detailOpen && detailCurrentId){
+      let t=state.tasks.find(x=>x.id===detailCurrentId); if(!t) return;
+      if(activeDetailPaste==='admin' && roleAdmin()){ t.adminImgs=getAdminImgs(t); t.adminImgs.push(rd.result); }
+      else { t.reportImgs=getReportImgs(t); t.reportImgs.push(rd.result); }
+      save(); render(); detail(t.id);
+    }
+  };
+  rd.readAsDataURL(file);
+});
+
+function initColumnResize(){
+  const table=document.getElementById('taskTable'); if(!table) return;
+  const cols=[...table.querySelectorAll('col')];
+  const saved=JSON.parse(localStorage.getItem('task_col_widths_v14')||'{}');
+  const defaults={time:82,title:250,content:520,emp:105,img:78,admin:260,report:280,status:100,log:78,act:88};
+  cols.forEach(c=>{const k=c.dataset.col; c.style.width=(saved[k]||defaults[k]||120)+'px'});
+  table.querySelectorAll('th').forEach(th=>{
+    if(th.querySelector('.colResizer')) return;
+    const h=document.createElement('span'); h.className='colResizer'; th.appendChild(h);
+    h.addEventListener('mousedown',ev=>{
+      ev.preventDefault(); ev.stopPropagation();
+      const key=th.dataset.col; const col=table.querySelector('col[data-col="'+key+'"]');
+      const startX=ev.pageX; const startW=parseInt(col.style.width)||th.offsetWidth;
+      function move(e){const w=Math.max(60,startW+(e.pageX-startX)); col.style.width=w+'px'}
+      function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);const data={};cols.forEach(c=>data[c.dataset.col]=parseInt(c.style.width)||c.offsetWidth);localStorage.setItem('task_col_widths_v14',JSON.stringify(data));}
+      document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+    });
+  });
+}
+
+
+
+/* ===== V27 overrides: per-employee late logic + stronger reminders ===== */
+function showToast(msg){
+  const el=document.getElementById('toast'); if(!el) return alert(msg);
+  el.textContent=msg; el.classList.add('show'); clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+}
+function logLine(action, actor){
+  const who=actor||actorValid()||'Không rõ';
+  showToast('Bạn đang thao tác: '+who);
+  return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' '+action+' — '+who+' — '+machineLabel();
+}
+function minOf(t){let [h,m]=String(t||'00:00').split(':').map(Number); return (h||0)*60+(m||0)}
+function taskStartDate(t){let d=new Date((t.date||todayStr())+'T'+(t.time||'00:00')+':00'); return isNaN(d)?new Date():d}
+function nowMin(){let d=new Date();return d.getHours()*60+d.getMinutes()}
+function shareEmp(a,b){let A=empList(a), B=empList(b); return A.some(x=>B.includes(x));}
+function nextTaskForSameEmployee(t){
+  const base=minOf(t.time);
+  const candidates=state.tasks.filter(x=>x.id!==t.id && x.date===t.date && shareEmp(x.emp,t.emp) && minOf(x.time)>base)
+    .sort((a,b)=>minOf(a.time)-minOf(b.time));
+  return candidates[0]||null;
+}
+function taskDeadlineDate(t){
+  const next=nextTaskForSameEmployee(t);
+  if(!next) return null;
+  const d=new Date((t.date||todayStr())+'T'+(next.time||'00:00')+':00');
+  return isNaN(d)?null:d;
+}
+function isLateTask(t){
+  const deadline=taskDeadlineDate(t);
+  if(!deadline){
+    // Không có việc kế tiếp cùng nhân viên: chỉ note quá giờ nếu là ngày cũ mà chưa xong.
+    return (t.status!=='Đã xong' && (t.date||todayStr())<todayStr());
+  }
+  if(t.status==='Đã xong'){
+    return !!t.doneAt && Number(t.doneAt)>=deadline.getTime();
+  }
+  return Date.now()>=deadline.getTime();
+}
+function displayStatus(t){return t.status==='Đã xong'?'Đã xong':'Chưa làm'}
+function statusHtml(t){
+  const main=displayStatus(t); const late=isLateTask(t);
+  const cls=main==='Đã xong'?'done':'todo';
+  return `<div class="statusStack"><span class="status ${cls}">${main}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div>`;
+}
+function durationText(t){
+  if(t.status!=='Đã xong' || !t.doneAt) return '—';
+  let start=taskStartDate(t).getTime(); let end=Number(t.doneAt)||Date.now(); let mins=Math.max(0,Math.round((end-start)/60000));
+  let h=Math.floor(mins/60), m=mins%60; if(h&&m) return `${h}h${String(m).padStart(2,'0')}`; if(h) return `${h}h`; return `${m}p`;
+}
+function remindList(t){return String(t.remindPlan||'').split(',').map(x=>parseInt(x.trim())).filter(n=>!isNaN(n)&&n>0)}
+function remindHtml(t){
+  const plan=remindList(t).join(',');
+  const disabled=roleAdmin()?'':'disabled';
+  return `<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${t.id}')">🔔 Nhắc</button><input class="remindMini" ${disabled} value="${esc(plan)}" title="Nhắc sau phút, VD: 10,20,30" onchange="updateRemindPlan('${t.id}',this.value)"></div>`;
+}
+function updateRemindPlan(id,val){ if(!roleAdmin()) return; let t=state.tasks.find(x=>x.id===id); if(!t) return; withActor(actor=>{t.remindPlan=val;t.firedReminders=[];t.logs=t.logs||[];t.logs.push(logLine('cập nhật lịch nhắc: '+(val||'rỗng'),actor));save();render();}); }
+let attentionTaskId=null;
+let attentionAudio=null;
+function playAttentionSound(){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx=new AudioCtx();
+    let count=0;
+    const beep=()=>{
+      const osc=ctx.createOscillator(); const gain=ctx.createGain();
+      osc.frequency.value=count%2?880:660; gain.gain.value=0.12;
+      osc.connect(gain); gain.connect(ctx.destination); osc.start(); setTimeout(()=>osc.stop(),180);
+      count++; if(count<6) setTimeout(beep,360); else setTimeout(()=>ctx.close(),600);
+    };
+    beep();
+  }catch(e){}
+}
+function isAssignedToCurrentUser(t){
+  if(roleAdmin()) return false;
+  const me=document.getElementById('currentEmp')?.value||'';
+  return empList(t.emp).includes(me);
+}
+function showAttention(t, reason='Nhắc việc'){
+  if(!isAssignedToCurrentUser(t)) return;
+  if(t.activeReminder && t.activeReminder.ackBy) return;
+  attentionTaskId=t.id;
+  const deadline=taskDeadlineDate(t);
+  attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time)}</div><div class="attentionTitle">${esc(t.title)}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(empList(t.emp).join(', '))}</span><span>${esc(reason)}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
+  openModal('attentionModal');
+  playAttentionSound();
+}
+function closeAttention(){closeModal('attentionModal'); attentionTaskId=null;}
+function attentionAck(){
+  const id=attentionTaskId; if(!id) return closeAttention();
+  const t=state.tasks.find(x=>x.id===id); if(!t) return closeAttention();
+  withActor(actor=>{
+    t.logs=t.logs||[];
+    t.logs.push(logLine('đã nhận thông báo nhắc việc',actor));
+    t.activeReminder=null; // Máy nào nhận trước thì toàn bộ máy khác tắt popup theo realtime Firebase.
+    save();render();closeAttention();
+  });
+}
+function attentionDone(){ closeAttention(); }
+function manualRemind(id){
+  let t=state.tasks.find(x=>x.id===id); if(!t) return;
+  withActor(actor=>{
+    t.logs=t.logs||[];
+    t.logs.push(logLine('nhắc việc thủ công',actor));
+    t.activeReminder={id:'r'+Date.now(),type:'manual',at:Date.now(),by:actor.name||currentUserLabel(),ackBy:null};
+    save();render();showAttention(t,'Nhắc thủ công');
+  });
+}
+function shouldRepeatReminder(t, now){
+  const list=remindList(t); if(!list.length) return null;
+  const start=taskStartDate(t).getTime();
+  const elapsed=Math.floor((now-start)/60000);
+  if(elapsed<0) return null;
+  // Nếu nhập 10 => cứ 10 phút nhắc 1 lần cho tới khi Đã xong.
+  if(list.length===1){
+    const interval=list[0];
+    if(elapsed<interval) return null;
+    const slot=Math.floor(elapsed/interval)*interval;
+    if(!t.lastRepeatReminder || Number(t.lastRepeatReminder)<slot) return slot;
+    return null;
+  }
+  // Nếu nhập 10,20,30 => nhắc đúng các mốc đó.
+  t.firedReminders=t.firedReminders||[];
+  for(const m of list){ if(elapsed>=m && !t.firedReminders.includes(m)) return m; }
+  return null;
+}
+function checkAutoReminders(){
+  const d=todayStr(); const now=Date.now(); let changed=false;
+  state.tasks.forEach(t=>{
+    if(t.date!==d || t.status==='Đã xong') return;
+    if(t.activeReminder && !t.activeReminder.ackBy){ showAttention(t,t.activeReminder.type==='manual'?'Nhắc thủ công':'Tự nhắc'); return; }
+    const m=shouldRepeatReminder(t,now); if(m===null) return;
+    t.logs=t.logs||[];
+    if(remindList(t).length===1){ t.lastRepeatReminder=m; t.logs.push(new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' tự nhắc mỗi '+remindList(t)[0]+'p — '+machineLabel()); }
+    else { t.firedReminders=t.firedReminders||[]; t.firedReminders.push(m); t.logs.push(new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' tự nhắc sau '+m+'p — '+machineLabel()); }
+    t.activeReminder={id:'r'+Date.now()+Math.random().toString(36).slice(2,5),type:'auto',at:now,minute:m,ackBy:null};
+    changed=true;
+    showAttention(t,remindList(t).length===1?'Tự nhắc mỗi '+remindList(t)[0]+' phút':'Tự nhắc sau '+m+' phút');
+  });
+  if(changed) save();
+}
+function filtered(){
+  let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=state.tasks.filter(t=>t.date===d);
+  if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));
+  if(st==='Quá giờ')arr=arr.filter(t=>isLateTask(t));
+  else if(st!=='Tất cả')arr=arr.filter(t=>displayStatus(t)===st);
+  if(tp!=='Tất cả')arr=arr.filter(t=>t.type===tp);
+  if(q)arr=arr.filter(t=>(t.title+t.content+t.adminNote+t.report).toLowerCase().includes(q));
+  let rank=t=>isLateTask(t)?0:(t.status==='Chưa làm'?1:2);
+  return arr.sort((a,b)=>rank(a)-rank(b)||a.time.localeCompare(b.time));
+}
+function render(){
+  applyRole();syncFilterChips();syncStatsActive();renderDevices();let arr=filtered();
+  stTotal.textContent=arr.length;
+  stTodo.textContent=arr.filter(t=>displayStatus(t)==='Chưa làm' && !isLateTask(t)).length;
+  stLate.textContent=arr.filter(t=>isLateTask(t)).length;
+  stDone.textContent=arr.filter(t=>displayStatus(t)==='Đã xong').length;
+  stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;
+  stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;
+  taskBody.innerHTML=arr.map(t=>row(t)).join('')||'<tr><td colspan="12" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';
+  renderDaily();renderMaster();renderEmployees();
+}
+// Override row để trạng thái quá giờ vẫn hiện dưới cả Chưa làm và Đã xong.
+function row(t){
+  let late=isLateTask(t);
+  let cls=t.status==='Đã xong'?(late?'done overdue':'done'):(late?'overdue':'');
+  let imgs=getImgs(t), rimgs=getReportImgs(t);
+  let cLong=(t.content||'').length>150;let nLong=(t.adminNote||'').length>100;let aimgs=getAdminImgs(t);
+  return `<tr class="${cls}" style="--empColor:${empColor(t.emp)}"><td><b>${t.time}</b></td><td><span class="titlepill" onclick="detail('${t.id}')">${esc(t.title)}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${t.type}</span></td><td><div class="clip contentText">${esc(t.content)}</div>${cLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}</td><td>${empChips(t.emp)}</td><td>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery('${t.id}',0)">📷 ${imgs.length}</button>`:'<span class="imgbadge empty">Không</span>'}</td><td>${roleAdmin()?`<textarea class="quickText" placeholder="Admin ghi chú..." onclick="openAdminNote('${t.id}')" oninput="quickAdminNote('${t.id}',this.value)">${esc(t.adminNote||'')}</textarea>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`:`<div class="clip">${esc(t.adminNote||'')}</div>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}${nLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}`}</td><td><textarea class="quickText" placeholder="Bấm để nhập báo cáo..." onclick="openReport('${t.id}')" oninput="quickReport('${t.id}',this.value)">${esc(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery('${t.id}',0)">📷 ${rimgs.length} ảnh báo cáo</button>`:''}</td><td>${statusHtml(t)}</td><td><span class="durationBadge">${durationText(t)}</span></td><td>${remindHtml(t)}</td><td>${(t.logs||[]).length} dòng</td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${t.id}')">⋮</button><div class="menu" id="menu-${t.id}"><button onclick="detail('${t.id}')">Chi tiết</button>${t.status==='Đã xong'?(roleAdmin()?`<button onclick="setStatus('${t.id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${t.id}','Đã xong')">Đánh dấu xong</button>`}${roleAdmin()?`<button onclick="openTaskForm('${t.id}')">Sửa</button><button onclick="manualRemind('${t.id}')">Nhắc ngay</button><button class="danger" onclick="delTask('${t.id}')">Xóa</button>`:`<button onclick="manualRemind('${t.id}')">Nhắc ngay</button>`}</div></td></tr>`
+}
+function setStatus(id,s){let t=state.tasks.find(x=>x.id===id);if(!roleAdmin() && s!=='Đã xong'){alert('Nhân viên chỉ được đánh dấu đã xong');return;}withActor(actor=>{t.status=s;if(s==='Đã xong')t.doneAt=Date.now();else t.doneAt=null;t.logs=t.logs||[];t.logs.push(logLine('đổi trạng thái: '+s,actor));save();render();if(document.getElementById('detailModal').classList.contains('open'))detail(id)});}
+function copyTaskInfo(id){let t=state.tasks.find(x=>x.id===id); if(!t) return; const deadline=taskDeadlineDate(t); const txt=`🔔 NHẮC VIỆC\n\nThời gian: ${t.time} - ${fmtDate(t.date)}${deadline?'\nHạn trước: '+deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):''}\nTên CV: ${t.title}\nNhân viên: ${t.emp}\nTrạng thái: ${displayStatus(t)}${isLateTask(t)?' / Quá giờ':''}\nTG xử lý: ${durationText(t)}\n\nNội dung:\n${t.content||''}\n\nAdmin ghi chú:\n${t.adminNote||''}\n\nBáo cáo NV:\n${t.report||''}`; if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>showToast('Đã copy thông tin việc để gửi Zalo'));}else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Đã copy thông tin việc');}}
+setInterval(()=>{checkAutoReminders();render();},60000);
+
+initFirebase();
+refreshEmployeeUI();render();applyRole();renderDevices();initColumnResize();askLoginIfNeeded();
+setInterval(writeDevicePresence,30000);
 </script>
-</body>
-</html>
+</body></html>
