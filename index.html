@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nhắc Việc Shop - V12</title>
+<title>Nhắc Việc Shop - V13</title>
 <style>
 :root{--navy:#0f172a;--blue:#2563eb;--bg:#f3f6fb;--line:#d9e2ef;--text:#172033;--muted:#667085;--green:#16a34a;--red:#dc2626;--orange:#f59e0b;--softred:#fff4e8;--softgreen:#f2fff6;--softyellow:#fff9e9}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:14px}button,input,select,textarea{font-family:inherit;font-size:14px}.top{height:54px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;box-shadow:0 2px 10px #0002;position:sticky;top:0;z-index:20}.brand{line-height:1.05}.brand h1{font-size:22px;margin:0;font-weight:800}.brand p{margin:2px 0 0;color:#cbd5e1;font-size:12px}.topright{display:flex;gap:8px;align-items:center}.top select,.top button{height:38px;border:0;border-radius:10px;padding:0 14px;font-weight:700}.wrap{max-width:1660px;margin:14px auto;padding:0 12px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px #0f172a10}.tabs{display:flex;gap:8px;padding:10px}.tab{border:0;border-radius:11px;padding:12px 22px;font-weight:800;background:#eef2f7;cursor:pointer}.tab.active{background:var(--blue);color:#fff}.filters{padding:12px;display:grid;grid-template-columns:150px 180px 170px 170px 1fr 130px 140px 140px;gap:10px;align-items:end;margin-top:10px}.field label{display:block;font-size:12px;color:#637083;font-weight:800;margin:0 0 5px}.field input,.field select{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff}.btn{height:40px;border:0;border-radius:10px;padding:0 16px;font-weight:800;cursor:pointer}.btn.blue{background:var(--blue);color:#fff}.btn.gray{background:#e9eef6}.btn.green{background:#16a34a;color:white}.btn.red{background:#dc2626;color:#fff}.btn.orange{background:#f59e0b;color:#111}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:10px 0}.stat{padding:13px 16px}.stat b{font-size:27px;display:block}.stat span{color:#667085}.section-title{display:flex;justify-content:space-between;align-items:center;margin:14px 4px 8px}.section-title h2{font-size:18px;margin:0}.hint{font-size:12px;color:#667085}.tablebox{overflow:auto;border-radius:14px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px #0f172a10;max-height:calc(100vh - 320px);min-height:360px}.tasktable{width:100%;min-width:1450px;border-collapse:separate;border-spacing:0;table-layout:fixed}.tasktable th{background:#f0f4f9;color:#111827;text-transform:uppercase;font-size:13px;letter-spacing:.3px;height:42px;border-bottom:1px solid #b9c7d8;text-align:left;padding:0 10px;position:sticky;top:0;z-index:5}.tasktable td{padding:12px 10px;border-bottom:1px solid #e7edf5;vertical-align:top;background:#fff}.tasktable tr.overdue td{background:#fff5e8}.tasktable tr.done td{background:#f7fffa}.tasktable tr:hover td{background:#f8fbff}.w-time{width:72px}.w-title{width:190px}.w-emp{width:105px}.w-img{width:80px}.w-status{width:105px}.w-log{width:80px}.w-act{width:95px}.titlecell{font-weight:800;font-size:15px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;margin-top:6px}.daily{background:#dbeafe;color:#1d4ed8}.once{background:#eef2f7;color:#475569}.status{display:inline-flex;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.status.done{background:#dcfce7;color:#15803d}.status.late{background:#ffedd5;color:#c2410c}.status.todo{background:#fef3c7;color:#a16207}.clip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}.more{border:0;background:transparent;color:#2563eb;font-weight:800;padding:3px 0;cursor:pointer}.noteview{min-height:38px;max-height:44px;overflow:hidden;border:1px solid #e3eaf4;border-radius:9px;background:#fff;padding:8px;line-height:1.3}.noteview.empty{color:#98a2b3}.action{position:relative}.dotbtn{width:38px;height:34px;border:0;border-radius:9px;background:#eef2f7;font-weight:900;font-size:20px;cursor:pointer}.menu{display:none;position:absolute;right:8px;top:42px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 12px 30px #0002;z-index:15;width:145px;overflow:hidden}.menu.open{display:block}.menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;font-weight:700;cursor:pointer}.menu button:hover{background:#f1f5f9}.menu button.danger{color:#dc2626}.modal{display:none;position:fixed;inset:0;background:#0f172a88;z-index:50;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.panel{background:#fff;border-radius:16px;width:min(760px,96vw);max-height:90vh;overflow:auto;box-shadow:0 30px 80px #0005}.panelhead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #e5edf6}.panelhead h3{margin:0;font-size:19px}.x{border:0;background:#eef2f7;border-radius:9px;width:36px;height:34px;font-weight:900}.form{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.form .full{grid-column:1/-1}.form label{font-size:12px;font-weight:800;color:#667085;display:block;margin-bottom:5px}.form input,.form select,.form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.form textarea{min-height:80px;resize:vertical}.panelfoot{padding:14px 16px;border-top:1px solid #e5edf6;display:flex;justify-content:flex-end;gap:8px}.miniTable{width:100%;border-collapse:collapse}.miniTable th,.miniTable td{border-bottom:1px solid #e7edf5;padding:10px;text-align:left}.miniTable th{background:#f3f6fb}.masterbox{padding:14px}.hidden{display:none!important}@media(max-width:1100px){.filters{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
@@ -40,6 +40,17 @@
 /* V12 layout theo yêu cầu */
 .topFilters{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}.filterChip{border:1px solid #dbe3ef;background:#f1f5f9;border-radius:999px;padding:9px 14px;font-weight:900;cursor:pointer}.filterChip.active{background:#2563eb;color:#fff;border-color:#2563eb}.filterChip.emp{background:#fff}.filterChip.emp.active{box-shadow:0 0 0 3px #dbeafe;color:#0f172a}.filterChip.an.active{border-color:#60a5fa}.filterChip.nguyet.active{border-color:#f472b6}.filterChip.thuy.active{border-color:#34d399}.quickFilters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:14px;margin-top:10px}.quickFilters .label{font-weight:900;color:#475569;margin-right:2px}.filters{grid-template-columns:150px 1fr 120px 120px 140px}.hideField{display:none!important}.titlepill{background:#fff!important;border:2px solid var(--empColor)!important;border-left-width:7px!important;color:#0f172a!important}.badge.daily{background:#1d4ed8!important;color:#fff!important;box-shadow:0 2px 8px #1d4ed833}.adminQuickNote{width:100%;min-height:42px;max-height:76px;border:1px solid #dbe3ef;border-radius:10px;padding:8px 10px;background:#fff;resize:vertical;line-height:1.35}.adminQuickNote:focus{outline:2px solid #bfdbfe;border-color:#60a5fa}.detailCore{grid-template-columns:140px minmax(400px,1fr)!important;gap:14px!important;align-items:start!important}.detailCore .bigtime{font-size:28px!important}.detailCore .bigtitle{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.detailContentFull{grid-column:1/-1;border-top:1px solid #e5edf6;padding-top:12px}.detailContentFull .bigcontent{white-space:pre-wrap!important;overflow:visible!important;text-overflow:clip!important;font-size:18px!important;line-height:1.55!important}.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:250px}.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:520px}.tasktable th:nth-child(6),.tasktable td:nth-child(6){width:280px}
 
+
+
+/* V13 compact filter layout */
+.quickFilters{display:none!important}
+.filters{grid-template-columns:150px 1fr 120px 120px 120px 140px!important;align-items:end}
+.stats{margin:10px 0 8px}
+.stat{cursor:pointer;border:2px solid transparent;transition:.15s}
+.stat:hover{transform:translateY(-1px);box-shadow:0 12px 30px #0f172a18}
+.stat.active{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe;background:#f8fbff}
+.stat.active b{color:#2563eb}
+@media(max-width:1100px){.filters{grid-template-columns:repeat(2,1fr)!important}.stats{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -62,17 +73,6 @@
   </div>
 
   <div id="todayTab">
-    <div class="quickFilters">
-      <span class="label">Trạng thái:</span>
-      <button class="filterChip active" data-status="Tất cả" onclick="setStatusFilter('Tất cả')">Tất cả</button>
-      <button class="filterChip" data-status="Chưa làm" onclick="setStatusFilter('Chưa làm')">Chưa làm</button>
-      <button class="filterChip" data-status="Quá giờ" onclick="setStatusFilter('Quá giờ')">Quá giờ</button>
-      <button class="filterChip" data-status="Đã xong" onclick="setStatusFilter('Đã xong')">Đã xong</button>
-      <span class="label" style="margin-left:10px">Loại:</span>
-      <button class="filterChip active" data-type="Tất cả" onclick="setTypeFilter('Tất cả')">Tất cả</button>
-      <button class="filterChip" data-type="Hằng ngày" onclick="setTypeFilter('Hằng ngày')">Hằng ngày</button>
-      <button class="filterChip" data-type="Phát sinh" onclick="setTypeFilter('Phát sinh')">Phát sinh</button>
-    </div>
     <div class="card filters">
       <div class="field"><label>Ngày</label><input id="fDate" type="date" onchange="render()"></div>
       <div class="field hideField"><label>Nhân viên</label><select id="fEmp"><option>Tất cả</option><option>An</option><option>Nguyệt</option><option>Thủy</option></select></div>
@@ -81,8 +81,13 @@
       <div class="field"><label>Tìm kiếm</label><input id="fSearch" placeholder="Tên CV / nội dung / ghi chú" oninput="render()"></div>
       <button class="btn blue" onclick="render()">Lọc</button><button class="btn gray" onclick="today()">Hôm nay</button><button class="btn gray" onclick="yesterday()">Hôm qua</button><button class="btn blue adminOnly" onclick="openTaskForm()">+ Thêm việc</button>
     </div>
-    <div class="stats">
-      <div class="card stat"><b id="stTotal">0</b><span>Tổng việc</span></div><div class="card stat"><b id="stTodo">0</b><span>Chưa làm</span></div><div class="card stat"><b id="stLate">0</b><span>Quá giờ</span></div><div class="card stat"><b id="stDone">0</b><span>Đã xong</span></div><div class="card stat"><b id="stDaily">0</b><span>Hằng ngày</span></div><div class="card stat"><b id="stOnce">0</b><span>Phát sinh</span></div>
+    <div class="stats" id="statsRow">
+      <div class="card stat active" data-metric="total" onclick="setMetricFilter('total')"><b id="stTotal">0</b><span>Tổng việc</span></div>
+      <div class="card stat" data-metric="Chưa làm" onclick="setMetricFilter('Chưa làm')"><b id="stTodo">0</b><span>Chưa làm</span></div>
+      <div class="card stat" data-metric="Quá giờ" onclick="setMetricFilter('Quá giờ')"><b id="stLate">0</b><span>Quá giờ</span></div>
+      <div class="card stat" data-metric="Đã xong" onclick="setMetricFilter('Đã xong')"><b id="stDone">0</b><span>Đã xong</span></div>
+      <div class="card stat" data-metric="Hằng ngày" onclick="setMetricFilter('Hằng ngày')"><b id="stDaily">0</b><span>Hằng ngày</span></div>
+      <div class="card stat" data-metric="Phát sinh" onclick="setMetricFilter('Phát sinh')"><b id="stOnce">0</b><span>Phát sinh</span></div>
     </div>
     <div class="section-title"><h2>📋 Danh sách công việc</h2><span class="hint">Ưu tiên việc chưa xong/quá giờ lên trên · Báo cáo NV mở popup để ghi</span></div>
     <div class="tablebox"><table class="tasktable"><thead><tr><th class="w-time">Giờ</th><th class="w-title">Tên CV</th><th>Nội dung</th><th class="w-emp">Nhân viên</th><th class="w-img">Ảnh</th><th>Admin ghi chú</th><th>Báo cáo NV</th><th class="w-status">Trạng thái</th><th class="w-log">Lịch sử</th><th class="w-act">Thao tác</th></tr></thead><tbody id="taskBody"></tbody></table></div>
@@ -101,7 +106,7 @@
 <div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div style="padding:14px"><img id="bigImage" src=""></div></div></div>
 
 <script>
-const K='task_demo_v10';let state=JSON.parse(localStorage.getItem(K)||'null');
+const K='task_demo_v13';let state=JSON.parse(localStorage.getItem(K)||'null');
 const todayStr=()=>new Date().toISOString().slice(0,10);function fmtDate(d){let [y,m,da]=d.split('-');return `${da}/${m}/${y}`}
 function seed(){let d=todayStr();return{masters:[{id:'m1',title:'Check tin nhắn mới',time:'08:00',emp:'An',content:'Kiểm tra tin nhắn khách chưa trả lời, ưu tiên khách hỏi size và đổi địa chỉ.',note:'Làm trước khi in bill.'},{id:'m2',title:'Gọi đơn nháp',time:'09:00',emp:'Nguyệt',content:'Gọi lại toàn bộ đơn hôm qua chưa nghe máy.',note:'Ghi chú lý do khách chưa chốt.'},{id:'m3',title:'Check DVVC',time:'15:00',emp:'Thủy',content:'Kiểm tra các đơn giao thất bại và báo shop xử lý.',note:'Ưu tiên Viettel và GHN.'}],tasks:[{id:'t1',date:d,time:'08:00',title:'Check tin nhắn mới',emp:'An',type:'Hằng ngày',img:'',content:'Kiểm tra tin nhắn khách chưa trả lời, ưu tiên khách hỏi size và đổi địa chỉ.',adminNote:'Làm trước khi in bill.',report:'',status:'Quá giờ',logs:['08:00 Hệ thống nhắc','08:03 Admin xem']},{id:'t2',date:d,time:'09:00',title:'Gọi đơn nháp',emp:'Nguyệt',type:'Hằng ngày',img:'',content:'Gọi lại toàn bộ đơn hôm qua chưa nghe máy.',adminNote:'Ghi chú lý do khách chưa chốt.',report:'',status:'Quá giờ',logs:['09:00 Hệ thống nhắc']},{id:'t3',date:d,time:'15:00',title:'Check DVVC',emp:'Thủy',type:'Phát sinh',img:'',content:'Kiểm tra các đơn giao thất bại và báo shop xử lý.',adminNote:'Ưu tiên Viettel và GHN.',report:'Đã xử lý các đơn cần báo.',status:'Đã xong',logs:['15:00 Tạo việc','15:30 Nhân viên báo cáo','15:40 Đã xong']}]} }
 if(!state){state=seed();save()}function save(){localStorage.setItem(K,JSON.stringify(state))}function resetDemo(){localStorage.removeItem(K);location.reload()}
@@ -114,6 +119,30 @@ function yesterday(){let d=new Date();d.setDate(d.getDate()-1);document.getEleme
 function setEmpFilter(v){document.getElementById('fEmp').value=v;document.querySelectorAll('[data-emp]').forEach(b=>b.classList.toggle('active',b.dataset.emp===v));render()}
 function setStatusFilter(v){document.getElementById('fStatus').value=v;document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===v));render()}
 function setTypeFilter(v){document.getElementById('fType').value=v;document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===v));render()}
+
+function setMetricFilter(metric){
+  let curStatus=document.getElementById('fStatus').value;
+  let curType=document.getElementById('fType').value;
+  if(metric==='total'){
+    document.getElementById('fStatus').value='Tất cả';
+    document.getElementById('fType').value='Tất cả';
+  }else if(['Chưa làm','Quá giờ','Đã xong'].includes(metric)){
+    // Bấm lại mục đang chọn thì quay về Tổng việc
+    if(curStatus===metric && curType==='Tất cả'){document.getElementById('fStatus').value='Tất cả'}
+    else{document.getElementById('fStatus').value=metric;document.getElementById('fType').value='Tất cả'}
+  }else if(['Hằng ngày','Phát sinh'].includes(metric)){
+    if(curType===metric && curStatus==='Tất cả'){document.getElementById('fType').value='Tất cả'}
+    else{document.getElementById('fType').value=metric;document.getElementById('fStatus').value='Tất cả'}
+  }
+  render();
+}
+function syncStatsActive(){
+  let st=document.getElementById('fStatus').value, tp=document.getElementById('fType').value;
+  let metric='total';
+  if(st!=='Tất cả' && tp==='Tất cả') metric=st;
+  if(tp!=='Tất cả' && st==='Tất cả') metric=tp;
+  document.querySelectorAll('[data-metric]').forEach(el=>el.classList.toggle('active',el.dataset.metric===metric));
+}
 function syncFilterChips(){let e=document.getElementById('fEmp').value,s=document.getElementById('fStatus').value,t=document.getElementById('fType').value;document.querySelectorAll('[data-emp]').forEach(b=>b.classList.toggle('active',b.dataset.emp===e));document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===s));document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===t))}
 let noteTimers={};function quickAdminNote(id,val){clearTimeout(noteTimers[id]);noteTimers[id]=setTimeout(()=>{let t=state.tasks.find(x=>x.id===id);if(!t)return;t.adminNote=val;t.logs=t.logs||[];t.logs.push(new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' Admin sửa ghi chú nhanh');save();},450)}
 function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
