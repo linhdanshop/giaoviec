@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nhắc Việc Shop - V26</title>
+<title>Nhắc Việc Shop - V27</title>
 <style>
 :root{--navy:#0f172a;--blue:#2563eb;--bg:#f3f6fb;--line:#d9e2ef;--text:#172033;--muted:#667085;--green:#16a34a;--red:#dc2626;--orange:#f59e0b;--softred:#fff4e8;--softgreen:#f2fff6;--softyellow:#fff9e9}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:14px}button,input,select,textarea{font-family:inherit;font-size:14px}.top{height:54px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;box-shadow:0 2px 10px #0002;position:sticky;top:0;z-index:20}.brand{line-height:1.05}.brand h1{font-size:22px;margin:0;font-weight:800}.brand p{margin:2px 0 0;color:#cbd5e1;font-size:12px}.topright{display:flex;gap:8px;align-items:center}.top select,.top button{height:38px;border:0;border-radius:10px;padding:0 14px;font-weight:700}.wrap{max-width:1660px;margin:14px auto;padding:0 12px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px #0f172a10}.tabs{display:flex;gap:8px;padding:10px}.tab{border:0;border-radius:11px;padding:12px 22px;font-weight:800;background:#eef2f7;cursor:pointer}.tab.active{background:var(--blue);color:#fff}.filters{padding:12px;display:grid;grid-template-columns:150px 180px 170px 170px 1fr 130px 140px 140px;gap:10px;align-items:end;margin-top:10px}.field label{display:block;font-size:12px;color:#637083;font-weight:800;margin:0 0 5px}.field input,.field select{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff}.btn{height:40px;border:0;border-radius:10px;padding:0 16px;font-weight:800;cursor:pointer}.btn.blue{background:var(--blue);color:#fff}.btn.gray{background:#e9eef6}.btn.green{background:#16a34a;color:white}.btn.red{background:#dc2626;color:#fff}.btn.orange{background:#f59e0b;color:#111}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:10px 0}.stat{padding:13px 16px;cursor:pointer}.stat.active{outline:2px solid #2563eb}.stat b{font-size:27px;display:block}.stat span{color:#667085}.section-title{display:flex;justify-content:space-between;align-items:center;margin:14px 4px 8px}.section-title h2{font-size:18px;margin:0}.hint{font-size:12px;color:#667085}.tablebox{overflow:auto;border-radius:14px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px #0f172a10;max-height:calc(100vh - 320px);min-height:360px}.tasktable{width:100%;min-width:1450px;border-collapse:separate;border-spacing:0;table-layout:fixed}.tasktable th{background:#f0f4f9;color:#111827;text-transform:uppercase;font-size:13px;letter-spacing:.3px;height:42px;border-bottom:1px solid #b9c7d8;text-align:left;padding:0 10px;position:sticky;top:0;z-index:5}.tasktable td{padding:12px 10px;border-bottom:1px solid #e7edf5;vertical-align:top;background:#fff}.tasktable tr.overdue td{background:#fff5e8}.tasktable tr.done td{background:#f7fffa}.tasktable tr:hover td{background:#f8fbff}.w-time{width:72px}.w-title{width:190px}.w-emp{width:105px}.w-img{width:80px}.w-status{width:105px}.w-log{width:80px}.w-act{width:95px}.titlecell{font-weight:800;font-size:15px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;margin-top:6px}.daily{background:#dbeafe;color:#1d4ed8}.once{background:#eef2f7;color:#475569}.status{display:inline-flex;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}.status.done{background:#dcfce7;color:#15803d}.status.late{background:#ffedd5;color:#c2410c}.status.todo{background:#fef3c7;color:#a16207}.clip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}.more{border:0;background:transparent;color:#2563eb;font-weight:800;padding:3px 0;cursor:pointer}.noteview{min-height:38px;max-height:44px;overflow:hidden;border:1px solid #e3eaf4;border-radius:9px;background:#fff;padding:8px;line-height:1.3}.noteview.empty{color:#98a2b3}.action{position:relative}.dotbtn{width:38px;height:34px;border:0;border-radius:9px;background:#eef2f7;font-weight:900;font-size:20px;cursor:pointer}.menu{display:none;position:absolute;right:8px;top:42px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 12px 30px #0002;z-index:15;width:145px;overflow:hidden}.menu.open{display:block}.menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;font-weight:700;cursor:pointer}.menu button:hover{background:#f1f5f9}.menu button.danger{color:#dc2626}.modal{display:none;position:fixed;inset:0;background:#0f172a88;z-index:50;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.panel{background:#fff;border-radius:16px;width:min(760px,96vw);max-height:90vh;overflow:auto;box-shadow:0 30px 80px #0005}.panelhead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #e5edf6}.panelhead h3{margin:0;font-size:19px}.x{border:0;background:#eef2f7;border-radius:9px;width:36px;height:34px;font-weight:900}.form{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.form .full{grid-column:1/-1}.form label{font-size:12px;font-weight:800;color:#667085;display:block;margin-bottom:5px}.form input,.form select,.form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.form textarea{min-height:80px;resize:vertical}.panelfoot{padding:14px 16px;border-top:1px solid #e5edf6;display:flex;justify-content:flex-end;gap:8px}.miniTable{width:100%;border-collapse:collapse}.miniTable th,.miniTable td{border-bottom:1px solid #e7edf5;padding:10px;text-align:left}.miniTable th{background:#f3f6fb}.masterbox{padding:14px}.hidden{display:none!important}@media(max-width:1100px){.filters{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
@@ -115,6 +115,21 @@
 .tasktable th:nth-child(12),.tasktable td:nth-child(12){width:78px!important}
 .durationBadge{display:inline-flex;border-radius:999px;background:#f1f5f9;color:#334155;padding:6px 9px;font-weight:900;font-size:12px;white-space:nowrap}
 .remindBox{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.remindBtn{height:30px;border:0;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:900;padding:0 8px;cursor:pointer}.remindMini{width:54px;height:30px;border:1px solid #dbe3ef;border-radius:8px;padding:0 6px;font-size:12px}.copyBox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;white-space:pre-wrap;font-family:Arial,Tahoma,sans-serif}.toast{position:fixed;right:18px;bottom:18px;background:#0f172a;color:white;border-radius:12px;padding:12px 16px;font-weight:800;z-index:9999;box-shadow:0 14px 35px #0004;display:none}.toast.show{display:block}.whoSmall{font-size:12px;color:#64748b;margin-top:5px}
+
+/* V27 strong reminder + late note */
+.statusStack{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.status.second{margin-top:0}
+.tasktable tr.done.overdue td{background:#fffaf0}
+.attentionPanel{width:min(760px,96vw)!important;background:#fff!important;border:4px solid #ef4444;border-radius:22px!important;overflow:hidden}
+.attentionHead{background:#dc2626;color:#fff;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.attentionHead h3{margin:0;font-size:28px;font-weight:900}
+.attentionBody{padding:22px;background:#fff7ed}
+.attentionTime{font-size:42px;font-weight:900;color:#111827;margin-bottom:8px}
+.attentionTitle{font-size:30px;font-weight:900;color:#dc2626;margin-bottom:10px}
+.attentionContent{font-size:18px;line-height:1.55;color:#111827;background:#fff;border:1px solid #fed7aa;border-radius:14px;padding:14px;margin:12px 0}
+.attentionMeta{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.attentionMeta span{background:#fff;border:1px solid #fed7aa;border-radius:999px;padding:8px 12px;font-weight:900}
+.attentionFoot{padding:16px 22px;background:#fff;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #fed7aa}
 </style>
 </head>
 <body>
@@ -185,6 +200,8 @@
 <div id="loginModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn nhân viên</label><select id="loginEmp"></select></div><div class="full" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn gray" onclick="loginAsEmployee()">Vào bằng nhân viên</button><button class="btn blue" onclick="loginAsAdmin()">Vào Admin</button></div><div class="full"><small style="color:#667085">Máy sẽ ghi nhớ người đang thao tác. Nhân viên vẫn xem được tất cả việc; chỉ khác quyền thao tác. Admin demo mật khẩu: 123456</small></div></div></div></div>
 <div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div style="padding:14px"><img id="bigImage" src=""></div></div></div>
 
+
+<div id="attentionModal" class="modal"><div class="panel attentionPanel"><div class="attentionHead"><h3>🔔 NHẮC VIỆC</h3><button class="x" onclick="closeAttention()">×</button></div><div id="attentionBody" class="attentionBody"></div><div class="attentionFoot"><button class="btn gray" onclick="closeAttention()">Để sau</button><button class="btn orange" onclick="attentionAck()">Đã nhận nhắc</button><button class="btn green" onclick="attentionDone()">Đã xong</button></div></div></div>
 <div id="toast" class="toast"></div>
 <script>
 const K='task_demo_v23';let state=JSON.parse(localStorage.getItem(K)||'null');
@@ -433,31 +450,49 @@ function initColumnResize(){
 
 
 
-/* ===== V26 overrides: actor, dynamic overdue, duration, reminders, copy zalo ===== */
+/* ===== V27 overrides: per-employee late logic + stronger reminders ===== */
 function showToast(msg){
   const el=document.getElementById('toast'); if(!el) return alert(msg);
-  el.textContent=msg; el.classList.add('show'); clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.classList.remove('show'),2400);
+  el.textContent=msg; el.classList.add('show'); clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
 }
 function logLine(action, actor){
   const who=actor||actorValid()||'Không rõ';
   showToast('Bạn đang thao tác: '+who);
-  return new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' '+action+' — '+who+' — '+machineLabel();
+  return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' '+action+' — '+who+' — '+machineLabel();
 }
 function minOf(t){let [h,m]=String(t||'00:00').split(':').map(Number); return (h||0)*60+(m||0)}
 function taskStartDate(t){let d=new Date((t.date||todayStr())+'T'+(t.time||'00:00')+':00'); return isNaN(d)?new Date():d}
 function nowMin(){let d=new Date();return d.getHours()*60+d.getMinutes()}
-function displayStatus(t){
-  if(t.status==='Đã xong') return 'Đã xong';
-  const today=todayStr();
-  if((t.date||today)<today) return 'Quá giờ';
-  if((t.date||today)>today) return 'Chưa làm';
-  const same=state.tasks.filter(x=>x.date===t.date && x.status!=='Đã xong').sort((a,b)=>minOf(a.time)-minOf(b.time));
-  const idx=same.findIndex(x=>x.id===t.id);
-  const next=same[idx+1];
-  if(next && nowMin()>=minOf(next.time)) return 'Quá giờ';
-  return 'Chưa làm';
+function shareEmp(a,b){let A=empList(a), B=empList(b); return A.some(x=>B.includes(x));}
+function nextTaskForSameEmployee(t){
+  const base=minOf(t.time);
+  const candidates=state.tasks.filter(x=>x.id!==t.id && x.date===t.date && shareEmp(x.emp,t.emp) && minOf(x.time)>base)
+    .sort((a,b)=>minOf(a.time)-minOf(b.time));
+  return candidates[0]||null;
 }
-function statusHtml(t){let st=displayStatus(t);let isLate=st==='Quá giờ';let cls=st==='Đã xong'?'done':isLate?'late':'todo';let main=st==='Đã xong'?'Đã xong':'Chưa làm';return `<div class="statusStack"><span class="status ${cls}">${main}</span>${isLate?'<span class="status late second">Quá giờ</span>':''}</div>`}
+function taskDeadlineDate(t){
+  const next=nextTaskForSameEmployee(t);
+  if(!next) return null;
+  const d=new Date((t.date||todayStr())+'T'+(next.time||'00:00')+':00');
+  return isNaN(d)?null:d;
+}
+function isLateTask(t){
+  const deadline=taskDeadlineDate(t);
+  if(!deadline){
+    // Không có việc kế tiếp cùng nhân viên: chỉ note quá giờ nếu là ngày cũ mà chưa xong.
+    return (t.status!=='Đã xong' && (t.date||todayStr())<todayStr());
+  }
+  if(t.status==='Đã xong'){
+    return !!t.doneAt && Number(t.doneAt)>=deadline.getTime();
+  }
+  return Date.now()>=deadline.getTime();
+}
+function displayStatus(t){return t.status==='Đã xong'?'Đã xong':'Chưa làm'}
+function statusHtml(t){
+  const main=displayStatus(t); const late=isLateTask(t);
+  const cls=main==='Đã xong'?'done':'todo';
+  return `<div class="statusStack"><span class="status ${cls}">${main}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div>`;
+}
 function durationText(t){
   if(t.status!=='Đã xong' || !t.doneAt) return '—';
   let start=taskStartDate(t).getTime(); let end=Number(t.doneAt)||Date.now(); let mins=Math.max(0,Math.round((end-start)/60000));
@@ -470,7 +505,41 @@ function remindHtml(t){
   return `<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${t.id}')">🔔 Nhắc</button><input class="remindMini" ${disabled} value="${esc(plan)}" title="Nhắc sau phút, VD: 10,20,30" onchange="updateRemindPlan('${t.id}',this.value)"></div>`;
 }
 function updateRemindPlan(id,val){ if(!roleAdmin()) return; let t=state.tasks.find(x=>x.id===id); if(!t) return; withActor(actor=>{t.remindPlan=val;t.firedReminders=[];t.logs=t.logs||[];t.logs.push(logLine('cập nhật lịch nhắc: '+(val||'rỗng'),actor));save();render();}); }
-function manualRemind(id){let t=state.tasks.find(x=>x.id===id); if(!t) return; withActor(actor=>{t.logs=t.logs||[];t.logs.push(logLine('nhắc việc thủ công',actor));save();render();showToast('🔔 Đã nhắc: '+t.title);});}
+let attentionTaskId=null;
+let attentionAudio=null;
+function playAttentionSound(){
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx=new AudioCtx();
+    let count=0;
+    const beep=()=>{
+      const osc=ctx.createOscillator(); const gain=ctx.createGain();
+      osc.frequency.value=count%2?880:660; gain.gain.value=0.12;
+      osc.connect(gain); gain.connect(ctx.destination); osc.start(); setTimeout(()=>osc.stop(),180);
+      count++; if(count<6) setTimeout(beep,360); else setTimeout(()=>ctx.close(),600);
+    };
+    beep();
+  }catch(e){}
+}
+function showAttention(t, reason='Nhắc việc'){
+  attentionTaskId=t.id;
+  const deadline=taskDeadlineDate(t);
+  attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time)}</div><div class="attentionTitle">${esc(t.title)}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(t.emp||'')}</span><span>${esc(reason)}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
+  openModal('attentionModal');
+  playAttentionSound();
+}
+function closeAttention(){closeModal('attentionModal'); attentionTaskId=null;}
+function attentionAck(){
+  const id=attentionTaskId; if(!id) return closeAttention();
+  const t=state.tasks.find(x=>x.id===id); if(!t) return closeAttention();
+  withActor(actor=>{t.logs=t.logs||[];t.logs.push(logLine('đã nhận thông báo nhắc việc',actor));save();render();closeAttention();});
+}
+function attentionDone(){
+  const id=attentionTaskId; if(!id) return closeAttention();
+  closeAttention(); setStatus(id,'Đã xong');
+}
+function manualRemind(id){let t=state.tasks.find(x=>x.id===id); if(!t) return; withActor(actor=>{t.logs=t.logs||[];t.logs.push(logLine('nhắc việc thủ công',actor));save();render();showAttention(t,'Nhắc thủ công');});}
 function checkAutoReminders(){
   const d=todayStr(); const now=Date.now();
   state.tasks.forEach(t=>{
@@ -479,37 +548,40 @@ function checkAutoReminders(){
     if(elapsed<0) return;
     const list=remindList(t); if(!list.length) return;
     t.firedReminders=t.firedReminders||[];
-    list.forEach(m=>{ if(elapsed>=m && !t.firedReminders.includes(m)){ t.firedReminders.push(m); t.logs=t.logs||[]; t.logs.push(new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' tự nhắc sau '+m+'p — '+machineLabel()); showToast('🔔 Tự nhắc: '+t.title+' sau '+m+'p'); save(); }});
+    list.forEach(m=>{ if(elapsed>=m && !t.firedReminders.includes(m)){ t.firedReminders.push(m); t.logs=t.logs||[]; t.logs.push(new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' tự nhắc sau '+m+'p — '+machineLabel()); showAttention(t,'Tự nhắc sau '+m+' phút'); save(); }});
   });
 }
-function filtered(){let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=state.tasks.filter(t=>t.date===d);if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));if(st!=='Tất cả')arr=arr.filter(t=>displayStatus(t)===st);if(tp!=='Tất cả')arr=arr.filter(t=>t.type===tp);if(q)arr=arr.filter(t=>(t.title+t.content+t.adminNote+t.report).toLowerCase().includes(q));let rank={'Quá giờ':0,'Chưa làm':1,'Đã xong':2};return arr.sort((a,b)=>(rank[displayStatus(a)]??1)-(rank[displayStatus(b)]??1)||a.time.localeCompare(b.time))}
-function render(){applyRole();syncFilterChips();syncStatsActive();renderDevices();checkAutoReminders();let arr=filtered();stTotal.textContent=arr.length;stTodo.textContent=arr.filter(t=>displayStatus(t)==='Chưa làm').length;stLate.textContent=arr.filter(t=>displayStatus(t)==='Quá giờ').length;stDone.textContent=arr.filter(t=>displayStatus(t)==='Đã xong').length;stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;taskBody.innerHTML=arr.map(t=>row(t)).join('')||'<tr><td colspan="12" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';renderDaily();renderMaster();renderEmployees()}
-function row(t){
-let st=displayStatus(t);let cls=st==='Quá giờ'?'overdue':st==='Đã xong'?'done':'';
-let imgs=getImgs(t), rimgs=getReportImgs(t);let cLong=(t.content||'').length>150;let nLong=(t.adminNote||'').length>100;let aimgs=getAdminImgs(t);
-return `<tr class="${cls}" style="--empColor:${empColor(t.emp)}"><td><b>${t.time}</b></td><td><span class="titlepill" onclick="detail('${t.id}')">${esc(t.title)}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${t.type}</span></td><td><div class="clip contentText">${esc(t.content)}</div>${cLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}</td><td>${empChips(t.emp)}</td><td>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery('${t.id}',0)">📷 ${imgs.length}</button>`:'<span class="imgbadge empty">Không</span>'}</td><td>${roleAdmin()?`<textarea class="quickText" placeholder="Admin ghi chú..." onclick="openAdminNote('${t.id}')" oninput="quickAdminNote('${t.id}',this.value)">${esc(t.adminNote||'')}</textarea>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`:`<div class="clip">${esc(t.adminNote||'')}</div>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}${nLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}`}</td><td><textarea class="quickText" placeholder="Bấm để nhập báo cáo..." onclick="openReport('${t.id}')" oninput="quickReport('${t.id}',this.value)">${esc(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery('${t.id}',0)">📷 ${rimgs.length} ảnh báo cáo</button>`:''}</td><td>${statusHtml(t)}</td><td><span class="durationBadge">${durationText(t)}</span></td><td>${remindHtml(t)}</td><td>${(t.logs||[]).length} dòng</td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${t.id}')">⋮</button><div class="menu" id="menu-${t.id}"><button onclick="detail('${t.id}')">Chi tiết</button>${st==='Đã xong'?(roleAdmin()?`<button onclick="setStatus('${t.id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${t.id}','Đã xong')">Đánh dấu xong</button>`}${roleAdmin()?`<button onclick="openTaskForm('${t.id}')">Sửa</button><button onclick="manualRemind('${t.id}')">Nhắc ngay</button><button class="danger" onclick="delTask('${t.id}')">Xóa</button>`:`<button onclick="manualRemind('${t.id}')">Nhắc ngay</button>`}</div></td></tr>`}
-function setStatus(id,s){let t=state.tasks.find(x=>x.id===id);if(!roleAdmin() && s!=='Đã xong'){alert('Nhân viên chỉ được đánh dấu đã xong');return;}withActor(actor=>{t.status=s;if(s==='Đã xong')t.doneAt=Date.now();else t.doneAt=null;t.logs=t.logs||[];t.logs.push(logLine('đổi trạng thái: '+s,actor));save();render();if(document.getElementById('detailModal').classList.contains('open'))detail(id)});}
-function openTaskForm(id=null,type=null){if(!roleAdmin())return;closeModal('detailModal');document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open'));fillMasterSelect();editId.value=id||'';taskModalTitle.textContent=id?'Sửa công việc':'Thêm công việc';let t=id?state.tasks.find(x=>x.id===id):null;tempTaskImgs=t?getImgs(t).slice():[];mDate.value=t?.date||todayStr();mTime.value=t?.time||currentTimeStr();setModalEmps(t?.emp||'An');mType.value=t?.type||type||'Phát sinh';mImg.value=t?.img||'';mTitle.value=t?.title||'';mContent.value=t?.content||'';mAdminNote.value=t?.adminNote||'';if(document.getElementById('mRemind'))mRemind.value=t?.remindPlan||'';mMaster.value='';if(!id && state.defaultMasterId){mMaster.value=state.defaultMasterId;fillFromMaster();mType.value=type||'Phát sinh';mTime.value=currentTimeStr();}renderPreview('taskPreview',tempTaskImgs);openModal('taskModal')}
-function saveTask(){let id=editId.value;let data={date:mDate.value,time:mTime.value,title:mTitle.value,emp:getModalEmps(),type:mType.value,img:mImg.value,imgs:tempTaskImgs,content:mContent.value,adminNote:mAdminNote.value,remindPlan:(document.getElementById('mRemind')?mRemind.value:'')};withActor(actor=>{if(id){let t=state.tasks.find(x=>x.id===id);Object.assign(t,data);t.logs=t.logs||[];t.logs.push(logLine('sửa việc',actor))}else{let existing=null;if(data.type==='Hằng ngày'){existing=state.tasks.find(x=>x.date===data.date && x.type==='Hằng ngày' && x.title===data.title)}if(existing){Object.assign(existing,data);existing.logs=existing.logs||[];existing.logs.push(logLine('cập nhật việc hằng ngày',actor))}else{state.tasks.push({id:'t'+Date.now(),...data,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',doneAt:null,firedReminders:[],logs:[logLine('tạo việc',actor)]})}}save();closeModal('taskModal');render()});}
-function copyTaskInfo(id){let t=state.tasks.find(x=>x.id===id); if(!t) return; const txt=`🔔 NHẮC VIỆC\n\nThời gian: ${t.time} - ${fmtDate(t.date)}\nTên CV: ${t.title}\nNhân viên: ${t.emp}\nTrạng thái: ${displayStatus(t)}\n\nNội dung:\n${t.content||''}\n\nAdmin ghi chú:\n${t.adminNote||''}\n\nBáo cáo NV:\n${t.report||''}`; if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>showToast('Đã copy thông tin việc để gửi Zalo'));}else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Đã copy thông tin việc');}}
-function detail(id){
-  let t=state.tasks.find(x=>x.id===id);let imgs=getImgs(t), rimgs=getReportImgs(t), aimgs=getAdminImgs(t);let st=displayStatus(t);
-  detailCurrentId=id; activeDetailPaste='report'; detailTitle.textContent=t.time+' - '+t.title;
-  const statusBtn = st==='Đã xong' ? `<button class="btn orange" onclick="setStatus('${t.id}','Chưa làm')">Mở lại</button>` : `<button class="btn green" onclick="setStatus('${t.id}','Đã xong')">Đánh dấu xong</button>`;
-  detailBody.innerHTML=`<div class="detailWrap" style="--empColor:${empColor(t.emp)}">
-    <div class="detailTop"><span class="info">Nhân viên: ${empChips(t.emp)}</span><span class="info">Loại: ${esc(t.type)}</span><span class="info">Trạng thái: ${statusHtml(t)}</span><span class="info">TG xử lý: ${durationText(t)}</span><span class="info">Lịch sử: ${(t.logs||[]).length} dòng</span></div>
-    <div class="detailActions">${statusBtn}<button class="btn orange" onclick="manualRemind('${t.id}')">🔔 Nhắc ngay</button><button class="btn blue" onclick="copyTaskInfo('${t.id}')">📋 Copy gửi Zalo</button>${roleAdmin()?`<button class="btn gray" onclick="openTaskForm('${t.id}')">Sửa việc</button><button class="btn red" onclick="delTask('${t.id}')">Xóa</button>`:''}</div>
-    <div class="detailMain"><div class="detailCore"><div><b>Giờ</b><div class="bigtime">${esc(t.time)}</div></div><div><b>Tên công việc</b><div class="titlepill bigtitle">${esc(t.title)}</div></div><div class="detailContentFull"><b>Nội dung</b><div class="bigcontent">${esc(t.content).replace(/\n/g,'<br>')}</div></div></div>
-    <div class="detailSection"><div class="galleryHead"><h4>Ảnh công việc</h4>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery('${t.id}',0)">Mở xem ${imgs.length} ảnh</button>`:''}</div>${imgs.length?`<div class="gallery">${imgs.map((src,i)=>`<img class="thumb" src="${src}" onclick="openTaskGallery('${t.id}',${i})">`).join('')}</div>`:'Không có ảnh'}</div>
-    <div class="detailEditGrid">
-      <div class="detailSection adminBox" id="detailAdminBox"><div class="galleryHead"><h4>Admin ghi chú</h4>${aimgs.length?`<button class="imgbadge" onclick="openAdminGallery('${t.id}',0)">Mở xem ${aimgs.length} ảnh</button>`:''}</div>${roleAdmin()?`<textarea id="detailAdminNote" onfocus="detailSetPaste('admin')" oninput="quickAdminNote('${t.id}',this.value)">${esc(t.adminNote||'')}</textarea><div class="detailPasteHint">Click vào ô này rồi Ctrl+V để thêm ảnh admin. Tự lưu nội dung khi gõ.</div>`:`<div>${esc(t.adminNote||'Không có').replace(/\n/g,'<br>')}</div>`}<div id="detailAdminPreview" class="previewImgs">${aimgs.map((src,i)=>`<img src="${src}" onclick="openAdminGallery('${t.id}',${i})">`).join('')}</div></div>
-      <div class="detailSection reportBox" id="detailReportBox"><div class="galleryHead"><h4>Báo cáo nhân viên</h4>${rimgs.length?`<button class="imgbadge" onclick="openReportGallery('${t.id}',0)">Mở xem ${rimgs.length} ảnh báo cáo</button>`:''}</div><textarea id="detailReportText" onfocus="detailSetPaste('report')" oninput="quickReport('${t.id}',this.value)" placeholder="Nhân viên nhập báo cáo...">${esc(t.report||'')}</textarea><div class="detailPasteHint">Click vào ô này rồi Ctrl+V để thêm ảnh báo cáo. Tự lưu nội dung khi gõ.</div><div id="detailReportPreview" class="previewImgs">${rimgs.map((src,i)=>`<img src="${src}" onclick="openReportGallery('${t.id}',${i})">`).join('')}</div></div>
-    </div>
-    <div class="detailSection"><h4>Copy Zalo</h4><button class="btn blue" onclick="copyTaskInfo('${t.id}')">📋 Copy thông tin việc</button><div class="copyBox" style="margin-top:10px">🔔 NHẮC VIỆC\n${esc(t.time)} - ${esc(t.title)}\nNhân viên: ${esc(t.emp)}\nNội dung: ${esc(t.content)}</div></div>
-    <div class="detailSection"><h4>Lịch sử thao tác</h4>${(t.logs||[]).map(x=>'• '+esc(x)).join('<br>')}</div></div></div>`;
-  setTimeout(()=>detailSetPaste('report'),0); openModal('detailModal')
+function filtered(){
+  let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=state.tasks.filter(t=>t.date===d);
+  if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));
+  if(st==='Quá giờ')arr=arr.filter(t=>isLateTask(t));
+  else if(st!=='Tất cả')arr=arr.filter(t=>displayStatus(t)===st);
+  if(tp!=='Tất cả')arr=arr.filter(t=>t.type===tp);
+  if(q)arr=arr.filter(t=>(t.title+t.content+t.adminNote+t.report).toLowerCase().includes(q));
+  let rank=t=>isLateTask(t)?0:(t.status==='Chưa làm'?1:2);
+  return arr.sort((a,b)=>rank(a)-rank(b)||a.time.localeCompare(b.time));
 }
-function renderDaily(){dailyBody.innerHTML=state.tasks.filter(t=>t.type==='Hằng ngày').map(t=>`<tr style="--empColor:${empColor(t.emp)}"><td><b style="font-size:18px">${t.time}</b></td><td><span class="titlepill">${esc(t.title)}</span></td><td>${empChips(t.emp)}</td><td><div class="clip contentText">${esc(t.content)}</div><div class="dailyFocusNote">Cột Giờ / Tên CV / Nội dung là dữ liệu chạy lại mỗi ngày</div></td><td>${esc(t.adminNote)}</td><td>${statusHtml(t)}</td><td><span class="durationBadge">${durationText(t)}</span></td><td class="adminOnly"><button class="btn gray" onclick="openTaskForm('${t.id}')">Sửa</button></td></tr>`).join('')}
+function render(){
+  applyRole();syncFilterChips();syncStatsActive();renderDevices();let arr=filtered();
+  stTotal.textContent=arr.length;
+  stTodo.textContent=arr.filter(t=>displayStatus(t)==='Chưa làm' && !isLateTask(t)).length;
+  stLate.textContent=arr.filter(t=>isLateTask(t)).length;
+  stDone.textContent=arr.filter(t=>displayStatus(t)==='Đã xong').length;
+  stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;
+  stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;
+  taskBody.innerHTML=arr.map(t=>row(t)).join('')||'<tr><td colspan="12" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';
+  renderDaily();renderMaster();renderEmployees();
+}
+// Override row để trạng thái quá giờ vẫn hiện dưới cả Chưa làm và Đã xong.
+function row(t){
+  let late=isLateTask(t);
+  let cls=t.status==='Đã xong'?(late?'done overdue':'done'):(late?'overdue':'');
+  let imgs=getImgs(t), rimgs=getReportImgs(t);
+  let cLong=(t.content||'').length>150;let nLong=(t.adminNote||'').length>100;let aimgs=getAdminImgs(t);
+  return `<tr class="${cls}" style="--empColor:${empColor(t.emp)}"><td><b>${t.time}</b></td><td><span class="titlepill" onclick="detail('${t.id}')">${esc(t.title)}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${t.type}</span></td><td><div class="clip contentText">${esc(t.content)}</div>${cLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}</td><td>${empChips(t.emp)}</td><td>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery('${t.id}',0)">📷 ${imgs.length}</button>`:'<span class="imgbadge empty">Không</span>'}</td><td>${roleAdmin()?`<textarea class="quickText" placeholder="Admin ghi chú..." onclick="openAdminNote('${t.id}')" oninput="quickAdminNote('${t.id}',this.value)">${esc(t.adminNote||'')}</textarea>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`:`<div class="clip">${esc(t.adminNote||'')}</div>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${t.id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}${nLong?`<button class="more" onclick="detail('${t.id}')">Xem thêm</button>`:''}`}</td><td><textarea class="quickText" placeholder="Bấm để nhập báo cáo..." onclick="openReport('${t.id}')" oninput="quickReport('${t.id}',this.value)">${esc(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery('${t.id}',0)">📷 ${rimgs.length} ảnh báo cáo</button>`:''}</td><td>${statusHtml(t)}</td><td><span class="durationBadge">${durationText(t)}</span></td><td>${remindHtml(t)}</td><td>${(t.logs||[]).length} dòng</td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${t.id}')">⋮</button><div class="menu" id="menu-${t.id}"><button onclick="detail('${t.id}')">Chi tiết</button>${t.status==='Đã xong'?(roleAdmin()?`<button onclick="setStatus('${t.id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${t.id}','Đã xong')">Đánh dấu xong</button>`}${roleAdmin()?`<button onclick="openTaskForm('${t.id}')">Sửa</button><button onclick="manualRemind('${t.id}')">Nhắc ngay</button><button class="danger" onclick="delTask('${t.id}')">Xóa</button>`:`<button onclick="manualRemind('${t.id}')">Nhắc ngay</button>`}</div></td></tr>`
+}
+function setStatus(id,s){let t=state.tasks.find(x=>x.id===id);if(!roleAdmin() && s!=='Đã xong'){alert('Nhân viên chỉ được đánh dấu đã xong');return;}withActor(actor=>{t.status=s;if(s==='Đã xong')t.doneAt=Date.now();else t.doneAt=null;t.logs=t.logs||[];t.logs.push(logLine('đổi trạng thái: '+s,actor));save();render();if(document.getElementById('detailModal').classList.contains('open'))detail(id)});}
+function copyTaskInfo(id){let t=state.tasks.find(x=>x.id===id); if(!t) return; const deadline=taskDeadlineDate(t); const txt=`🔔 NHẮC VIỆC\n\nThời gian: ${t.time} - ${fmtDate(t.date)}${deadline?'\nHạn trước: '+deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):''}\nTên CV: ${t.title}\nNhân viên: ${t.emp}\nTrạng thái: ${displayStatus(t)}${isLateTask(t)?' / Quá giờ':''}\nTG xử lý: ${durationText(t)}\n\nNội dung:\n${t.content||''}\n\nAdmin ghi chú:\n${t.adminNote||''}\n\nBáo cáo NV:\n${t.report||''}`; if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>showToast('Đã copy thông tin việc để gửi Zalo'));}else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Đã copy thông tin việc');}}
 setInterval(()=>{checkAutoReminders();render();},60000);
 
 refreshEmployeeUI();render();applyRole();renderDevices();initColumnResize();askLoginIfNeeded();
