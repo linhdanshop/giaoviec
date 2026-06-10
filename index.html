@@ -1443,6 +1443,156 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
 })();
 </script>
 
+
+<script>
+/* FINAL 39: daily templates independent by day + better guide/PBH UI */
+(function(){
+  const ROOT='taskReminder';
+  const TASKS_PATH=ROOT+'/tasks';
+  const META_PATH=ROOT+'/state';
+  function $q(id){return document.getElementById(id)}
+  function ehtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function todayISO(){return (typeof todayStr==='function'?todayStr():new Date().toISOString().slice(0,10))}
+  function curD(){return ($q('fDate')&&$q('fDate').value)||todayISO()}
+  function dm(d){try{let [y,m,day]=String(d||'').split('-');return `${day}/${m}`}catch(e){return ''}}
+  function safeId(x){return String(x||'').replace(/[^a-zA-Z0-9_-]/g,'_')}
+  function dailyId(date,mid){return 'daily_'+safeId(date)+'_'+safeId(mid)}
+  function arr(v){if(!v)return[]; if(Array.isArray(v))return v.filter(Boolean); return Object.keys(v).map(k=>v[k]&&typeof v[k]==='object'?({id:v[k].id||k,...v[k]}):null).filter(Boolean)}
+  function saveMetaOnly(){
+    if(typeof normalizeMasters==='function') try{normalizeMasters()}catch(e){}
+    if(window.db){ db.ref(META_PATH).set({employees:state.employees||['An','Nguyệt','Thủy'],masters:state.masters||[],defaultMasterId:state.defaultMasterId||''}).catch(e=>console.warn(e)); }
+    try{localStorage.setItem('taskReminder_meta_backup',JSON.stringify({employees:state.employees,masters:state.masters,defaultMasterId:state.defaultMasterId}))}catch(e){}
+  }
+  function saveCurrentTasks(){ if(typeof save==='function') save(); }
+
+  // Việc hằng ngày chỉ sinh ra task ngày nếu task đó chưa tồn tại. Không đồng bộ ngược sửa đổi ngày cũ.
+  window.ensureDailyForDate=function(dateStr){
+    dateStr=dateStr||curD();
+    state.masters=arr(state.masters);
+    if(!Array.isArray(state.tasks)) state.tasks=[];
+    let changed=false;
+    state.masters.forEach(m=>{
+      if(!m||!m.id) return;
+      const id=dailyId(dateStr,m.id);
+      if(state.tasks.some(t=>t&&t.id===id)) return;
+      state.tasks.push({
+        id, masterId:m.id, date:dateStr, type:'Hằng ngày', hidden:false,
+        time:m.time||'08:00', title:m.title||'', emp:m.emp||'', content:m.content||'',
+        adminNote:m.note||m.adminNote||'', img:m.img||'', imgs:Array.isArray(m.imgs)?m.imgs.slice():[],
+        report:'', reportImgs:[], adminImgs:[], remindPlan:m.remindPlan||'', status:'Chưa làm', doneAt:'',
+        logs:[(new Date()).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' tự tạo việc hằng ngày — Hệ thống']
+      });
+      changed=true;
+    });
+    if(changed) saveCurrentTasks();
+  };
+
+  // Sửa task trong tab Công việc chỉ sửa task của ngày đó, không sửa template.
+  window.saveTask=function(){
+    const id=($q('editId')&&$q('editId').value)||'';
+    const data={date:($q('mDate')&&mDate.value)||curD(),time:($q('mTime')&&mTime.value)||'08:00',title:(($q('mTitle')&&mTitle.value)||'').trim(),emp:(typeof getModalEmps==='function'?getModalEmps():'An'),type:(($q('mType')&&mType.value)||'Phát sinh'),img:(($q('mImg')&&mImg.value)||''),imgs:window.tempTaskImgs||[],content:(($q('mContent')&&mContent.value)||'').trim(),adminNote:(($q('mAdminNote')&&mAdminNote.value)||'').trim(),remindPlan:(($q('mRemind')&&mRemind.value)||'')};
+    if(!data.title){alert('Nhập tên công việc');return;}
+    const doSave=(actor)=>{
+      let t=id?(state.tasks||[]).find(x=>x&&x.id===id):null;
+      if(t){ Object.assign(t,data); t.logs=t.logs||[]; t.logs.push((typeof logLine==='function'?logLine('sửa việc trong ngày',actor):'Sửa việc')); }
+      else{ const nid=(data.type==='Hằng ngày'&&($q('mMaster')&&mMaster.value))?dailyId(data.date,mMaster.value):('ps_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)); state.tasks.push({id:nid,masterId:($q('mMaster')&&mMaster.value)||'',...data,status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[(typeof logLine==='function'?logLine('tạo việc',actor):'Tạo việc')]}); }
+      saveCurrentTasks(); if(typeof closeModal==='function') closeModal('taskModal'); if(typeof render==='function') render();
+    };
+    if(typeof withActor==='function') withActor(doSave); else doSave('Admin');
+  };
+
+  // Tab Việc hằng ngày hiển thị template, sửa/xóa ở đây mới ảnh hưởng ngày mới.
+  window.renderDaily=function(){
+    const body=$q('dailyBody'); if(!body)return;
+    state.masters=arr(state.masters);
+    body.innerHTML=(state.masters||[]).map(m=>`<tr style="--empColor:${typeof empColor==='function'?empColor(m.emp):'#60a5fa'}">
+      <td><div class="timeStack"><div class="timeMain">${ehtml(m.time||'')}</div><div class="dateSub">áp dụng ngày mới</div></div></td>
+      <td><span class="titlepill">${ehtml(m.title||'')}</span></td>
+      <td>${typeof empChips==='function'?empChips(m.emp):ehtml(m.emp||'')}</td>
+      <td><div class="clip contentText">${ehtml(m.content||'')}</div></td>
+      <td>${ehtml(m.note||m.adminNote||'')}</td>
+      <td><span class="status todo">Mẫu lặp</span></td>
+      <td class="adminOnly"><button class="btn gray" onclick="openMasterForm('${m.id}')">Sửa</button> <button class="btn red" onclick="deleteDailyTemplate('${m.id}')">Xóa</button></td>
+    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:#667085;font-weight:800">Chưa có việc hằng ngày</td></tr>';
+    const title=document.querySelector('#dailyTab .section-title');
+    if(title){ title.innerHTML='<h2>🔁 Việc hằng ngày</h2><span class="hint">Sửa ở đây chỉ áp dụng cho ngày mới. Task đã sinh theo ngày không bị đổi.</span><button class="btn blue adminOnly" onclick="openMasterForm()">+ Tạo việc hằng ngày</button>'; }
+  };
+  window.deleteDailyTemplate=function(id){ if(!(typeof roleAdmin==='function'?roleAdmin():true))return; if(!confirm('Xóa việc hằng ngày này? Các ngày đã sinh trước đó không bị xóa.'))return; state.masters=(state.masters||[]).filter(m=>m.id!==id); if(state.defaultMasterId===id) state.defaultMasterId=(state.masters[0]&&state.masters[0].id)||''; saveMetaOnly(); renderDaily(); if(typeof renderMaster==='function')renderMaster(); };
+  window.saveMaster=function(){
+    const id=($q('msId')&&msId.value)||'';
+    const data={title:(($q('msTitle')&&msTitle.value)||'').trim(),emp:(($q('msEmp')&&msEmp.value)||'An'),time:(($q('msTime')&&msTime.value)||'08:00'),content:(($q('msContent')&&msContent.value)||'').trim(),note:(($q('msNote')&&msNote.value)||'').trim()};
+    if(!data.title){alert('Nhập tên công việc');return;}
+    state.masters=arr(state.masters);
+    if(id){let m=state.masters.find(x=>x.id===id); if(m)Object.assign(m,data);}
+    else state.masters.push({id:'m_'+Date.now(),...data});
+    saveMetaOnly(); if(typeof closeModal==='function')closeModal('masterModal'); renderDaily(); if(typeof renderMaster==='function')renderMaster();
+  };
+
+  // Cột giờ: thêm ngày nhỏ dưới giờ trong tab Công việc.
+  const oldRow=window.row;
+  if(oldRow){
+    window.row=function(t){let html=oldRow(t);return html.replace(/<td><b>(.*?)<\/b><\/td>/,`<td><div class="timeStack"><div class="timeMain">$1</div><div class="dateSub">${dm(t.date)}</div></div></td>`)};
+  }
+
+  // Hướng dẫn công việc: giao diện card dễ xem, không textbox thô khi xem.
+  window.renderGuide=function(){
+    const box=$q('guideList'); if(!box)return;
+    const list=state.guides||[];
+    box.innerHTML=list.length?list.map(g=>`<div class="guideViewCard">
+      <div class="guideViewHead"><div class="guideTitleBig" onclick="openGuideDetail('${g.id}')">${ehtml(g.title||'Hướng dẫn mới')}</div><div class="adminOnly"><button class="btn gray" onclick="editGuideInline('${g.id}')">Sửa</button> <button class="btn red" onclick="delGuide('${g.id}')">Xóa</button></div></div>
+      <div class="guideContent">${ehtml(g.content||'Chưa có nội dung hướng dẫn')}</div>
+      <div class="guideImgList">${(g.imgs||[]).map((src,i)=>`<span class="guideImgWrap"><img src="${src}" onclick="openGuideGallery('${g.id}',${i})"><button class="adminOnly" onclick="event.stopPropagation();delGuideImage('${g.id}',${i})">×</button></span>`).join('')}</div>
+      <div class="adminOnly guideEdit hidden" id="ge_${g.id}"><input value="${ehtml(g.title||'')}" oninput="saveGuide('${g.id}','title',this.value)" placeholder="Tên công việc"><textarea oninput="saveGuide('${g.id}','content',this.value)" placeholder="Nội dung hướng dẫn">${ehtml(g.content||'')}</textarea><button class="btn gray" onclick="pickGuideImage('${g.id}')">📷 Thêm ảnh</button></div>
+    </div>`).join(''):'<div style="padding:20px;color:#667085;font-weight:800">Chưa có hướng dẫn</div>';
+  };
+  window.editGuideInline=function(id){const el=$q('ge_'+id); if(el)el.classList.toggle('hidden')};
+  window.openGuideDetail=function(id){const g=(state.guides||[]).find(x=>x.id===id); if(!g)return; alert((g.title||'Hướng dẫn')+'\n\n'+(g.content||''));};
+
+  // PBH / DVVC: đảm bảo panel hiển thị đúng và có 2 phần.
+  window.renderPBH=function(){
+    const box=$q('pbhList'); if(!box)return;
+    if(typeof getCompare!=='function'){}
+    const key=(window.pbhMode||'pbhCancel');
+    const mode=window.__pbhMode||'pbhCancel';
+    const d=(function(){ try{const k=(typeof pbhKey==='function'?pbhKey():mode+'/'+curD()); state.pbhCompare=state.pbhCompare||{}; state.pbhCompare[k]=state.pbhCompare[k]||{shopText:'',systemText:'',reasons:{}}; return state.pbhCompare[k];}catch(e){return {shopText:'',systemText:'',reasons:{}}} })();
+    function parse(txt){return [...new Set(String(txt||'').split(/\n+/).map(x=>x.trim()).filter(Boolean))]}
+    const shop=parse(d.shopText), sys=parse(d.systemText);
+    const match=shop.filter(x=>sys.includes(x)), missShop=sys.filter(x=>!shop.includes(x)), missSys=shop.filter(x=>!sys.includes(x));
+    const second=mode==='pbhCancel'?'HỆ THỐNG':'DVVC';
+    const title=mode==='pbhCancel'?'PBH Hủy':'DVVC Chưa lấy';
+    const saveTxt=(field,val)=>{d[field]=val; savePbhData(mode,d);};
+    window.__savePbhText=saveTxt;
+    window.__saveReason=function(code,val){d.reasons=d.reasons||{}; d.reasons[code]=val; savePbhData(mode,d);};
+    function rowReason(c){return `<div class="mvdRow"><div class="mvdCode">${ehtml(c)}</div><input class="reasonInput" value="${ehtml((d.reasons||{})[c]||'')}" oninput="__saveReason('${ehtml(c)}',this.value)" placeholder="Nhập lý do sau khi kiểm tra"></div>`}
+    box.innerHTML=`<div class="compareTabs"><button class="btn gray ${mode==='pbhCancel'?'active':''}" onclick="__switchPbh('pbhCancel')">PBH Hủy</button><button class="btn gray ${mode==='dvvcPending'?'active':''}" onclick="__switchPbh('dvvcPending')">DVVC Chưa lấy</button><span class="compareDate">${title} · ${dm(curD())}</span></div>
+      <div class="compareWrap"><div class="compareBox"><h3>SHOP</h3><textarea placeholder="Dán mã vận đơn, mỗi mã 1 dòng" oninput="__savePbhText('shopText',this.value)">${ehtml(d.shopText||'')}</textarea></div><div class="compareBox"><h3>${second}</h3><textarea placeholder="Dán mã vận đơn, mỗi mã 1 dòng" oninput="__savePbhText('systemText',this.value)">${ehtml(d.systemText||'')}</textarea></div></div>
+      <div class="compareActions"><button class="btn blue" onclick="renderPBH()">Đối soát</button><span class="copyHint">Khớp: <b>${match.length}</b> · Thiếu Shop: <b>${missShop.length}</b> · Thiếu ${second}: <b>${missSys.length}</b></span></div>
+      <div class="compareResult"><div class="resultCol resultMatch"><h4>Khớp (${match.length})</h4>${match.length?match.map(c=>`<div class="mvdCode ok">${ehtml(c)}</div>`).join(''):'<div class="emptySmall">Không có</div>'}</div><div class="resultCol resultMissA"><h4>Thiếu Shop (${missShop.length})</h4>${missShop.length?missShop.map(rowReason).join(''):'<div class="emptySmall">Không có</div>'}</div><div class="resultCol resultMissB"><h4>Thiếu ${second} (${missSys.length})</h4>${missSys.length?missSys.map(rowReason).join(''):'<div class="emptySmall">Không có</div>'}</div></div>`;
+  };
+  window.__switchPbh=function(mode){window.__pbhMode=mode; loadPbhData(mode);};
+  function pbhPath(mode){return ROOT+'/pbhCompare/'+mode+'/'+curD()}
+  function savePbhData(mode,data){data.updatedAt=Date.now(); if(window.db)db.ref(pbhPath(mode)).set(data).catch(console.warn); else localStorage.setItem('pbh_'+mode+'_'+curD(),JSON.stringify(data));}
+  function loadPbhData(mode){state.pbhCompare=state.pbhCompare||{}; const key=mode+'/'+curD(); if(window.db){db.ref(pbhPath(mode)).off(); db.ref(pbhPath(mode)).on('value',s=>{state.pbhCompare[key]=s.val()||{shopText:'',systemText:'',reasons:{}}; renderPBH();});}else{try{state.pbhCompare[key]=JSON.parse(localStorage.getItem('pbh_'+mode+'_'+curD())||'null')||{shopText:'',systemText:'',reasons:{}}}catch(e){} renderPBH();}}
+
+  function ensurePanels(){
+    document.querySelectorAll('[data-tab="master"]').forEach(b=>b.textContent='CV mẫu');
+    const p=$q('pbhTab'); if(p){const st=p.querySelector('.section-title'); if(st)st.innerHTML='<h2>📦 PBH Hủy/Chưa lấy</h2><span class="hint">Dán danh sách MVD 2 bên để đối soát. Lý do nhập tự do sau khi kiểm tra.</span>'; if(!$q('pbhList'))p.insertAdjacentHTML('beforeend','<div class="card masterbox" id="pbhList"></div>')}
+  }
+  const oldSwitch=window.switchTab;
+  window.switchTab=function(tab){ if(oldSwitch) oldSwitch(tab); setTimeout(()=>{ensurePanels(); if(tab==='daily')renderDaily(); if(tab==='guide')renderGuide(); if(tab==='pbh'){loadPbhData(window.__pbhMode||'pbhCancel')}},50); };
+  const oldRender=window.render;
+  window.render=function(){ if(oldRender) oldRender(); setTimeout(()=>{ensurePanels(); renderDaily(); if(!$q('guideTab')?.classList.contains('hidden'))renderGuide(); if(!$q('pbhTab')?.classList.contains('hidden'))renderPBH();},30); };
+
+  // CSS bổ sung
+  const css=document.createElement('style'); css.textContent=`
+    .guideViewCard{background:#fff;border:1px solid #dbe5f3;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 8px 20px rgba(15,23,42,.04)}
+    .guideViewHead{display:flex;justify-content:space-between;gap:12px;align-items:center}.guideTitleBig{font-size:20px;font-weight:900;color:#0f172a;cursor:pointer}.guideContent{white-space:pre-wrap;line-height:1.55;margin:10px 0;font-weight:700;color:#1f2937}.guideEdit input,.guideEdit textarea{width:100%;margin-top:8px;border:1px solid #cbd5e1;border-radius:12px;padding:10px}.guideEdit textarea{min-height:90px}.emptySmall{color:#64748b;font-weight:800;padding:10px}.timeStack{line-height:1.1}.timeMain{font-size:20px;font-weight:900}.dateSub{font-size:11px;color:#64748b;margin-top:5px;font-weight:800}.reasonInput{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:8px;font-weight:700}.mvdCode.ok{background:#dcfce7;color:#166534;border-radius:10px;padding:8px;margin:6px 0;font-weight:900}`;
+  document.head.appendChild(css);
+
+  setTimeout(()=>{ensurePanels(); if(typeof render==='function')render(); if($q('fDate'))$q('fDate').addEventListener('change',()=>{setTimeout(()=>{ensureDailyForDate(curD()); if(!$q('pbhTab')?.classList.contains('hidden'))loadPbhData(window.__pbhMode||'pbhCancel')},300)});},1200);
+})();
+</script>
+
 </body></html>
 
 <style>
