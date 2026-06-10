@@ -419,7 +419,7 @@ function getModalEmps(){let list=[...document.querySelectorAll('#mEmpGroup input
 function currentTimeStr(){let d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function getImgs(t){let arr=[]; if(Array.isArray(t.imgs)) arr=arr.concat(t.imgs); if(t.img) arr.push(t.img); return arr.filter(Boolean)}
 function getReportImgs(t){return Array.isArray(t.reportImgs)?t.reportImgs:[]}
-function filtered(){let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=state.tasks.filter(t=>t.date===d);if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));if(st!=='Tất cả')arr=arr.filter(t=>t.status===st);if(tp!=='Tất cả')arr=arr.filter(t=>t.type===tp);if(q)arr=arr.filter(t=>(t.title+t.content+t.adminNote+t.report).toLowerCase().includes(q));let rank={'Quá giờ':0,'Chưa làm':1,'Đã xong':2};return arr.sort((a,b)=>(rank[a.status]??1)-(rank[b.status]??1)||a.time.localeCompare(b.time))}
+function filtered(){let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=(state.tasks||[]).filter(t=>t&&typeof t==='object'&&t.date===d);if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));if(st!=='Tất cả')arr=arr.filter(t=>t.status===st);if(tp!=='Tất cả')arr=arr.filter(t=>t.type===tp);if(q)arr=arr.filter(t=>(t.title+t.content+t.adminNote+t.report).toLowerCase().includes(q));let rank={'Quá giờ':0,'Chưa làm':1,'Đã xong':2};return arr.sort((a,b)=>(rank[a.status]??1)-(rank[b.status]??1)||a.time.localeCompare(b.time))}
 function render(){applyRole();syncFilterChips();syncStatsActive();renderDevices();let arr=filtered();stTotal.textContent=arr.length;stTodo.textContent=arr.filter(t=>t.status==='Chưa làm').length;stLate.textContent=arr.filter(t=>t.status==='Quá giờ').length;stDone.textContent=arr.filter(t=>t.status==='Đã xong').length;stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;taskBody.innerHTML=arr.map(t=>row(t)).join('')||'<tr><td colspan="10" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';renderDaily();renderMaster();renderEmployees()}
 function statusHtml(t){let isLate=t.status==='Quá giờ';let cls=t.status==='Đã xong'?'done':isLate?'late':'todo';let main=t.status==='Đã xong'?'Đã xong':'Chưa làm';return `<div class="statusStack"><span class="status ${cls}">${main}</span>${isLate?'<span class="status late second">Quá giờ</span>':''}</div>`}
 function row(t){
@@ -691,7 +691,7 @@ function checkAutoReminders(){
   if(changed) save();
 }
 function filtered(){
-  let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=state.tasks.filter(t=>t.date===d);
+  let d=fDate.value,emp=fEmp.value,st=fStatus.value,tp=fType.value,q=fSearch.value.toLowerCase().trim();let arr=(state.tasks||[]).filter(t=>t&&typeof t==='object'&&t.date===d);
   if(emp!=='Tất cả')arr=arr.filter(t=>empList(t.emp).includes(emp));
   if(st==='Quá giờ')arr=arr.filter(t=>isLateTask(t));
   else if(st!=='Tất cả')arr=arr.filter(t=>displayStatus(t)===st);
@@ -789,6 +789,7 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
     const seen=new Map();
     const kept=[];
     for(const t of state.tasks){
+      if(!t || typeof t!=='object') { changed=true; continue; }
       if(t.type==='Hằng ngày' && (!dateStr || t.date===dateStr)){
         const key=taskKey(t);
         if(seen.has(key)){
@@ -908,10 +909,12 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
   }
   function normalizeV30(){
     if(!window.state) window.state={};
-    state.employees=Array.isArray(state.employees)&&state.employees.length?state.employees:['An','Nguyệt','Thủy'];
-    state.masters=Array.isArray(state.masters)?state.masters:[];
-    state.tasks=Array.isArray(state.tasks)?state.tasks:[];
+    state.employees=Array.isArray(state.employees)&&state.employees.length?state.employees.filter(Boolean):['An','Nguyệt','Thủy'];
+    // Firebase sau khi xóa có thể trả về null/{}; lọc sạch record rỗng để không lỗi .type
+    if(Array.isArray(state.masters)) state.masters=state.masters.filter(m=>m && typeof m==='object'); else state.masters=[];
+    if(Array.isArray(state.tasks)) state.tasks=state.tasks.filter(t=>t && typeof t==='object'); else state.tasks=[];
     state.masters.forEach((m,i)=>{ if(!m.id) m.id='m_'+safeKey(m.title||('cv_'+i)); });
+    state.tasks.forEach((t,i)=>{ if(!t.id) t.id=t.type==='Hằng ngày'&&t.masterId?dailyTaskId(t.date,t.masterId):onceTaskId(t.date||vnTodayStr()); });
   }
   function mergeDailyFromMaster(t,m,dateStr){
     const keep={
@@ -935,6 +938,7 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
     // Gom lại task hằng ngày cũ theo masterId/date để chống trùng.
     const oldMap=new Map();
     for(const t of state.tasks){
+      if(!t || typeof t!=='object') { changed=true; continue; }
       if(t.type==='Hằng ngày' && t.date===dateStr && t.masterId){
         const id=dailyTaskId(dateStr,t.masterId);
         const old=oldMap.get(id);
@@ -949,6 +953,7 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
       }
     }
     for(const m of state.masters){
+      if(!m || typeof m!=='object') { changed=true; continue; }
       if(m.disabled) continue;
       const id=dailyTaskId(dateStr,m.id);
       let t=oldMap.get(id);
@@ -965,6 +970,7 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
     }
     // Giữ hằng ngày ở ngày khác, nhưng chuẩn hóa ID nếu có masterId.
     for(const t of state.tasks){
+      if(!t || typeof t!=='object') { changed=true; continue; }
       if(t.type==='Hằng ngày' && t.date!==dateStr){
         if(t.masterId){
           const fixed=dailyTaskId(t.date,t.masterId);
@@ -977,6 +983,7 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
     const seen=new Set();
     state.tasks=[];
     for(const t of newTasks){
+      if(!t || typeof t!=='object') {changed=true; continue;}
       if(!t.id) t.id=t.type==='Hằng ngày'&&t.masterId?dailyTaskId(t.date,t.masterId):onceTaskId(t.date);
       if(seen.has(t.id)){changed=true; continue;}
       seen.add(t.id); state.tasks.push(t);
