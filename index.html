@@ -158,7 +158,7 @@
   <div class="card tabs">
     <button class="tab active" data-tab="today" onclick="switchTab('today')">Công việc</button>
     <button class="tab" data-tab="daily" onclick="switchTab('daily')">Việc hằng ngày</button>
-    <button class="tab" data-tab="master" onclick="switchTab('master')">Danh sách CV</button>
+    <button class="tab" data-tab="master" onclick="switchTab('master')">CV mẫu</button>
     <button class="tab" data-tab="devices" onclick="switchTab('devices')">Thiết bị online</button>
     <div class="topFilters" id="empChips"></div>
   </div>
@@ -185,7 +185,7 @@
   </div>
 
   <div id="dailyTab" class="hidden"><div class="section-title"><h2>🔁 Việc hằng ngày</h2><button class="btn blue adminOnly" onclick="openTaskForm(null,'Hằng ngày')">+ Tạo việc hằng ngày</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th>Giờ</th><th>Tên CV</th><th>Nhân viên</th><th>Nội dung</th><th>Ghi chú admin</th><th>Trạng thái</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="dailyBody"></tbody></table></div></div>
-  <div id="masterTab" class="hidden"><div class="section-title"><h2>🧾 Danh sách CV mẫu</h2><span class="hint">Lưu sẵn các việc hay dùng để tạo nhanh, không phải gõ lại mỗi ngày</span><button class="btn blue adminOnly" onclick="openMasterForm()">+ Thêm mẫu CV</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th style="width:90px">Mặc định</th><th>Tên CV</th><th>Nội dung mẫu</th><th>NV mặc định</th><th>Ghi chú mẫu</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="masterBody"></tbody></table></div><div class="section-title"><h2>👥 Nhân viên</h2><span class="hint">Admin thêm/xóa nhân viên, bộ lọc và form tự cập nhật</span></div><div class="card masterbox"><div class="empManage adminOnly"><input id="newEmpName" placeholder="Tên nhân viên mới"><button class="btn blue" onclick="addEmployee()">+ Thêm nhân viên</button></div><table class="miniTable"><thead><tr><th>Tên nhân viên</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="empManageBody"></tbody></table></div></div>
+  <div id="masterTab" class="hidden"><div class="section-title"><h2>🧾 CV mẫu</h2><span class="hint">Lưu sẵn các việc hay dùng để tạo nhanh, không phải gõ lại mỗi ngày</span><button class="btn blue adminOnly" onclick="openMasterForm()">+ Thêm mẫu CV</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th style="width:90px">Mặc định</th><th>Tên CV</th><th>Nội dung mẫu</th><th>NV mặc định</th><th>Ghi chú mẫu</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="masterBody"></tbody></table></div><div class="section-title"><h2>👥 Nhân viên</h2><span class="hint">Admin thêm/xóa nhân viên, bộ lọc và form tự cập nhật</span></div><div class="card masterbox"><div class="empManage adminOnly"><input id="newEmpName" placeholder="Tên nhân viên mới"><button class="btn blue" onclick="addEmployee()">+ Thêm nhân viên</button></div><table class="miniTable"><thead><tr><th>Tên nhân viên</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="empManageBody"></tbody></table></div></div>
   <div id="devicesTab" class="hidden">
   <div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Mỗi trình duyệt có 1 mã thiết bị cố định. IP chỉ để ghi chú vì đổi mạng sẽ đổi IP.</span></div>
   <div class="card masterbox">
@@ -205,7 +205,7 @@
 </div>
 </div>
 
-<div id="taskModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="taskModalTitle">Thêm việc</h3><button class="x" onclick="closeModal('taskModal')">×</button></div><div class="form"><input type="hidden" id="editId"><div><label>Chọn từ danh sách CV</label><select id="mMaster" onchange="fillFromMaster()"></select></div><div><label>Ngày</label><input id="mDate" type="date"></div><div><label>Thời gian</label><input id="mTime" type="time"></div><div><label>Nhân viên <small style="color:#667085">(chọn được nhiều)</small></label><div id="mEmpGroup" class="checkrow"></div></div><div><label>Loại việc</label><select id="mType"><option>Phát sinh</option><option>Hằng ngày</option></select></div><div><label>Nhắc sau phút <small style="color:#667085">VD: 10,20,30</small></label><input id="mRemind" placeholder="10,20,30"></div><div><label>Ảnh URL</label><input id="mImg" placeholder="Dán link ảnh hoặc bỏ trống"></div><div><label>Dán ảnh</label><div class="pastebox">Mở popup này rồi Ctrl+V ảnh vào đâu cũng được</div><div id="taskPreview" class="previewImgs"></div></div><div class="full"><label>Tên CV</label><input id="mTitle"></div><div class="full"><label>Nội dung cần làm</label><textarea id="mContent"></textarea></div><div class="full"><label>Admin ghi chú</label><textarea id="mAdminNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('taskModal')">Đóng</button><button class="btn blue" onclick="saveTask()">Lưu việc</button></div></div></div>
+<div id="taskModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="taskModalTitle">Thêm việc</h3><button class="x" onclick="closeModal('taskModal')">×</button></div><div class="form"><input type="hidden" id="editId"><div><label>Chọn từ CV mẫu</label><select id="mMaster" onchange="fillFromMaster()"></select></div><div><label>Ngày</label><input id="mDate" type="date"></div><div><label>Thời gian</label><input id="mTime" type="time"></div><div><label>Nhân viên <small style="color:#667085">(chọn được nhiều)</small></label><div id="mEmpGroup" class="checkrow"></div></div><div><label>Loại việc</label><select id="mType"><option>Phát sinh</option><option>Hằng ngày</option></select></div><div><label>Nhắc sau phút <small style="color:#667085">VD: 10,20,30</small></label><input id="mRemind" placeholder="10,20,30"></div><div><label>Ảnh URL</label><input id="mImg" placeholder="Dán link ảnh hoặc bỏ trống"></div><div><label>Dán ảnh</label><div class="pastebox">Mở popup này rồi Ctrl+V ảnh vào đâu cũng được</div><div id="taskPreview" class="previewImgs"></div></div><div class="full"><label>Tên CV</label><input id="mTitle"></div><div class="full"><label>Nội dung cần làm</label><textarea id="mContent"></textarea></div><div class="full"><label>Admin ghi chú</label><textarea id="mAdminNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('taskModal')">Đóng</button><button class="btn blue" onclick="saveTask()">Lưu việc</button></div></div></div>
 <div id="reportModal" class="modal"><div class="panel"><div class="panelhead"><h3>Báo cáo nhân viên</h3><button class="x" onclick="closeModal('reportModal')">×</button></div><div class="form"><input type="hidden" id="rId"><div class="full"><label>Nội dung báo cáo</label><textarea id="rText" style="min-height:160px" placeholder="Nhân viên nhập báo cáo việc ở đây..."></textarea><div class="pastebox" style="margin-top:10px">Ctrl+V ảnh báo cáo vào popup này</div><div id="reportPreview" class="previewImgs"></div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('reportModal')">Đóng</button><button class="btn blue" onclick="saveReport()">Lưu báo cáo</button></div></div></div>
 
 <div id="adminNoteModal" class="modal"><div class="panel"><div class="panelhead"><h3>Admin ghi chú</h3><button class="x" onclick="closeModal('adminNoteModal')">×</button></div><div class="form"><input type="hidden" id="aId"><div class="full"><label>Nội dung admin ghi chú</label><textarea id="aText" style="min-height:160px" placeholder="Admin nhập ghi chú ở đây..."></textarea><div class="pastebox" style="margin-top:10px">Ctrl+V ảnh ghi chú admin vào popup này</div><div id="adminPreview" class="previewImgs"></div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('adminNoteModal')">Đóng</button><button class="btn blue" onclick="saveAdminNote()">Lưu ghi chú</button></div></div></div>
@@ -497,7 +497,7 @@ function renderMaster(){masterBody.innerHTML=state.masters.map(m=>`<tr><td><labe
 function setDefaultMaster(id){state.defaultMasterId=id;save();renderMaster();fillMasterSelect()}
 function openMasterForm(id=null){if(!roleAdmin())return;let m=id?state.masters.find(x=>x.id===id):null;msId.value=id||'';msTitle.value=m?.title||'';msEmp.value=m?.emp||'An';msTime.value=m?.time||'';msContent.value=m?.content||'';msNote.value=m?.note||'';openModal('masterModal')}
 function saveMaster(){let id=msId.value;let data={title:msTitle.value,emp:msEmp.value,time:msTime.value,content:msContent.value,note:msNote.value};if(id)Object.assign(state.masters.find(x=>x.id===id),data);else state.masters.push({id:'m'+Date.now(),...data});save();closeModal('masterModal');renderMaster()}
-function createFromMaster(id){let m=state.masters.find(x=>x.id===id);let data={date:fDate.value||todayStr(),time:m.time,title:m.title,emp:m.emp,type:'Hằng ngày',img:'',content:m.content,adminNote:m.note};let existing=state.tasks.find(x=>x.date===data.date && x.type==='Hằng ngày' && x.title===data.title);if(existing){Object.assign(existing,data);existing.logs=existing.logs||[];existing.logs.push('Cập nhật từ danh sách CV')}else state.tasks.push({id:'t'+Date.now(),...data,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:['Tạo từ danh sách CV']});save();render();switchTab('today')}
+function createFromMaster(id){let m=state.masters.find(x=>x.id===id);let data={date:fDate.value||todayStr(),time:m.time,title:m.title,emp:m.emp,type:'Hằng ngày',img:'',content:m.content,adminNote:m.note};let existing=state.tasks.find(x=>x.date===data.date && x.type==='Hằng ngày' && x.title===data.title);if(existing){Object.assign(existing,data);existing.logs=existing.logs||[];existing.logs.push('Cập nhật từ CV mẫu')}else state.tasks.push({id:'t'+Date.now(),...data,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:['Tạo từ CV mẫu']});save();render();switchTab('today')}
 
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
@@ -1070,6 +1070,165 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
 
   // Chạy ngay khi tải để sau khi xóa hết tasks vẫn sinh lại đúng từ masters.
   setTimeout(()=>{try{normalizeV30(); ensureDailyForDate((fDate&&fDate.value)||vnTodayStr()); render();}catch(e){console.error(e); alert('Lỗi khởi tạo task hằng ngày: '+e.message)}},1200);
+})();
+</script>
+
+
+<script>
+/* FINAL 32: Firebase tasks tách theo ngày + đổi tab Danh sách CV -> CV mẫu
+   Cấu trúc mới:
+   taskReminder/state: employees, masters, defaultMasterId
+   taskReminder/tasks/YYYY-MM-DD/taskId: task của đúng ngày đó
+   taskReminder/devices: thiết bị online
+*/
+(function(){
+  const META_PATH='taskReminder/state';
+  const TASKS_PATH='taskReminder/tasks';
+  let currentTaskDate='';
+  let taskDateRef=null;
+  let v32Saving=false;
+  let v32DateLoading=false;
+  const dailyKey=(date, mid)=>'daily_'+String(mid||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+  const onceKey=(date)=>'ps_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  function toArray(obj){
+    if(!obj) return [];
+    if(Array.isArray(obj)) return obj.filter(Boolean);
+    return Object.keys(obj).map(k=>obj[k] && typeof obj[k]==='object' ? ({id:obj[k].id||k, ...obj[k]}) : null).filter(Boolean);
+  }
+  function tasksToObj(arr,date){
+    const o={};
+    (arr||[]).filter(t=>t && t.date===date).forEach(t=>{ o[t.id]=t; });
+    return o;
+  }
+  function metaOnly(){
+    return {
+      employees: state.employees || ['An','Nguyệt','Thủy'],
+      masters: state.masters || [],
+      defaultMasterId: state.defaultMasterId || ''
+    };
+  }
+  function normalizeMasters(){
+    state.employees = Array.isArray(state.employees)&&state.employees.length ? state.employees : ['An','Nguyệt','Thủy'];
+    state.masters = Array.isArray(state.masters) ? state.masters.filter(Boolean) : toArray(state.masters);
+    state.masters.forEach((m,i)=>{
+      if(!m.id) m.id='m_'+(m.title?String(m.title).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_'):'cv')+'_'+i;
+      if(!m.time) m.time='08:00';
+      if(!m.emp) m.emp=state.employees[0]||'An';
+      if(m.note==null) m.note=m.adminNote||'';
+    });
+    if(!state.defaultMasterId && state.masters[0]) state.defaultMasterId=state.masters[0].id;
+    if(!Array.isArray(state.tasks)) state.tasks=[];
+  }
+  function logSys(msg){ return new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' '+msg+' — Hệ thống'; }
+  function mergeDaily(t,m,date){
+    t.id=dailyKey(date,m.id); t.masterId=m.id; t.date=date; t.type='Hằng ngày';
+    t.time=m.time||'08:00'; t.title=m.title||''; t.emp=m.emp||''; t.content=m.content||''; t.adminNote=m.note||m.adminNote||'';
+    t.img=m.img||''; t.imgs=m.imgs||t.imgs||[]; t.remindPlan=m.remindPlan||t.remindPlan||'';
+    if(!t.report) t.report=''; if(!t.reportImgs) t.reportImgs=[]; if(!t.adminImgs) t.adminImgs=[]; if(!t.status) t.status='Chưa làm'; if(!t.logs) t.logs=[];
+    return t;
+  }
+  window.ensureDailyForDate=function(dateStr){
+    normalizeMasters(); dateStr=dateStr || (document.getElementById('fDate')?.value) || new Date().toISOString().slice(0,10);
+    let changed=false;
+    state.masters.forEach(m=>{
+      const id=dailyKey(dateStr,m.id);
+      let t=state.tasks.find(x=>x && x.id===id) || state.tasks.find(x=>x && x.date===dateStr && x.type==='Hằng ngày' && x.masterId===m.id);
+      if(!t){ t={id,masterId:m.id,date:dateStr,type:'Hằng ngày',logs:[logSys('tự tạo việc hằng ngày')]}; state.tasks.push(t); changed=true; }
+      const before=JSON.stringify({time:t.time,title:t.title,emp:t.emp,content:t.content,adminNote:t.adminNote,img:t.img,imgs:t.imgs,remindPlan:t.remindPlan});
+      mergeDaily(t,m,dateStr);
+      const after=JSON.stringify({time:t.time,title:t.title,emp:t.emp,content:t.content,adminNote:t.adminNote,img:t.img,imgs:t.imgs,remindPlan:t.remindPlan});
+      if(before!==after) changed=true;
+    });
+    if(changed && typeof save==='function') save();
+  };
+  async function loadTasksForDate(dateStr){
+    if(!db) return;
+    dateStr = dateStr || document.getElementById('fDate')?.value || new Date().toISOString().slice(0,10);
+    currentTaskDate=dateStr;
+    if(taskDateRef) taskDateRef.off();
+    taskDateRef=db.ref(TASKS_PATH+'/'+dateStr);
+    v32DateLoading=true;
+    taskDateRef.on('value',snap=>{
+      const arr=toArray(snap.val()).map(t=>({date:dateStr, ...t})).filter(t=>t && typeof t==='object');
+      state.tasks=arr;
+      normalizeMasters();
+      ensureDailyForDate(dateStr);
+      try{ render(); }catch(e){ console.warn(e); }
+      v32DateLoading=false;
+    });
+  }
+  // Save mới: metadata và task theo ngày riêng, không ghi task vào /state nữa.
+  window.save=function(){
+    normalizeMasters();
+    try{ localStorage.setItem(K, JSON.stringify({...metaOnly(), tasks: state.tasks||[]})); }catch(e){}
+    if(db && !v32Saving){
+      v32Saving=true;
+      const dateStr=(document.getElementById('fDate')?.value)||currentTaskDate||new Date().toISOString().slice(0,10);
+      const updates={};
+      updates[META_PATH]=metaOnly();
+      updates[TASKS_PATH+'/'+dateStr]=tasksToObj(state.tasks||[], dateStr);
+      db.ref().update(updates).catch(e=>{ try{showToast('Firebase lỗi ghi: '+e.message)}catch(_){} }).finally(()=>{v32Saving=false;});
+    }
+  };
+  // Tạo/sửa task: Hằng ngày dùng ID cố định theo date + masterId; phát sinh dùng ID riêng trong ngày.
+  window.saveTask=function(){
+    const id=(editId&&editId.value)||'';
+    const data={date:(mDate&&mDate.value)||todayStr(),time:(mTime&&mTime.value)||currentTimeStr(),title:(mTitle&&mTitle.value||'').trim(),emp:getModalEmps(),type:(mType&&mType.value)||'Phát sinh',img:(mImg&&mImg.value)||'',imgs:tempTaskImgs||[],content:(mContent&&mContent.value||'').trim(),adminNote:(mAdminNote&&mAdminNote.value||'').trim(),remindPlan:(mRemind&&mRemind.value)||''};
+    if(!data.title){alert('Nhập tên công việc');return;}
+    withActor(actor=>{
+      let t=id?state.tasks.find(x=>x.id===id):null;
+      if(data.type==='Hằng ngày'){
+        let masterId=t?.masterId || (mMaster&&mMaster.value) || '';
+        let m=masterId?state.masters.find(x=>x.id===masterId):null;
+        if(!m){ masterId='m_'+Date.now(); m={id:masterId}; state.masters.push(m); if(!state.defaultMasterId) state.defaultMasterId=masterId; }
+        Object.assign(m,{title:data.title,time:data.time,emp:data.emp,content:data.content,note:data.adminNote,img:data.img,imgs:data.imgs,remindPlan:data.remindPlan});
+        const fixed=dailyKey(data.date,masterId);
+        t=state.tasks.find(x=>x.id===fixed) || t;
+        if(!t){ t={id:fixed,masterId,date:data.date,type:'Hằng ngày',status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[logLine('tạo việc hằng ngày',actor)]}; state.tasks.push(t); }
+        else { t.logs=t.logs||[]; t.logs.push(logLine('cập nhật việc hằng ngày',actor)); }
+        mergeDaily(t,m,data.date);
+      }else{
+        if(t){ Object.assign(t,data,{type:'Phát sinh',masterId:''}); t.logs=t.logs||[]; t.logs.push(logLine('sửa việc phát sinh',actor)); }
+        else state.tasks.push({id:onceKey(data.date),...data,type:'Phát sinh',masterId:'',status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[logLine('tạo việc phát sinh',actor)]});
+      }
+      save(); closeModal('taskModal'); render();
+    });
+  };
+  // Sửa CV mẫu cập nhật master; task hằng ngày của ngày đang xem sẽ tự đồng bộ.
+  window.saveMaster=function(){
+    const id=(msId&&msId.value)||'';
+    const data={title:(msTitle&&msTitle.value||'').trim(),emp:(msEmp&&msEmp.value)||'',time:(msTime&&msTime.value)||'08:00',content:(msContent&&msContent.value||'').trim(),note:(msNote&&msNote.value||'').trim()};
+    if(!data.title){alert('Nhập tên CV mẫu');return;}
+    if(id){ const m=state.masters.find(x=>x.id===id); if(m) Object.assign(m,data); }
+    else{ state.masters.push({id:'m_'+Date.now(),...data}); }
+    ensureDailyForDate(document.getElementById('fDate')?.value||todayStr());
+    save(); closeModal('masterModal'); renderMaster(); renderDaily(); render();
+  };
+  // Đổi ngày thì chỉ tải node tasks/ngày đó.
+  function dateChanged(){ const d=document.getElementById('fDate')?.value||todayStr(); if(db) loadTasksForDate(d); else {ensureDailyForDate(d); render();} }
+  const oldToday=window.today; window.today=function(){switchTab('today');document.getElementById('fDate').value=todayStr();dateChanged();};
+  const oldYesterday=window.yesterday; window.yesterday=function(){switchTab('today');let d=new Date();d.setDate(d.getDate()-1);document.getElementById('fDate').value=d.toISOString().slice(0,10);dateChanged();};
+  setTimeout(()=>{
+    const fd=document.getElementById('fDate'); if(fd){ fd.onchange=dateChanged; }
+    // đổi tên tab nếu file cũ còn chữ cũ
+    document.querySelectorAll('[data-tab="master"]').forEach(b=>b.textContent='CV mẫu');
+    document.querySelectorAll('.section-title h2').forEach(h=>{ if(h.textContent.includes('Danh sách CV')) h.textContent='🧾 CV mẫu'; });
+    if(db){
+      // Nghe metadata riêng. Xóa state/tasks cũ để về sau không phình dữ liệu.
+      db.ref(META_PATH).on('value',snap=>{
+        const meta=snap.val()||{};
+        state.employees=meta.employees||state.employees||['An','Nguyệt','Thủy'];
+        state.masters=toArray(meta.masters||state.masters||[]);
+        state.defaultMasterId=meta.defaultMasterId||state.defaultMasterId||'';
+        normalizeMasters();
+        try{refreshEmployeeUI(); renderMaster(); renderDaily(); render();}catch(e){}
+      });
+      db.ref(META_PATH+'/tasks').remove().catch(()=>{});
+      loadTasksForDate(fd?.value||todayStr());
+    }else{
+      ensureDailyForDate(fd?.value||todayStr()); render();
+    }
+  },1800);
 })();
 </script>
 
