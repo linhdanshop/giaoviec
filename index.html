@@ -1593,6 +1593,86 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
 })();
 </script>
 
+
+
+<style>
+/* V41 FIX: Hướng dẫn dạng danh sách + PBH hiển thị chắc chắn */
+.v41ListBox{background:#fff;border:1px solid #dbe5f2;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(15,23,42,.05)}
+.v41GuideTable{width:100%;border-collapse:collapse;font-size:14px;background:#fff}.v41GuideTable th{background:#eef3fa;text-align:left;padding:12px 14px;font-weight:950;border-bottom:1px solid #cbd8ea}.v41GuideTable td{padding:12px 14px;border-bottom:1px solid #eef2f7;vertical-align:top}.v41GuideTitle{font-weight:950;font-size:16px;color:#0f172a}.v41GuideContent{color:#dc2626;font-weight:800;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}.v41ImgBadge{display:inline-flex;align-items:center;gap:6px;background:#eef3fa;border-radius:999px;padding:7px 11px;font-weight:900;color:#2563eb;border:0;cursor:pointer}.v41Actions{display:flex;gap:8px;flex-wrap:wrap}.v41Btn{border:0;border-radius:10px;padding:10px 14px;font-weight:950;cursor:pointer}.v41Blue{background:#2563eb;color:#fff}.v41Gray{background:#e9eef6;color:#111827}.v41Red{background:#e11d25;color:white}.v41Green{background:#16a34a;color:white}.v41Orange{background:#f59e0b;color:#111}.v41Empty{padding:22px;color:#64748b;font-weight:800;text-align:center}.v41Panel{background:#fff;border:1px solid #dbe5f2;border-radius:16px;padding:16px;box-shadow:0 10px 25px rgba(15,23,42,.05)}
+.v41CompareTabs{display:flex;align-items:center;gap:10px;margin-bottom:12px}.v41CompareTabs .active{background:#2563eb;color:#fff}.v41CompareGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.v41CompareBox h3{margin:0 0 8px;font-size:16px}.v41CompareBox textarea{width:100%;min-height:210px;border:1px solid #cbd8ea;border-radius:14px;padding:12px;font-weight:800;font-family:Arial,Tahoma,sans-serif;resize:vertical}.v41CompareActions{display:flex;align-items:center;gap:12px;margin:14px 0}.v41Summary{font-weight:900;color:#475569}.v41Results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.v41ResultCol{border:1px solid #dbe5f2;border-radius:14px;background:#f8fafc;overflow:hidden}.v41ResultCol h4{margin:0;padding:11px 12px;background:#eef3fa;border-bottom:1px solid #dbe5f2}.v41Row{display:grid;grid-template-columns:145px 1fr;gap:10px;align-items:start;border-bottom:1px solid #e6edf7;padding:8px}.v41Code{font-weight:950;color:#0f172a;background:#fff;border:1px solid #dbe5f2;border-radius:9px;padding:8px;word-break:break-all}.v41Reason{width:100%;min-height:42px;border:1px solid #dbe5f2;border-radius:9px;padding:8px;font-family:Arial,Tahoma,sans-serif;font-weight:800}.v41Match{background:#f0fdf4}.v41MissA{background:#fff7ed}.v41MissB{background:#fef2f2}.v41Modal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}.v41Modal.hidden{display:none!important}.v41ModalBox{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:20px;box-shadow:0 25px 70px rgba(15,23,42,.35)}.v41ModalHead{position:sticky;top:0;background:#fff;border-bottom:1px solid #dbe5f2;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;z-index:2}.v41ModalHead h2{margin:0;font-size:22px}.v41Close{border:0;background:#eef3fa;border-radius:12px;width:44px;height:44px;font-weight:950;font-size:20px;cursor:pointer}.v41ModalBody{padding:18px}.v41FormGrid{display:grid;grid-template-columns:1fr;gap:12px}.v41FormGrid label{font-weight:950;color:#475569}.v41FormGrid input,.v41FormGrid textarea{width:100%;border:1px solid #cbd8ea;border-radius:12px;padding:12px;font-size:16px;font-weight:800;font-family:Arial,Tahoma,sans-serif}.v41FormGrid textarea{min-height:170px}.v41Images{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}.v41Images img{width:110px;height:90px;object-fit:cover;border-radius:12px;border:1px solid #dbe5f2;cursor:pointer}.v41ImgWrap{position:relative}.v41ImgWrap button{position:absolute;right:-7px;top:-7px;border:0;background:#ef4444;color:white;width:24px;height:24px;border-radius:999px;font-weight:950;cursor:pointer}.v41Footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #dbe5f2;padding:14px 18px;display:flex;justify-content:flex-end;gap:10px}.v41DetailText{white-space:pre-wrap;color:#dc2626;font-weight:850;line-height:1.55;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:14px}.v41DetailImages img{width:160px;height:120px;object-fit:cover;border-radius:14px;border:1px solid #dbe5f2;margin:6px;cursor:pointer}
+@media(max-width:760px){.v41CompareGrid,.v41Results{grid-template-columns:1fr}.v41GuideTable,.v41GuideTable tbody,.v41GuideTable tr,.v41GuideTable td{display:block}.v41GuideTable thead{display:none}.v41GuideTable tr{border-bottom:1px solid #dbe5f2;padding:10px}.v41Row{grid-template-columns:1fr}.v41Actions{margin-top:8px}}
+</style>
+
+<script>
+(function(){
+  const ROOT41='taskReminder';
+  let guideData41=[];
+  let guideEditId41=null;
+  let pbhMode41='pbhCancel';
+  let pbhData41={shopText:'',systemText:'',reasons:{}};
+  const $41=id=>document.getElementById(id);
+  const esc41=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const curDate41=()=>($41('fDate')&&$41('fDate').value)||new Date().toISOString().slice(0,10);
+  const dm41=d=>{let a=String(d||'').split('-');return a.length===3?`${a[2]}/${a[1]}`:d};
+  const isAdmin41=()=>{try{return typeof roleAdmin==='function'?roleAdmin():((document.getElementById('role')?.value||'Admin')==='Admin')}catch(e){return true}};
+  function db41(path){return (window.db|| (typeof db!=='undefined' && db)) ? (window.db||db).ref(ROOT41+'/'+path) : null}
+  function ensureTabs41(){
+    const tabs=document.querySelector('.tabs'); if(!tabs)return;
+    let guideBtn=document.querySelector('[data-tab="guide"]');
+    if(!guideBtn){guideBtn=document.createElement('button');guideBtn.className='tab';guideBtn.dataset.tab='guide';guideBtn.textContent='Hướng dẫn công việc';guideBtn.onclick=()=>switchTab('guide'); const master=document.querySelector('[data-tab="master"]'); tabs.insertBefore(guideBtn,master||tabs.children[2]||null);}
+    let pbhBtn=document.querySelector('[data-tab="pbh"]');
+    if(!pbhBtn){pbhBtn=document.createElement('button');pbhBtn.className='tab';pbhBtn.dataset.tab='pbh';pbhBtn.textContent='PBH Hủy/Chưa lấy';pbhBtn.onclick=()=>switchTab('pbh'); guideBtn.after(pbhBtn);}
+    document.querySelectorAll('[data-tab="master"]').forEach(b=>b.textContent='CV mẫu');
+    const wrap=document.querySelector('.wrap')||document.body;
+    let guide=$41('guideTab'); if(!guide){guide=document.createElement('div'); guide.id='guideTab'; guide.className='hidden'; wrap.appendChild(guide);}
+    let pbh=$41('pbhTab'); if(!pbh){pbh=document.createElement('div'); pbh.id='pbhTab'; pbh.className='hidden'; wrap.appendChild(pbh);}
+    guide.innerHTML=`<div class="section-title"><h2>📘 Hướng dẫn công việc</h2><span class="hint">Danh sách hướng dẫn thao tác</span>${isAdmin41()?'<button class="v41Btn v41Blue" onclick="v41AddGuide()">+ Thêm hướng dẫn</button>':''}</div><div class="v41ListBox" id="guideList41"></div>`;
+    pbh.innerHTML=`<div class="section-title"><h2>📦 PBH Hủy/Chưa lấy</h2><span class="hint">Dán danh sách MVD 2 bên để đối soát</span></div><div class="v41Panel" id="pbhList41"></div>`;
+    if(!$41('guideModal41')){
+      document.body.insertAdjacentHTML('beforeend',`<div id="guideModal41" class="v41Modal hidden"><div class="v41ModalBox"><div class="v41ModalHead"><h2 id="guideModalTitle41">Hướng dẫn</h2><button class="v41Close" onclick="v41CloseGuideModal()">×</button></div><div class="v41ModalBody" id="guideModalBody41"></div><div class="v41Footer" id="guideModalFoot41"></div></div></div>`);
+    }
+  }
+  function saveGuides41(){const r=db41('guides'); if(r)r.set(guideData41); else localStorage.setItem('v41_guides',JSON.stringify(guideData41));}
+  function loadGuides41(){const r=db41('guides'); if(r){r.off(); r.on('value',s=>{const v=s.val(); guideData41=Array.isArray(v)?v:Object.values(v||{}); renderGuides41();});}else{try{guideData41=JSON.parse(localStorage.getItem('v41_guides')||'[]')}catch(e){guideData41=[]} renderGuides41();}}
+  window.v41AddGuide=function(){guideData41.push({id:'g_'+Date.now(),title:'Hướng dẫn mới',content:'',imgs:[]});saveGuides41();renderGuides41();v41EditGuide(guideData41[guideData41.length-1].id)};
+  window.v41DeleteGuide=function(id){if(!isAdmin41())return;if(confirm('Xóa hướng dẫn này?')){guideData41=guideData41.filter(g=>g.id!==id);saveGuides41();renderGuides41();}};
+  window.v41EditGuide=function(id){if(!isAdmin41())return;guideEditId41=id;const g=guideData41.find(x=>x.id===id)||{};$41('guideModalTitle41').textContent='Sửa hướng dẫn';$41('guideModalBody41').innerHTML=`<div class="v41FormGrid"><label>Tên công việc</label><input id="gTitle41" value="${esc41(g.title||'')}" placeholder="Tên công việc"><label>Nội dung hướng dẫn</label><textarea id="gContent41" placeholder="Nhập nội dung hướng dẫn">${esc41(g.content||'')}</textarea><div><button class="v41Btn v41Gray" onclick="v41PickGuideImage()">📷 Thêm ảnh</button><span style="margin-left:10px;color:#64748b;font-weight:800">hoặc Ctrl+V ảnh vào popup này</span><div class="v41Images" id="gImages41">${(g.imgs||[]).map((src,i)=>`<span class="v41ImgWrap"><img src="${src}" onclick="v41OpenGuideImage('${id}',${i})"><button onclick="v41RemoveGuideImage(${i})">×</button></span>`).join('')}</div></div></div>`;$41('guideModalFoot41').innerHTML=`<button class="v41Btn v41Gray" onclick="v41CloseGuideModal()">Đóng</button><button class="v41Btn v41Blue" onclick="v41SaveGuideEdit()">Lưu</button>`;$41('guideModal41').classList.remove('hidden');};
+  window.v41ViewGuide=function(id){const g=guideData41.find(x=>x.id===id)||{};$41('guideModalTitle41').textContent=g.title||'Hướng dẫn';$41('guideModalBody41').innerHTML=`<div class="v41DetailText">${esc41(g.content||'Chưa có nội dung')}</div><div class="v41DetailImages">${(g.imgs||[]).map((src,i)=>`<img src="${src}" onclick="v41OpenGuideImage('${id}',${i})">`).join('')}</div>`;$41('guideModalFoot41').innerHTML=`<button class="v41Btn v41Gray" onclick="v41CloseGuideModal()">Đóng</button>`;$41('guideModal41').classList.remove('hidden');};
+  window.v41CloseGuideModal=function(){$41('guideModal41').classList.add('hidden');guideEditId41=null};
+  window.v41SaveGuideEdit=function(){const g=guideData41.find(x=>x.id===guideEditId41);if(!g)return;g.title=$41('gTitle41').value.trim()||'Hướng dẫn mới';g.content=$41('gContent41').value;saveGuides41();renderGuides41();v41CloseGuideModal();};
+  async function addImageToGuide41(file){const g=guideData41.find(x=>x.id===guideEditId41); if(!g||!file)return;let url='';try{url=window.uploadOrBase64?await window.uploadOrBase64(file):await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file);});}catch(e){alert('Lỗi tải ảnh: '+e.message);return;}g.imgs=g.imgs||[];g.imgs.push(url);saveGuides41();v41EditGuide(g.id);renderGuides41();}
+  window.v41PickGuideImage=function(){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=()=>addImageToGuide41(inp.files&&inp.files[0]);inp.click();};
+  window.v41RemoveGuideImage=function(i){const g=guideData41.find(x=>x.id===guideEditId41);if(!g)return;(g.imgs||[]).splice(i,1);saveGuides41();v41EditGuide(g.id);renderGuides41();};
+  window.v41OpenGuideImage=function(id,i){const g=guideData41.find(x=>x.id===id);if(g&&window.openGallery)openGallery(g.imgs||[],i||0,'Ảnh hướng dẫn');};
+  function renderGuides41(){ensureTabs41();const box=$41('guideList41');if(!box)return;box.innerHTML=guideData41.length?`<table class="v41GuideTable"><thead><tr><th style="width:260px">Tên công việc</th><th>Nội dung hướng dẫn</th><th style="width:120px">Ảnh</th><th style="width:230px">Thao tác</th></tr></thead><tbody>${guideData41.map(g=>`<tr><td><div class="v41GuideTitle">${esc41(g.title||'Hướng dẫn mới')}</div></td><td><div class="v41GuideContent">${esc41(g.content||'Chưa có nội dung')}</div></td><td>${(g.imgs||[]).length?`<button class="v41ImgBadge" onclick="v41OpenGuideImage('${g.id}',0)">📷 ${(g.imgs||[]).length}</button>`:'Không có'}</td><td><div class="v41Actions"><button class="v41Btn v41Gray" onclick="v41ViewGuide('${g.id}')">Xem việc</button>${isAdmin41()?`<button class="v41Btn v41Blue" onclick="v41EditGuide('${g.id}')">Sửa</button><button class="v41Btn v41Red" onclick="v41DeleteGuide('${g.id}')">Xóa</button>`:''}</div></td></tr>`).join('')}</tbody></table>`:'<div class="v41Empty">Chưa có hướng dẫn</div>';}
+  function pbhKey41(){return curDate41()+'/'+pbhMode41}
+  function loadPbh41(){const r=db41('pbhCompare/'+pbhKey41()); if(r){r.off();r.on('value',s=>{pbhData41=s.val()||{shopText:'',systemText:'',reasons:{}};renderPbh41();});}else{try{pbhData41=JSON.parse(localStorage.getItem('v41_pbh_'+pbhKey41())||'null')||{shopText:'',systemText:'',reasons:{}}}catch(e){pbhData41={shopText:'',systemText:'',reasons:{}}}renderPbh41();}}
+  function savePbh41(){const r=db41('pbhCompare/'+pbhKey41());pbhData41.updatedAt=Date.now(); if(r)r.set(pbhData41); else localStorage.setItem('v41_pbh_'+pbhKey41(),JSON.stringify(pbhData41));}
+  const parseList41=txt=>[...new Set(String(txt||'').split(/\r?\n|,|\s+/).map(x=>x.trim()).filter(Boolean))];
+  function diff41(){const a=parseList41(pbhData41.shopText),b=parseList41(pbhData41.systemText),as=new Set(a),bs=new Set(b);return{match:a.filter(x=>bs.has(x)),missShop:b.filter(x=>!as.has(x)),missSys:a.filter(x=>!bs.has(x))};}
+  window.v41SwitchPbh=function(m){pbhMode41=m;loadPbh41()};
+  window.v41SavePbhText=function(f,v){pbhData41[f]=v;savePbh41();renderPbh41()};
+  window.v41SaveReason=function(code,v){pbhData41.reasons=pbhData41.reasons||{};pbhData41.reasons[code]=v;savePbh41()};
+  function rows41(list){return list.length?list.map(c=>`<div class="v41Row"><div class="v41Code">${esc41(c)}</div><textarea class="v41Reason" placeholder="Nhập lý do..." oninput="v41SaveReason('${esc41(c)}',this.value)">${esc41((pbhData41.reasons||{})[c]||'')}</textarea></div>`).join(''):'<div class="v41Empty">Không có</div>'}
+  function renderPbh41(){ensureTabs41();const box=$41('pbhList41');if(!box)return;const r=diff41();const second=pbhMode41==='pbhCancel'?'HỆ THỐNG':'DVVC';box.innerHTML=`<div class="v41CompareTabs"><button class="v41Btn v41Gray ${pbhMode41==='pbhCancel'?'active':''}" onclick="v41SwitchPbh('pbhCancel')">PBH Hủy</button><button class="v41Btn v41Gray ${pbhMode41==='dvvcPending'?'active':''}" onclick="v41SwitchPbh('dvvcPending')">DVVC Chưa lấy</button><b>${dm41(curDate41())}</b></div><div class="v41CompareGrid"><div class="v41CompareBox"><h3>SHOP</h3><textarea placeholder="Dán danh sách mã vận đơn, mỗi mã 1 dòng" oninput="v41SavePbhText('shopText',this.value)">${esc41(pbhData41.shopText||'')}</textarea></div><div class="v41CompareBox"><h3>${second}</h3><textarea placeholder="Dán danh sách mã vận đơn, mỗi mã 1 dòng" oninput="v41SavePbhText('systemText',this.value)">${esc41(pbhData41.systemText||'')}</textarea></div></div><div class="v41CompareActions"><button class="v41Btn v41Blue" onclick="renderPbh41()">Đối soát</button><span class="v41Summary">Khớp: <b>${r.match.length}</b> · Thiếu Shop: <b>${r.missShop.length}</b> · Thiếu ${second}: <b>${r.missSys.length}</b></span></div><div class="v41Results"><div class="v41ResultCol v41Match"><h4>Khớp (${r.match.length})</h4>${rows41(r.match)}</div><div class="v41ResultCol v41MissA"><h4>Thiếu Shop (${r.missShop.length})</h4>${rows41(r.missShop)}</div><div class="v41ResultCol v41MissB"><h4>Thiếu ${second} (${r.missSys.length})</h4>${rows41(r.missSys)}</div></div>`;}
+  const oldSwitch41=window.switchTab;
+  window.switchTab=function(tab){
+    try{if(oldSwitch41) oldSwitch41(tab)}catch(e){}
+    setTimeout(()=>{
+      ensureTabs41();
+      document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+      ['today','daily','master','devices','guide','pbh'].forEach(x=>{const p=$41(x==='today'?'todayTab':x+'Tab'); if(p)p.classList.toggle('hidden',x!==tab);});
+      if(tab==='guide'){loadGuides41();renderGuides41();}
+      if(tab==='pbh'){loadPbh41();renderPbh41();}
+    },30);
+  };
+  document.addEventListener('paste',e=>{const m=$41('guideModal41');if(!m||m.classList.contains('hidden')||!guideEditId41)return;const items=e.clipboardData&&e.clipboardData.items;if(!items)return;for(const it of items){if(it.type&&it.type.startsWith('image/')){e.preventDefault();addImageToGuide41(it.getAsFile());break;}}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')v41CloseGuideModal();});
+  document.addEventListener('change',e=>{if(e.target&&e.target.id==='fDate')loadPbh41();});
+  setTimeout(()=>{ensureTabs41();loadGuides41();loadPbh41();},1200);
+})();
+</script>
+
 </body></html>
 
 <style>
