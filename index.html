@@ -270,19 +270,9 @@ function initFirebase(){
   try{
     firebase.initializeApp(firebaseConfig);
     db=firebase.database();
-    db.ref('taskReminder/state').on('value',snap=>{
-      const val=snap.val();
-      if(val){
-        savingRemote=true;
-        state=val; normalizeState(); saveLocal();
-        try{refreshEmployeeUI();render();renderDevices();}catch(e){}
-        savingRemote=false;
-      }else{
-        db.ref('taskReminder/state').set(state);
-      }
-    });
+    window.db=db;
     db.ref('.info/connected').on('value',snap=>{ if(snap.val()) writeDevicePresence(); });
-    console.log('Firebase đã bật');
+    console.log('Firebase đã bật - dùng data flow sạch V42');
   }catch(e){console.error(e);showToast('Firebase config lỗi, đang chạy localStorage');}
 }
 let device=localStorage.getItem('task_device_id_v23');
@@ -1178,12 +1168,12 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
 <script>
 /* FINAL 32: Firebase tasks tách theo ngày + đổi tab Danh sách CV -> CV mẫu
    Cấu trúc mới:
-   taskReminder/state: employees, masters, defaultMasterId
+   taskReminder/settings: employees, masters, defaultMasterId
    taskReminder/tasks/YYYY-MM-DD/taskId: task của đúng ngày đó
    taskReminder/devices: thiết bị online
 */
 (function(){
-  const META_PATH='taskReminder/state';
+  const META_PATH='taskReminder/settings';
   const TASKS_PATH='taskReminder/tasks';
   let currentTaskDate='';
   let taskDateRef=null;
@@ -1324,7 +1314,7 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
         normalizeMasters();
         try{refreshEmployeeUI(); renderMaster(); renderDaily(); render();}catch(e){}
       });
-      db.ref(META_PATH+'/tasks').remove().catch(()=>{});
+      
       loadTasksForDate(fd?.value||todayStr());
     }else{
       ensureDailyForDate(fd?.value||todayStr()); render();
@@ -1673,6 +1663,103 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
 })();
 </script>
 
+
+
+<script>
+/* FINAL CLEAN DATA FLOW 2026-06-10
+   Giữ nguyên giao diện V42. Chỉ chuẩn hóa data Firebase:
+   taskReminder/settings              : employees, masters, defaultMasterId
+   taskReminder/tasks/YYYY-MM-DD      : công việc theo ngày
+   taskReminder/pbhV42/YYYY-MM-DD     : PBH theo ngày
+   taskReminder/guides                : hướng dẫn cố định
+   taskReminder/inventory             : tồn kho cố định, có trường date để lọc
+   taskReminder/friends               : người quen cố định
+   taskReminder/devices               : thiết bị online
+*/
+(function(){
+  const ROOT='taskReminder';
+  const $=id=>document.getElementById(id);
+  const todayIso=()=>new Date().toISOString().slice(0,10);
+  const curDate=()=>($('fDate')&&$('fDate').value)||todayIso();
+  const arrObj=v=>!v?[]:(Array.isArray(v)?v.filter(Boolean):Object.entries(v).map(([id,x])=>x&&typeof x==='object'?({id:id,...x}):null).filter(Boolean));
+  const objById=arr=>{const o={};(arr||[]).filter(Boolean).forEach(x=>{const id=x.id||('id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6));o[id]={...x,id};});return o};
+  const dailyKey=(date,mid)=>'daily_'+String(mid||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+
+  function settingsObj(){
+    return {
+      employees:Array.isArray(state.employees)&&state.employees.length?state.employees:['An','Nguyệt','Thủy'],
+      masters:Array.isArray(state.masters)?state.masters:arrObj(state.masters),
+      defaultMasterId:state.defaultMasterId||''
+    };
+  }
+  function tasksObj(date){
+    const o={};
+    (state.tasks||[]).filter(t=>t&&t.date===date).forEach(t=>{o[t.id]=t});
+    return o;
+  }
+  window.save=function(){
+    try{localStorage.setItem(K,JSON.stringify({...settingsObj(),tasks:state.tasks||[]}));}catch(e){}
+    if(!window.db) return;
+    const d=curDate();
+    const up={};
+    up[ROOT+'/settings']=settingsObj();
+    up[ROOT+'/tasks/'+d]=tasksObj(d);
+    return db.ref().update(up).catch(e=>{try{showToast('Firebase lỗi ghi: '+e.message)}catch(_){console.warn(e)}});
+  };
+
+  window.saveExtra42=function(path,val){
+    if(window.db){ return db.ref(ROOT+'/'+path).set(val).catch(e=>console.warn(e)); }
+    localStorage.setItem('taskReminder_'+String(path).replace(/\//g,'_'),JSON.stringify(val));
+  };
+
+  // Ghi PBH chỉ đúng ngày đang mở, không set nguyên cục pbhV42 nếu không cần.
+  window.savePbhAll=function(){
+    if(!state.pbhV42) state.pbhV42={};
+    const d=curDate();
+    const val=state.pbhV42[d]||{};
+    if(window.db){ return db.ref(ROOT+'/pbhV42/'+d).set(val).catch(console.warn); }
+    localStorage.setItem('taskReminder_pbhV42_'+d,JSON.stringify(val));
+  };
+
+  function loadClean(){
+    if(!window.db) return;
+    db.ref(ROOT+'/settings').on('value',s=>{
+      const v=s.val()||{};
+      state.employees=v.employees||state.employees||['An','Nguyệt','Thủy'];
+      state.masters=arrObj(v.masters||state.masters||[]);
+      state.defaultMasterId=v.defaultMasterId||state.defaultMasterId||'';
+      try{refreshEmployeeUI();renderMaster();renderDaily();render();}catch(e){}
+    });
+    function watchTasks(){
+      const d=curDate();
+      if(window.__cleanTaskRef) window.__cleanTaskRef.off();
+      window.__cleanTaskRef=db.ref(ROOT+'/tasks/'+d);
+      window.__cleanTaskRef.on('value',s=>{
+        state.tasks=arrObj(s.val()).map(t=>({date:d,...t}));
+        try{ if(typeof ensureDailyForDate==='function') ensureDailyForDate(d); render(); }catch(e){}
+      });
+      if(window.__cleanPbhRef) window.__cleanPbhRef.off();
+      window.__cleanPbhRef=db.ref(ROOT+'/pbhV42/'+d);
+      window.__cleanPbhRef.on('value',s=>{
+        state.pbhV42=state.pbhV42||{}; state.pbhV42[d]=s.val()||{};
+        try{ if(!$('pbhTab')?.classList.contains('hidden')) renderPBH42(); }catch(e){}
+      });
+    }
+    const fd=$('fDate');
+    if(fd){const old=fd.onchange; fd.onchange=function(){ if(old) old.call(this); setTimeout(watchTasks,0); };}
+    watchTasks();
+    db.ref(ROOT+'/guides').on('value',s=>{state.guides=arrObj(s.val());try{if(!$('guideTab')?.classList.contains('hidden'))renderGuide42();}catch(e){}});
+    db.ref(ROOT+'/inventory').on('value',s=>{state.inventory=arrObj(s.val());try{if(!$('inventoryTab')?.classList.contains('hidden'))renderInventory42();}catch(e){}});
+    db.ref(ROOT+'/friends').on('value',s=>{state.friends=Array.isArray(s.val())?s.val():arrObj(s.val()).map(x=>x.name||x.id).filter(Boolean);});
+  }
+
+  // Override lưu hướng dẫn/tồn kho sau cùng để không quay về patch cũ.
+  setTimeout(()=>{
+    try{loadClean();}
+    catch(e){console.warn('Clean data flow load lỗi',e)}
+  },2600);
+})();
+</script>
 </body></html>
 
 <style>
