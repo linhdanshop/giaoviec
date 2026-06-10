@@ -1232,4 +1232,114 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
 })();
 </script>
 
+
+
+<style>
+/* FINAL 33: quyền nhân viên + upload ảnh rõ ràng */
+body.employeeMode [data-tab="master"]{display:none!important}
+body.employeeMode #masterTab{display:none!important}
+body.employeeMode .tasktable col[data-col="remind"],
+body.employeeMode .tasktable th[data-col="remind"],
+body.employeeMode .tasktable td:nth-child(10){display:none!important}
+body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .btnRemind{display:none!important}
+.uploadBtn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;background:#e9eef6;color:#0f172a;font-weight:900;padding:9px 12px;margin:6px 8px 6px 0;cursor:pointer}
+.uploadBtn.blue{background:#dbeafe;color:#1d4ed8}.uploadBtn.green{background:#dcfce7;color:#15803d}.uploadBtn.orange{background:#ffedd5;color:#c2410c}
+.uploadRow{margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.uploadHint{color:#667085;font-size:12px;font-weight:800}
+</style>
+<script>
+/* FINAL 33 PATCH */
+(function(){
+  function isAdmin(){ try{return document.getElementById('role').value==='Admin'}catch(e){return false} }
+  function currentTask(id){ return (window.state?.tasks||[]).find(t=>t&&t.id===id); }
+  function removeEmployeeReminderButtons(){
+    if(isAdmin()) return;
+    document.querySelectorAll('.menu button').forEach(b=>{ if((b.textContent||'').trim().includes('Nhắc')) b.remove(); });
+  }
+  function updateEmployeeMode(){
+    const admin=isAdmin();
+    document.body.classList.toggle('employeeMode',!admin);
+    document.querySelectorAll('[data-tab="master"]').forEach(e=>e.classList.toggle('hidden',!admin));
+    if(!admin){
+      const active=document.querySelector('.tab.active')?.dataset?.tab;
+      if(active==='master' || active==='devices') { try{switchTab('today')}catch(e){} }
+    }
+    removeEmployeeReminderButtons();
+  }
+  const oldApply=window.applyRole;
+  window.applyRole=function(){ if(oldApply) oldApply(); updateEmployeeMode(); };
+  const oldSwitch=window.switchTab;
+  window.switchTab=function(t){ if(!isAdmin() && (t==='master' || t==='devices')) t='today'; if(oldSwitch) oldSwitch(t); updateEmployeeMode(); };
+  const oldLoginEmp=window.loginAsEmployee;
+  window.loginAsEmployee=function(empName){ const r=oldLoginEmp?oldLoginEmp(empName):null; setTimeout(()=>{try{switchTab('today')}catch(e){} updateEmployeeMode();},80); return r; };
+  const oldLoginAdmin=window.loginAsAdmin;
+  window.loginAsAdmin=function(){ const r=oldLoginAdmin?oldLoginAdmin():null; setTimeout(updateEmployeeMode,80); return r; };
+  const oldRender=window.render;
+  window.render=function(){ if(oldRender) oldRender(); updateEmployeeMode(); removeEmployeeReminderButtons(); };
+  const oldToggle=window.toggleMenu;
+  window.toggleMenu=function(ev,id){ if(oldToggle) oldToggle(ev,id); setTimeout(removeEmployeeReminderButtons,0); };
+
+  function fileInputFor(kind,id){
+    const input=document.createElement('input');
+    input.type='file'; input.accept='image/*'; input.multiple=true; input.style.display='none';
+    input.onchange=async()=>{ if(!input.files||!input.files.length) return; await handleFiles(kind,id,[...input.files]); input.remove(); };
+    document.body.appendChild(input); input.click();
+  }
+  async function uploadFile(file){
+    if(window.uploadOrBase64) return await window.uploadOrBase64(file);
+    return await new Promise(res=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.readAsDataURL(file)});
+  }
+  async function handleFiles(kind,id,files){
+    try{ showToast && showToast('Đang tải ảnh...'); }catch(e){}
+    const urls=[]; for(const f of files){ urls.push(await uploadFile(f)); }
+    if(kind==='taskForm'){
+      window.tempTaskImgs=window.tempTaskImgs||[]; window.tempTaskImgs.push(...urls); if(window.renderPreview) renderPreview('taskPreview',window.tempTaskImgs);
+    }else if(kind==='reportForm'){
+      window.tempReportImgs=window.tempReportImgs||[]; window.tempReportImgs.push(...urls); if(window.renderPreview) renderPreview('reportPreview',window.tempReportImgs);
+    }else if(kind==='adminForm'){
+      window.tempAdminImgs=window.tempAdminImgs||[]; window.tempAdminImgs.push(...urls); if(window.renderPreview) renderPreview('adminPreview',window.tempAdminImgs);
+    }else if(kind==='detailReport' || kind==='detailAdmin' || kind==='taskDirect'){
+      const t=currentTask(id); if(!t) return;
+      if(kind==='detailAdmin'){
+        if(!isAdmin()) return;
+        t.adminImgs = (window.getAdminImgs?getAdminImgs(t):(t.adminImgs||[])).slice(); t.adminImgs.push(...urls);
+      }else if(kind==='taskDirect'){
+        t.imgs = (window.getImgs?getImgs(t):(t.imgs||[])).slice(); t.imgs.push(...urls);
+      }else{
+        t.reportImgs = (window.getReportImgs?getReportImgs(t):(t.reportImgs||[])).slice(); t.reportImgs.push(...urls);
+      }
+      t.logs=t.logs||[]; t.logs.push((window.logLine?logLine('thêm ảnh',window.actorValid?actorValid():currentUserLabel()):('thêm ảnh '+new Date().toLocaleTimeString())));
+      if(window.save) save();
+      if(document.getElementById('detailModal')?.classList.contains('open') && window.detail) detail(id); else if(window.render) render();
+    }
+    try{ showToast && showToast('Đã tải ảnh'); }catch(e){}
+  }
+  window.pickImage=function(kind,id){ fileInputFor(kind,id); };
+
+  function addUploadButton(containerId, kind, id, label, cls='blue'){
+    const box=document.getElementById(containerId); if(!box || box.dataset.uploadAdded==='1') return;
+    box.dataset.uploadAdded='1';
+    const row=document.createElement('div'); row.className='uploadRow';
+    row.innerHTML=`<button type="button" class="uploadBtn ${cls}" onclick="pickImage('${kind}','${id||''}')">📷 ${label}</button><span class="uploadHint">hoặc Ctrl+V ảnh</span>`;
+    box.parentNode.insertBefore(row, box);
+  }
+  const oldOpenTask=window.openTaskForm;
+  window.openTaskForm=function(id=null,type=null){ if(oldOpenTask) oldOpenTask(id,type); setTimeout(()=>addUploadButton('taskPreview','taskForm','', 'Chọn ảnh công việc','blue'),80); };
+  const oldOpenReport=window.openReport;
+  if(oldOpenReport){ window.openReport=function(id){ oldOpenReport(id); setTimeout(()=>addUploadButton('reportPreview','reportForm',id,'Chọn ảnh báo cáo','green'),80); }; }
+  const oldOpenAdmin=window.openAdminNote;
+  if(oldOpenAdmin){ window.openAdminNote=function(id){ oldOpenAdmin(id); setTimeout(()=>addUploadButton('adminPreview','adminForm',id,'Chọn ảnh ghi chú','orange'),80); }; }
+  const oldDetail=window.detail;
+  window.detail=function(id){ if(oldDetail) oldDetail(id); setTimeout(()=>{
+    const taskSec=[...document.querySelectorAll('#detailBody .detailSection')].find(x=>x.textContent.includes('Ảnh công việc'));
+    if(taskSec && !taskSec.dataset.uploadAdded){taskSec.dataset.uploadAdded='1'; taskSec.insertAdjacentHTML('beforeend',`<div class="uploadRow"><button class="uploadBtn blue" onclick="pickImage('taskDirect','${id}')">📷 Thêm ảnh công việc</button><span class="uploadHint">hoặc Ctrl+V ảnh</span></div>`)}
+    const adminBox=document.getElementById('detailAdminBox');
+    if(adminBox && isAdmin() && !adminBox.dataset.directUploadAdded){adminBox.dataset.directUploadAdded='1'; adminBox.insertAdjacentHTML('beforeend',`<div class="uploadRow"><button class="uploadBtn orange" onclick="pickImage('detailAdmin','${id}')">📷 Thêm ảnh admin</button></div>`)}
+    const reportBox=document.getElementById('detailReportBox');
+    if(reportBox && !reportBox.dataset.directUploadAdded){reportBox.dataset.directUploadAdded='1'; reportBox.insertAdjacentHTML('beforeend',`<div class="uploadRow"><button class="uploadBtn green" onclick="pickImage('detailReport','${id}')">📷 Thêm ảnh báo cáo</button></div>`)}
+  },80); };
+
+  setTimeout(()=>{updateEmployeeMode();},1200);
+})();
+</script>
+
 </body></html>
