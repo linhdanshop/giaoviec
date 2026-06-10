@@ -776,4 +776,106 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
 })();
 </script>
 
+
+<script>
+/* FINAL 29: dọn dữ liệu trùng + thêm nút xóa mẫu CV */
+(function(){
+  function taskKey(t){
+    return [t.date||'', t.type||'', t.masterId||'', t.time||'', (t.title||'').trim(), empList(t.emp).join('|')].join('§');
+  }
+  window.cleanupDuplicateDailyTasks=function(dateStr, silent=false){
+    if(!state || !Array.isArray(state.tasks)) return 0;
+    const before=state.tasks.length;
+    const seen=new Map();
+    const kept=[];
+    for(const t of state.tasks){
+      if(t.type==='Hằng ngày' && (!dateStr || t.date===dateStr)){
+        const key=taskKey(t);
+        if(seen.has(key)){
+          const old=seen.get(key);
+          // Giữ dòng nào có báo cáo/ảnh/lịch sử nhiều hơn để tránh mất dữ liệu quan trọng.
+          const score=x=>(x.report?5:0)+(getReportImgs(x).length*3)+(getImgs(x).length*2)+((x.logs||[]).length);
+          if(score(t)>score(old)){
+            const idx=kept.indexOf(old);
+            if(idx>=0) kept[idx]=t;
+            seen.set(key,t);
+          }
+          continue;
+        }
+        seen.set(key,t);
+      }
+      kept.push(t);
+    }
+    state.tasks=kept;
+    const removed=before-state.tasks.length;
+    if(removed>0){ save(); if(!silent) showToast('Đã dọn '+removed+' công việc hằng ngày bị trùng'); }
+    return removed;
+  };
+
+  const oldEnsure=window.ensureDailyForDate;
+  window.ensureDailyForDate=function(dateStr){
+    if(typeof oldEnsure==='function') oldEnsure(dateStr);
+    cleanupDuplicateDailyTasks(dateStr, true);
+  };
+
+  window.deleteMaster=function(id){
+    const m=(state.masters||[]).find(x=>x.id===id);
+    if(!m) return;
+    const hasTasks=(state.tasks||[]).some(t=>t.masterId===id);
+    const msg=hasTasks
+      ? 'Xóa mẫu CV này?\n\nCác công việc đã sinh từ mẫu này vẫn giữ lại trong từng ngày.'
+      : 'Xóa mẫu CV này?';
+    if(!confirm(msg)) return;
+    state.masters=state.masters.filter(x=>x.id!==id);
+    if(state.defaultMasterId===id) state.defaultMasterId=(state.masters[0]&&state.masters[0].id)||'';
+    save(); render();
+  };
+
+  window.renderMaster=function(){
+    if(!masterBody) return;
+    masterBody.innerHTML=(state.masters||[]).map(m=>`<tr>
+      <td><label class="defaultPick"><input type="radio" name="defaultMaster" ${state.defaultMasterId===m.id?'checked':''} onchange="setDefaultMaster('${m.id}')"> Mặc định</label></td>
+      <td><b>${esc(m.title)}</b>${state.defaultMasterId===m.id?'<span class="defaultBadge">Đang chọn</span>':''}<br><small>${esc(m.time||'')}</small><div class="masterHint">Mở popup thêm việc sẽ tự chọn mẫu này</div></td>
+      <td>${esc(m.content||'')}</td>
+      <td>${esc(m.emp||'')}</td>
+      <td>${esc(m.note||'')}</td>
+      <td class="adminOnly"><button class="btn gray" onclick="openMasterForm('${m.id}')">Sửa</button> <button class="btn blue" onclick="createFromMaster('${m.id}')">Tạo việc</button> <button class="btn red" onclick="deleteMaster('${m.id}')">Xóa</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#667085;padding:24px">Chưa có mẫu CV</td></tr>';
+  };
+
+  window.renderDaily=function(){
+    if(!dailyBody) return;
+    const rows=(state.tasks||[]).filter(t=>t.type==='Hằng ngày' && t.date===(fDate?.value||todayStr()));
+    dailyBody.innerHTML=rows.map(t=>`<tr style="--empColor:${empColor(t.emp)}">
+      <td><b style="font-size:18px">${esc(t.time||'')}</b></td>
+      <td><span class="titlepill" onclick="detail('${t.id}')">${esc(t.title||'')}</span></td>
+      <td>${empChips(t.emp)}</td>
+      <td><div class="clip contentText">${esc(t.content||'')}</div><div class="dailyFocusNote">Cột Giờ / Tên CV / Nội dung là dữ liệu chạy lại mỗi ngày</div></td>
+      <td>${esc(t.adminNote||'')}</td>
+      <td>${statusHtml(t)}</td>
+      <td class="adminOnly"><button class="btn gray" onclick="openTaskForm('${t.id}')">Sửa</button> <button class="btn red" onclick="delTask('${t.id}')">Xóa</button></td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#667085;padding:24px">Chưa có việc hằng ngày cho ngày này</td></tr>';
+  };
+
+  // Thêm nút dọn trùng vào tab Việc hằng ngày khi mở.
+  const oldSwitchTab=window.switchTab;
+  window.switchTab=function(tab){
+    if(typeof oldSwitchTab==='function') oldSwitchTab(tab);
+    setTimeout(()=>{
+      const title=document.querySelector('#dailyTab .section-title');
+      if(title && !document.getElementById('cleanDupBtn')){
+        const btn=document.createElement('button');
+        btn.id='cleanDupBtn';
+        btn.className='btn gray adminOnly';
+        btn.textContent='Dọn trùng';
+        btn.onclick=()=>cleanupDuplicateDailyTasks(fDate.value||todayStr());
+        title.appendChild(btn);
+      }
+    },50);
+  };
+
+  setTimeout(()=>{cleanupDuplicateDailyTasks(fDate?.value||todayStr(), true); try{render();}catch(e){}},800);
+})();
+</script>
+
 </body></html>
