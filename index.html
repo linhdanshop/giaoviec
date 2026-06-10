@@ -1443,6 +1443,8 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
 })();
 </script>
 
+</body></html>
+
 <style>
 /* FINAL 36: ẩn việc hằng ngày theo ngày + tab hướng dẫn/PBH + quyền ảnh báo cáo */
 .hiddenTaskRow{opacity:.55;background:#f8fafc!important}
@@ -1457,6 +1459,11 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
 .previewWrap img{margin:0!important}
 .previewDel{position:absolute;right:-6px;top:-6px;width:22px;height:22px;border:0;border-radius:999px;background:#ef4444;color:white;font-weight:900;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{display:none!important}
+
+.hiddenListBox{margin-top:10px;border:1px dashed #cbd5e1;border-radius:14px;background:#f8fafc;padding:12px}
+.hiddenListBox h3{margin:0 0 8px;font-size:15px;color:#475569}
+.hiddenHiddenRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin:6px 0}
+.hiddenHiddenRow b{color:#0f172a}
 </style>
 <script>
 /* FINAL 36 PATCH */
@@ -1484,14 +1491,14 @@ body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{displa
     }
   }
   function ensurePanels(){
-    const top=document.querySelector('.topTabs');
+    const top=document.querySelector('.topTabs') || document.querySelector('.tabs');
     if(top && !document.querySelector('[data-tab="guide"]')){
       const dailyBtn=document.querySelector('[data-tab="daily"]');
       const guide=document.createElement('button'); guide.className='tab'; guide.dataset.tab='guide'; guide.textContent='Hướng dẫn công việc'; guide.onclick=()=>switchTab('guide');
       const pbh=document.createElement('button'); pbh.className='tab'; pbh.dataset.tab='pbh'; pbh.textContent='PBH Hủy/Chưa lấy'; pbh.onclick=()=>switchTab('pbh');
       if(dailyBtn && dailyBtn.nextSibling){ top.insertBefore(guide,dailyBtn.nextSibling); top.insertBefore(pbh,guide.nextSibling); } else { top.appendChild(guide); top.appendChild(pbh); }
     }
-    const main=document.querySelector('.main')||document.body;
+    const main=document.querySelector('.main') || document.querySelector('.wrap') || document.body;
     if(!$id('guideTab')){
       const g=document.createElement('div'); g.id='guideTab'; g.className='hidden extraTabPanel';
       g.innerHTML=`<div class="section-title"><h2>📘 Hướng dẫn công việc</h2><span class="hint">Lưu hướng dẫn thao tác cho nhân viên xem nhanh</span><button class="btn blue adminOnly" onclick="addGuide()">+ Thêm hướng dẫn</button></div><div class="card masterbox" id="guideList"></div>`;
@@ -1503,6 +1510,25 @@ body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{displa
       main.appendChild(p);
     }
   }
+
+  function ensureHiddenRestorePanel(){
+    const today=$id('todayTab');
+    if(!today || $id('hiddenRestoreBox')) return;
+    const box=document.createElement('div');
+    box.id='hiddenRestoreBox';
+    box.className='hiddenListBox';
+    box.innerHTML='<h3>👁️ Công việc đã ẩn trong ngày</h3><div id="hiddenRestoreList"></div>';
+    today.appendChild(box);
+  }
+  window.renderHiddenRestore=function(){
+    ensureHiddenRestorePanel();
+    const box=$id('hiddenRestoreBox'), list=$id('hiddenRestoreList'); if(!box||!list) return;
+    const d=todayValue();
+    const arr=(state.tasks||[]).filter(t=>t&&t.date===d&&t.hidden);
+    box.style.display=arr.length?'block':'none';
+    list.innerHTML=arr.map(t=>`<div class="hiddenHiddenRow"><span><b>${esc(t.time||'')}</b> - ${esc(t.title||'')} <span class="hiddenNote">${esc((empList(t.emp)||[]).join(', '))}</span></span><button class="btn blue" onclick="unhideTask('${t.id}')">Hiện lại</button></div>`).join('');
+  };
+
 
   const prevSwitch=window.switchTab;
   window.switchTab=function(tab){
@@ -1603,7 +1629,7 @@ body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{displa
     if($id('stDaily')) stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;
     if($id('stOnce')) stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;
     if($id('taskBody')) taskBody.innerHTML=arr.map(t=>window.row(t)).join('')||'<tr><td colspan="12" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';
-    try{renderDaily();renderMaster();renderEmployees();renderGuide();renderPBH();}catch(e){console.warn(e)}
+    try{renderDaily();renderMaster();renderEmployees();renderGuide();renderPBH();renderHiddenRestore();}catch(e){console.warn(e)}
   };
 
   // Preview ảnh: nhân viên chỉ gỡ ảnh báo cáo NV; admin gỡ được mọi loại.
@@ -1641,8 +1667,6 @@ body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{displa
   const prevToggle=window.toggleMenu; window.toggleMenu=function(ev,id){ if(prevToggle) prevToggle(ev,id); setTimeout(stripEmployeeReminders,20); };
   const observer=new MutationObserver(()=>stripEmployeeReminders()); observer.observe(document.body,{childList:true,subtree:true});
 
-  setTimeout(()=>{ ensurePanels(); loadExtra(); try{render();}catch(e){console.warn(e)} },2200);
+  setTimeout(()=>{ ensurePanels(); ensureHiddenRestorePanel(); loadExtra(); try{render();}catch(e){console.warn(e)} },2200);
 })();
 </script>
-
-</body></html>
