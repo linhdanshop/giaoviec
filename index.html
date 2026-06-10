@@ -1443,4 +1443,206 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
 })();
 </script>
 
+<style>
+/* FINAL 36: ẩn việc hằng ngày theo ngày + tab hướng dẫn/PBH + quyền ảnh báo cáo */
+.hiddenTaskRow{opacity:.55;background:#f8fafc!important}
+.hiddenNote{display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:900}
+.extraTabPanel .section-title{margin-top:10px}
+.guideGrid{display:grid;grid-template-columns:180px 1fr 140px;gap:10px;align-items:start}
+.guideCard{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:12px;margin-bottom:10px}
+.guideTitle{font-weight:900;color:#0f172a;font-size:15px}
+.guideText{white-space:pre-wrap;color:#b42318;font-weight:800;line-height:1.45}
+.pbhBadge{display:inline-flex;padding:5px 10px;border-radius:999px;font-weight:900;font-size:12px;border:1px solid #fed7aa;background:#fff7ed;color:#c2410c}
+.previewWrap{display:inline-block;position:relative;margin:4px}
+.previewWrap img{margin:0!important}
+.previewDel{position:absolute;right:-6px;top:-6px;width:22px;height:22px;border:0;border-radius:999px;background:#ef4444;color:white;font-weight:900;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{display:none!important}
+</style>
+<script>
+/* FINAL 36 PATCH */
+(function(){
+  const ROOT_PATH='taskReminder';
+  window.state = window.state || {};
+  state.guides = state.guides || [];
+  state.pbh = state.pbh || [];
+  function $id(id){return document.getElementById(id)}
+  function admin(){try{return document.getElementById('role').value==='Admin'}catch(e){return false}}
+  function todayValue(){return ($id('fDate')&&$id('fDate').value)||new Date().toISOString().slice(0,10)}
+  function arrObj(obj){ if(!obj) return []; if(Array.isArray(obj)) return obj.filter(Boolean); return Object.keys(obj).map(k=>obj[k]&&typeof obj[k]==='object'?{id:obj[k].id||k,...obj[k]}:null).filter(Boolean); }
+  function saveExtra(path,data){
+    if(typeof db!=='undefined' && db){ db.ref(ROOT_PATH+'/'+path).set(data).catch(e=>{try{showToast('Lỗi lưu '+path+': '+e.message)}catch(_){}}); }
+    else { localStorage.setItem('taskReminder_'+path,JSON.stringify(data)); }
+  }
+  function loadExtra(){
+    if(typeof db!=='undefined' && db){
+      db.ref(ROOT_PATH+'/guides').on('value',s=>{state.guides=arrObj(s.val()); renderGuide();});
+      db.ref(ROOT_PATH+'/pbh').on('value',s=>{state.pbh=arrObj(s.val()); renderPBH();});
+    }else{
+      try{state.guides=JSON.parse(localStorage.getItem('taskReminder_guides')||'[]')}catch(e){}
+      try{state.pbh=JSON.parse(localStorage.getItem('taskReminder_pbh')||'[]')}catch(e){}
+      renderGuide(); renderPBH();
+    }
+  }
+  function ensurePanels(){
+    const top=document.querySelector('.topTabs');
+    if(top && !document.querySelector('[data-tab="guide"]')){
+      const dailyBtn=document.querySelector('[data-tab="daily"]');
+      const guide=document.createElement('button'); guide.className='tab'; guide.dataset.tab='guide'; guide.textContent='Hướng dẫn công việc'; guide.onclick=()=>switchTab('guide');
+      const pbh=document.createElement('button'); pbh.className='tab'; pbh.dataset.tab='pbh'; pbh.textContent='PBH Hủy/Chưa lấy'; pbh.onclick=()=>switchTab('pbh');
+      if(dailyBtn && dailyBtn.nextSibling){ top.insertBefore(guide,dailyBtn.nextSibling); top.insertBefore(pbh,guide.nextSibling); } else { top.appendChild(guide); top.appendChild(pbh); }
+    }
+    const main=document.querySelector('.main')||document.body;
+    if(!$id('guideTab')){
+      const g=document.createElement('div'); g.id='guideTab'; g.className='hidden extraTabPanel';
+      g.innerHTML=`<div class="section-title"><h2>📘 Hướng dẫn công việc</h2><span class="hint">Lưu hướng dẫn thao tác cho nhân viên xem nhanh</span><button class="btn blue adminOnly" onclick="addGuide()">+ Thêm hướng dẫn</button></div><div class="card masterbox" id="guideList"></div>`;
+      main.appendChild(g);
+    }
+    if(!$id('pbhTab')){
+      const p=document.createElement('div'); p.id='pbhTab'; p.className='hidden extraTabPanel';
+      p.innerHTML=`<div class="section-title"><h2>📦 PBH Hủy/Chưa lấy</h2><span class="hint">Theo dõi nhanh nhóm PBH hủy hoặc chưa lấy</span><button class="btn blue adminOnly" onclick="addPBH()">+ Thêm dòng</button></div><div class="card masterbox" id="pbhList"></div>`;
+      main.appendChild(p);
+    }
+  }
+
+  const prevSwitch=window.switchTab;
+  window.switchTab=function(tab){
+    ensurePanels();
+    if((tab==='master'||tab==='devices') && !admin()) tab='today';
+    if(tab==='guide'||tab==='pbh'){
+      ['today','daily','master','devices','guide','pbh'].forEach(x=>{
+        const panel=$id(x+'Tab'); if(panel) panel.classList.toggle('hidden',x!==tab);
+        document.querySelectorAll(`[data-tab="${x}"]`).forEach(b=>b.classList.toggle('active',x===tab));
+      });
+      try{applyRole()}catch(e){}
+      if(tab==='guide') renderGuide(); else renderPBH();
+      return;
+    }
+    if(prevSwitch) prevSwitch(tab);
+    ['guide','pbh'].forEach(x=>{const p=$id(x+'Tab'); if(p) p.classList.add('hidden'); document.querySelectorAll(`[data-tab="${x}"]`).forEach(b=>b.classList.remove('active'));});
+  };
+
+  window.addGuide=function(){
+    if(!admin()) return;
+    state.guides=state.guides||[];
+    state.guides.push({id:'g_'+Date.now(),title:'Hướng dẫn mới',content:'Nhập nội dung hướng dẫn...',updatedAt:Date.now()});
+    saveExtra('guides',state.guides); renderGuide();
+  };
+  window.saveGuide=function(id,field,val){
+    const g=(state.guides||[]).find(x=>x.id===id); if(!g) return; g[field]=val; g.updatedAt=Date.now(); saveExtra('guides',state.guides);
+  };
+  window.delGuide=function(id){ if(!admin())return; if(confirm('Xóa hướng dẫn này?')){state.guides=(state.guides||[]).filter(x=>x.id!==id); saveExtra('guides',state.guides); renderGuide();} };
+  window.renderGuide=function(){
+    const box=$id('guideList'); if(!box) return;
+    const list=state.guides||[];
+    box.innerHTML=list.length?list.map(g=> admin()?`<div class="guideCard"><div class="guideGrid"><input value="${esc(g.title||'')}" oninput="saveGuide('${g.id}','title',this.value)"><textarea style="min-height:90px" oninput="saveGuide('${g.id}','content',this.value)">${esc(g.content||'')}</textarea><button class="btn red" onclick="delGuide('${g.id}')">Xóa</button></div></div>`:`<div class="guideCard"><div class="guideTitle">${esc(g.title||'')}</div><div class="guideText">${esc(g.content||'')}</div></div>`).join(''):'<div style="padding:20px;color:#667085;font-weight:800">Chưa có hướng dẫn</div>';
+  };
+
+  window.addPBH=function(){
+    if(!admin()) return;
+    state.pbh=state.pbh||[]; state.pbh.push({id:'pbh_'+Date.now(),time:new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),type:'Chưa lấy',content:'',note:''});
+    saveExtra('pbh',state.pbh); renderPBH();
+  };
+  window.savePBH=function(id,field,val){const p=(state.pbh||[]).find(x=>x.id===id); if(!p)return; p[field]=val; saveExtra('pbh',state.pbh);};
+  window.delPBH=function(id){if(!admin())return; if(confirm('Xóa dòng PBH này?')){state.pbh=(state.pbh||[]).filter(x=>x.id!==id); saveExtra('pbh',state.pbh); renderPBH();}};
+  window.renderPBH=function(){
+    const box=$id('pbhList'); if(!box) return; const list=state.pbh||[];
+    box.innerHTML=list.length?`<table class="miniTable"><thead><tr><th>Giờ</th><th>Trạng thái</th><th>Nội dung</th><th>Ghi chú</th><th class="adminOnly">Thao tác</th></tr></thead><tbody>${list.map(p=>`<tr><td>${admin()?`<input value="${esc(p.time||'')}" oninput="savePBH('${p.id}','time',this.value)">`:`<b>${esc(p.time||'')}</b>`}</td><td>${admin()?`<select onchange="savePBH('${p.id}','type',this.value)"><option ${p.type==='Chưa lấy'?'selected':''}>Chưa lấy</option><option ${p.type==='Hủy'?'selected':''}>Hủy</option></select>`:`<span class="pbhBadge">${esc(p.type||'')}</span>`}</td><td>${admin()?`<textarea oninput="savePBH('${p.id}','content',this.value)">${esc(p.content||'')}</textarea>`:`${esc(p.content||'')}`}</td><td>${admin()?`<textarea oninput="savePBH('${p.id}','note',this.value)">${esc(p.note||'')}</textarea>`:`${esc(p.note||'')}`}</td><td class="adminOnly"><button class="btn red" onclick="delPBH('${p.id}')">Xóa</button></td></tr>`).join('')}</tbody></table>`:'<div style="padding:20px;color:#667085;font-weight:800">Chưa có dữ liệu PBH</div>';
+  };
+
+  function baseFiltered(){
+    const d=todayValue(), emp=($id('fEmp')?.value)||'Tất cả', st=($id('fStatus')?.value)||'Tất cả', tp=($id('fType')?.value)||'Tất cả', q=(($id('fSearch')?.value)||'').toLowerCase().trim();
+    let arr=(state.tasks||[]).filter(t=>t&&typeof t==='object'&&t.date===d&&!t.hidden);
+    if(emp!=='Tất cả') arr=arr.filter(t=>empList(t.emp).includes(emp));
+    if(tp!=='Tất cả') arr=arr.filter(t=>t.type===tp);
+    if(st==='Quá giờ') arr=arr.filter(t=>isLateTask(t)); else if(st!=='Tất cả') arr=arr.filter(t=>t.status===st);
+    if(q) arr=arr.filter(t=>((t.title||'')+(t.content||'')+(t.adminNote||'')+(t.report||'')).toLowerCase().includes(q));
+    const rank=t=> t.status==='Đã xong' ? 2 : (isLateTask(t)?0:1);
+    return arr.sort((a,b)=>rank(a)-rank(b)||(a.time||'').localeCompare(b.time||''));
+  }
+  const prevRow=window.row;
+  window.row=function(t){
+    let html=prevRow?prevRow(t):'';
+    if(t&&t.type==='Hằng ngày'){
+      html=html.replace(new RegExp(`onclick="delTask\\('${t.id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}'\\)">Xóa`,'g'),`onclick="hideTaskToday('${t.id}')">Ẩn`);
+      html=html.replace(/>Xóa<\/button>/,`>Ẩn</button>`);
+    }
+    return html;
+  };
+  window.hideTaskToday=function(id){
+    const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return;
+    withActor(actor=>{t.hidden=true; t.hiddenAt=Date.now(); t.logs=t.logs||[]; t.logs.push(logLine('ẩn việc trong ngày',actor)); save(); closeModal('detailModal'); render();});
+  };
+  const prevDel=window.delTask;
+  window.delTask=function(id){
+    const t=(state.tasks||[]).find(x=>x&&x.id===id);
+    const active=document.querySelector('.tab.active')?.dataset?.tab;
+    if(t&&t.type==='Hằng ngày'&&active!=='daily') return hideTaskToday(id);
+    if(prevDel) return prevDel(id);
+  };
+  window.deleteDailyMaster=function(id){
+    if(!admin())return; const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return;
+    if(!confirm('Xóa việc hằng ngày này? Việc này sẽ không lặp lại các ngày sau.')) return;
+    if(t.masterId) state.masters=(state.masters||[]).filter(m=>m.id!==t.masterId);
+    state.tasks=(state.tasks||[]).filter(x=>x&&x.id!==id);
+    save(); renderDaily(); render();
+  };
+  window.unhideTask=function(id){const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return; delete t.hidden; save(); renderDaily(); render();};
+  window.renderDaily=function(){
+    const body=$id('dailyBody'); if(!body)return;
+    const arr=(state.tasks||[]).filter(t=>t&&t.type==='Hằng ngày');
+    body.innerHTML=arr.map(t=>`<tr class="${t.hidden?'hiddenTaskRow':''}" style="--empColor:${empColor(t.emp)}"><td><b style="font-size:18px">${esc(t.time||'')}</b></td><td><span class="titlepill">${esc(t.title||'')}</span>${t.hidden?'<span class="hiddenNote">Đang ẩn trong ngày đang xem</span>':''}</td><td>${empChips(t.emp)}</td><td><div class="clip contentText">${esc(t.content||'')}</div><div class="dailyFocusNote">Cột Giờ / Tên CV / Nội dung là dữ liệu chạy lại mỗi ngày</div></td><td>${esc(t.adminNote||'')}</td><td>${statusHtml(t)}</td><td class="adminOnly"><button class="btn gray" onclick="openTaskForm('${t.id}')">Sửa</button> ${t.hidden?`<button class="btn blue" onclick="unhideTask('${t.id}')">Hiện lại</button>`:''} <button class="btn red" onclick="deleteDailyMaster('${t.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:24px;color:#667085">Chưa có việc hằng ngày</td></tr>';
+  };
+  const prevRender=window.render;
+  window.render=function(){
+    try{applyRole()}catch(e){}; try{syncFilterChips();syncStatsActive();renderDevices()}catch(e){};
+    const arr=baseFiltered();
+    if($id('stTotal')) stTotal.textContent=arr.length;
+    if($id('stTodo')) stTodo.textContent=arr.filter(t=>t.status==='Chưa làm').length;
+    if($id('stLate')) stLate.textContent=arr.filter(t=>isLateTask(t)).length;
+    if($id('stDone')) stDone.textContent=arr.filter(t=>t.status==='Đã xong').length;
+    if($id('stDaily')) stDaily.textContent=arr.filter(t=>t.type==='Hằng ngày').length;
+    if($id('stOnce')) stOnce.textContent=arr.filter(t=>t.type==='Phát sinh').length;
+    if($id('taskBody')) taskBody.innerHTML=arr.map(t=>window.row(t)).join('')||'<tr><td colspan="12" style="text-align:center;padding:30px;color:#667085">Không có công việc</td></tr>';
+    try{renderDaily();renderMaster();renderEmployees();renderGuide();renderPBH();}catch(e){console.warn(e)}
+  };
+
+  // Preview ảnh: nhân viên chỉ gỡ ảnh báo cáo NV; admin gỡ được mọi loại.
+  window.removePreviewImg=function(previewId,i){
+    const arr=tempArrayForPreview(previewId); if(!arr) return; arr.splice(i,1); renderPreview(previewId,arr);
+  };
+  window.renderPreview=function(id,arr){
+    let el=$id(id); if(!el) return;
+    let title=id==='adminPreview'?'ảnh ghi chú':id==='reportPreview'?'ảnh báo cáo':'ảnh';
+    let allowDel=admin() || id==='reportPreview';
+    let btn=arr.length?`<button type="button" class="imgbadge" onclick="openGallery(tempArrayForPreview('${id}'),0,'Xem ${title}')">Mở xem ${arr.length} ${title}</button>`:'';
+    el.innerHTML=btn+arr.map((src,i)=>`<span class="previewWrap"><img src="${src}" onclick="openGallery(tempArrayForPreview('${id}'),${i},'Xem ${title}')">${allowDel?`<button class="previewDel" onclick="event.stopPropagation();removePreviewImg('${id}',${i})">×</button>`:''}</span>`).join('');
+  };
+  window.removeReportImg=function(id,i){
+    const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return;
+    const imgs=(getReportImgs(t)||[]).slice(); imgs.splice(i,1); t.reportImgs=imgs; t.logs=t.logs||[]; t.logs.push(logLine('gỡ ảnh báo cáo', actorValid?actorValid():currentUserLabel())); save(); if($id('detailModal')?.classList.contains('open')) detail(id); else render();
+  };
+  window.removeAdminImg=function(id,i){ if(!admin())return; const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return; const imgs=(getAdminImgs(t)||[]).slice(); imgs.splice(i,1); t.adminImgs=imgs; save(); detail(id); };
+  window.removeTaskImg=function(id,i){ if(!admin())return; const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return; const imgs=(getImgs(t)||[]).slice(); imgs.splice(i,1); t.imgs=imgs; save(); detail(id); };
+  const prevDetail=window.detail;
+  window.detail=function(id){
+    if(prevDetail) prevDetail(id);
+    setTimeout(()=>{
+      const t=(state.tasks||[]).find(x=>x&&x.id===id); if(!t)return;
+      const report=$id('detailReportPreview'); if(report){ const imgs=getReportImgs(t)||[]; report.innerHTML=imgs.map((src,i)=>`<span class="previewWrap"><img src="${src}" onclick="openReportGallery('${id}',${i})"><button class="previewDel" onclick="event.stopPropagation();removeReportImg('${id}',${i})">×</button></span>`).join(''); }
+      const adm=$id('detailAdminPreview'); if(adm){ const imgs=getAdminImgs(t)||[]; adm.innerHTML=imgs.map((src,i)=>`<span class="previewWrap"><img src="${src}" onclick="openAdminGallery('${id}',${i})">${admin()?`<button class="previewDel" onclick="event.stopPropagation();removeAdminImg('${id}',${i})">×</button>`:''}</span>`).join(''); }
+      const taskSec=[...document.querySelectorAll('#detailBody .detailSection')].find(x=>x.textContent.includes('Ảnh công việc'));
+      if(taskSec){ const gallery=taskSec.querySelector('.gallery'); if(gallery){ const imgs=getImgs(t)||[]; gallery.innerHTML=imgs.map((src,i)=>`<span class="previewWrap"><img class="thumb" src="${src}" onclick="openTaskGallery('${id}',${i})">${admin()?`<button class="previewDel" onclick="event.stopPropagation();removeTaskImg('${id}',${i})">×</button>`:''}</span>`).join(''); } }
+      document.querySelectorAll('.taskDirectUpload,.adminDirectUpload').forEach(e=>{if(!admin()) e.remove();});
+    },120);
+  };
+
+  // Nhân viên ẩn nhắc việc trong mọi menu/chi tiết
+  function stripEmployeeReminders(){ if(admin())return; document.querySelectorAll('button').forEach(b=>{const txt=(b.textContent||'').trim(); if(txt.includes('Nhắc ngay')||txt.includes('Test nhắc')) b.style.display='none';}); }
+  const prevToggle=window.toggleMenu; window.toggleMenu=function(ev,id){ if(prevToggle) prevToggle(ev,id); setTimeout(stripEmployeeReminders,20); };
+  const observer=new MutationObserver(()=>stripEmployeeReminders()); observer.observe(document.body,{childList:true,subtree:true});
+
+  setTimeout(()=>{ ensurePanels(); loadExtra(); try{render();}catch(e){console.warn(e)} },2200);
+})();
+</script>
+
 </body></html>
