@@ -878,4 +878,192 @@ setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.
 })();
 </script>
 
+
+
+<script>
+/* FINAL 30: task theo ngày + ID cố định chống trùng
+   - Việc hằng ngày là mẫu cố định trong masters.
+   - Mỗi ngày sinh task theo ID: daily_YYYY-MM-DD_MASTERID.
+   - Sửa task hằng ngày sẽ cập nhật lại master, ngày sau dùng dữ liệu mới.
+   - Phát sinh dùng ID riêng theo ngày, không đụng hằng ngày.
+*/
+(function(){
+  function vnTodayStr(){
+    const d=new Date();
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  // Ghi đè todayStr nếu file cũ đang dùng UTC làm lệch ngày ở VN.
+  try{ window.todayVN = vnTodayStr; }catch(e){}
+
+  function safeKey(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').toLowerCase() || 'x'}
+  window.dailyTaskId=function(dateStr, masterId){return 'daily_'+String(dateStr||vnTodayStr()).replace(/-/g,'')+'_'+safeKey(masterId)};
+  window.onceTaskId=function(dateStr){return 'task_'+String(dateStr||vnTodayStr()).replace(/-/g,'')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)};
+  function nowHHMM(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+  function logSys(txt){return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' '+txt+' — Hệ thống'}
+  function logActor(txt, actor){
+    try{return logLine(txt, actor)}catch(e){return new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' '+txt}
+  }
+  function normalizeV30(){
+    if(!window.state) window.state={};
+    state.employees=Array.isArray(state.employees)&&state.employees.length?state.employees:['An','Nguyệt','Thủy'];
+    state.masters=Array.isArray(state.masters)?state.masters:[];
+    state.tasks=Array.isArray(state.tasks)?state.tasks:[];
+    state.masters.forEach((m,i)=>{ if(!m.id) m.id='m_'+safeKey(m.title||('cv_'+i)); });
+  }
+  function mergeDailyFromMaster(t,m,dateStr){
+    const keep={
+      report:t.report||'', reportImgs:t.reportImgs||[], adminImgs:t.adminImgs||[],
+      status:t.status||'Chưa làm', doneAt:t.doneAt||null, logs:t.logs||[],
+      activeReminder:t.activeReminder||null, firedReminders:t.firedReminders||[], lastRepeatReminder:t.lastRepeatReminder||null
+    };
+    Object.assign(t,{
+      id:dailyTaskId(dateStr,m.id), masterId:m.id, date:dateStr, type:'Hằng ngày',
+      time:m.time||'08:00', title:m.title||'', emp:m.emp||'', content:m.content||'',
+      adminNote:m.note||m.adminNote||'', img:m.img||'', imgs:m.imgs||[], remindPlan:m.remindPlan||'',
+      ...keep
+    });
+    return t;
+  }
+  window.ensureDailyForDate=function(dateStr){
+    normalizeV30(); dateStr=dateStr||((document.getElementById('fDate')||{}).value)||vnTodayStr();
+    let changed=false;
+    const newTasks=[];
+    const usedDailyIds=new Set();
+    // Gom lại task hằng ngày cũ theo masterId/date để chống trùng.
+    const oldMap=new Map();
+    for(const t of state.tasks){
+      if(t.type==='Hằng ngày' && t.date===dateStr && t.masterId){
+        const id=dailyTaskId(dateStr,t.masterId);
+        const old=oldMap.get(id);
+        if(!old){ oldMap.set(id,t); }
+        else{
+          const score=x=>(x.report?10:0)+((x.reportImgs||[]).length*5)+((x.adminImgs||[]).length*3)+((x.logs||[]).length);
+          if(score(t)>score(old)) oldMap.set(id,t);
+          changed=true;
+        }
+      }else{
+        newTasks.push(t);
+      }
+    }
+    for(const m of state.masters){
+      if(m.disabled) continue;
+      const id=dailyTaskId(dateStr,m.id);
+      let t=oldMap.get(id);
+      if(!t){
+        t={logs:[logSys('tự tạo việc hằng ngày')],status:'Chưa làm',report:'',reportImgs:[],adminImgs:[]};
+        changed=true;
+      }
+      const before=JSON.stringify([t.id,t.time,t.title,t.emp,t.content,t.adminNote,t.img,t.imgs,t.remindPlan]);
+      mergeDailyFromMaster(t,m,dateStr);
+      const after=JSON.stringify([t.id,t.time,t.title,t.emp,t.content,t.adminNote,t.img,t.imgs,t.remindPlan]);
+      if(before!==after) changed=true;
+      usedDailyIds.add(id);
+      newTasks.push(t);
+    }
+    // Giữ hằng ngày ở ngày khác, nhưng chuẩn hóa ID nếu có masterId.
+    for(const t of state.tasks){
+      if(t.type==='Hằng ngày' && t.date!==dateStr){
+        if(t.masterId){
+          const fixed=dailyTaskId(t.date,t.masterId);
+          if(t.id!==fixed){t.id=fixed; changed=true;}
+        }
+        newTasks.push(t);
+      }
+    }
+    // Loại trùng id cuối cùng.
+    const seen=new Set();
+    state.tasks=[];
+    for(const t of newTasks){
+      if(!t.id) t.id=t.type==='Hằng ngày'&&t.masterId?dailyTaskId(t.date,t.masterId):onceTaskId(t.date);
+      if(seen.has(t.id)){changed=true; continue;}
+      seen.add(t.id); state.tasks.push(t);
+    }
+    if(changed) save();
+  };
+
+  // Sửa lưu việc: Hằng ngày tạo/cập nhật master trước, rồi sinh task theo ID ngày+master.
+  window.saveTask=function(){
+    normalizeV30();
+    const id=(editId&&editId.value)||'';
+    const data={
+      date:(mDate&&mDate.value)||vnTodayStr(),
+      time:(mTime&&mTime.value)||nowHHMM(),
+      title:(mTitle&&mTitle.value||'').trim(),
+      emp:typeof getModalEmps==='function'?getModalEmps():((mEmp&&mEmp.value)||''),
+      type:(mType&&mType.value)||'Phát sinh',
+      img:(mImg&&mImg.value)||'',
+      imgs:Array.isArray(window.tempTaskImgs)?tempTaskImgs:[],
+      content:(mContent&&mContent.value||'').trim(),
+      adminNote:(mAdminNote&&mAdminNote.value||'').trim(),
+      remindPlan:(window.mRemind&&mRemind.value)||''
+    };
+    if(!data.title){alert('Nhập tên công việc');return;}
+    if(!data.time){alert('Chọn thời gian');return;}
+    withActor(actor=>{
+      let t=id?state.tasks.find(x=>x.id===id):null;
+      if(data.type==='Hằng ngày'){
+        // Master lấy theo task đang sửa, hoặc dropdown mẫu, hoặc tạo master mới theo tên.
+        let masterId=t?.masterId || (mMaster&&mMaster.value) || '';
+        let m=masterId?state.masters.find(x=>x.id===masterId):null;
+        if(!m){
+          masterId='m_'+safeKey(data.title)+'_'+Date.now();
+          m={id:masterId}; state.masters.push(m);
+          if(!state.defaultMasterId) state.defaultMasterId=masterId;
+        }
+        Object.assign(m,{title:data.title,time:data.time,emp:data.emp,content:data.content,note:data.adminNote,img:data.img,imgs:data.imgs,remindPlan:data.remindPlan});
+        const fixedId=dailyTaskId(data.date,masterId);
+        t=state.tasks.find(x=>x.id===fixedId) || state.tasks.find(x=>x.date===data.date&&x.type==='Hằng ngày'&&x.masterId===masterId) || t;
+        if(!t){
+          t={id:fixedId,masterId,date:data.date,type:'Hằng ngày',report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:[logActor('tạo việc hằng ngày',actor)]};
+          state.tasks.push(t);
+        }else{
+          t.logs=t.logs||[]; t.logs.push(logActor('cập nhật việc hằng ngày',actor));
+        }
+        mergeDailyFromMaster(t,m,data.date);
+      }else{
+        if(t){
+          Object.assign(t,data,{type:'Phát sinh'});
+          t.logs=t.logs||[]; t.logs.push(logActor('sửa việc phát sinh',actor));
+        }else{
+          state.tasks.push({id:onceTaskId(data.date),...data,type:'Phát sinh',masterId:'',report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:[logActor('tạo việc phát sinh',actor)]});
+        }
+      }
+      ensureDailyForDate(data.date);
+      save(); closeModal('taskModal'); render();
+    });
+  };
+
+  // Sửa lưu mẫu CV: cập nhật master xong sẽ cập nhật luôn task hằng ngày của ngày đang xem.
+  window.saveMaster=function(){
+    normalizeV30();
+    const id=(msId&&msId.value)||'';
+    const data={title:(msTitle&&msTitle.value||'').trim(),emp:(msEmp&&msEmp.value)||'',time:(msTime&&msTime.value)||'08:00',content:(msContent&&msContent.value||'').trim(),note:(msNote&&msNote.value||'').trim()};
+    if(!data.title){alert('Nhập tên CV mẫu');return;}
+    if(id){Object.assign(state.masters.find(x=>x.id===id),data)}
+    else{state.masters.push({id:'m_'+safeKey(data.title)+'_'+Date.now(),...data})}
+    ensureDailyForDate((fDate&&fDate.value)||vnTodayStr());
+    save(); closeModal('masterModal'); renderMaster(); renderDaily(); render();
+  };
+
+  // Mở popup thêm việc: mặc định ngày hôm nay + giờ hiện tại + phát sinh; nếu bấm sửa thì giữ dữ liệu cũ.
+  const oldOpenTaskForm=window.openTaskForm;
+  window.openTaskForm=function(id=null,type=null){
+    if(typeof oldOpenTaskForm==='function') oldOpenTaskForm(id,type);
+    setTimeout(()=>{
+      if(!id){
+        if(mDate) mDate.value=vnTodayStr();
+        if(mTime) mTime.value=nowHHMM();
+        if(mType) mType.value=type||'Phát sinh';
+      }
+    },0);
+  };
+
+  // Chạy ngay khi tải để sau khi xóa hết tasks vẫn sinh lại đúng từ masters.
+  setTimeout(()=>{try{normalizeV30(); ensureDailyForDate((fDate&&fDate.value)||vnTodayStr()); render();}catch(e){console.error(e); alert('Lỗi khởi tạo task hằng ngày: '+e.message)}},1200);
+})();
+</script>
+
 </body></html>
