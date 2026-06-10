@@ -769,14 +769,43 @@ window.openTaskForm=function(id=null,type=null){if(!roleAdmin())return;closeModa
 window.ensureDailyForDate=function(dateStr){if(!state||!state.masters)return;let changed=false;state.masters.forEach(m=>{let existing=state.tasks.find(t=>t.date===dateStr&&t.type==='Hằng ngày'&&t.masterId===m.id);if(!existing){state.tasks.push({id:'t'+Date.now()+Math.random().toString(36).slice(2,5),masterId:m.id,date:dateStr,time:m.time,title:m.title,emp:m.emp,type:'Hằng ngày',img:'',imgs:m.imgs||[],content:m.content,adminNote:m.note,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:[new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' tự tạo việc hằng ngày — Hệ thống']});changed=true;}else{['time','title','emp','content'].forEach(k=>{if(existing[k]!==m[k]){existing[k]=m[k];changed=true}});if(existing.adminNote!==m.note){existing.adminNote=m.note;changed=true}}});if(changed)save();}
 window.cleanupOldTasks=function(){if(!state||!state.tasks)return;const now=new Date(todayStr()).getTime();const keep=7*24*3600*1000;let before=state.tasks.length;state.tasks=state.tasks.filter(t=>{let tm=new Date(t.date).getTime();return isNaN(tm)||now-tm<=keep});if(state.tasks.length!==before)save();}
 window.saveTask=function(){let id=editId.value;let data={date:mDate.value,time:mTime.value,title:mTitle.value,emp:getModalEmps(),type:mType.value,img:mImg.value,imgs:tempTaskImgs,content:mContent.value,adminNote:mAdminNote.value,remindPlan:mRemind.value};withActor(actor=>{if(id){let t=state.tasks.find(x=>x.id===id);Object.assign(t,data);t.logs=t.logs||[];t.logs.push(logLine('sửa việc',actor));if(t.type==='Hằng ngày'&&t.masterId){let m=state.masters.find(x=>x.id===t.masterId);if(m){m.time=t.time;m.title=t.title;m.emp=t.emp;m.content=t.content;m.note=t.adminNote;m.imgs=t.imgs||[];}}}else{let existing=null;if(data.type==='Hằng ngày'){existing=state.tasks.find(x=>x.date===data.date&&x.type==='Hằng ngày'&&x.title===data.title)}if(existing){Object.assign(existing,data);existing.logs=existing.logs||[];existing.logs.push(logLine('cập nhật việc hằng ngày',actor))}else{state.tasks.push({id:'t'+Date.now(),...data,report:'',reportImgs:[],adminImgs:[],status:'Chưa làm',logs:[logLine('tạo việc',actor)]})}}save();closeModal('taskModal');render()});}
-// Cloudinary upload ảnh - dùng unsigned upload preset, không cần Firebase Storage/Blaze.
-// Đổi CLOUDINARY_* nếu mày dùng preset khác.
+// Cloudinary upload ảnh - tối ưu tốc độ: nén ảnh trước khi upload giống web vận đơn.
+// Dùng unsigned upload preset Cloudinary, không cần Firebase Storage/Blaze.
 const CLOUDINARY_CLOUD_NAME = 'dqcyr3vgr';
 const CLOUDINARY_UPLOAD_PRESET = 'xulyvandon';
 const CLOUDINARY_FOLDER = 'Giaoviec';
+
+async function compressImageFile(file, maxSide=1280, quality=0.72){
+  // File nhỏ thì giữ nguyên để khỏi tốn thời gian canvas.
+  if(!file || !file.type || !file.type.startsWith('image/') || file.size < 380*1024) return file;
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((resolve,reject)=>{
+      const im = new Image();
+      im.onload=()=>resolve(im); im.onerror=reject; im.src=url;
+    });
+    let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    if(!w || !h) return file;
+    const ratio = Math.min(1, maxSide / Math.max(w,h));
+    const cw = Math.max(1, Math.round(w*ratio));
+    const ch = Math.max(1, Math.round(h*ratio));
+    const canvas=document.createElement('canvas'); canvas.width=cw; canvas.height=ch;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,cw,ch);
+    ctx.drawImage(img,0,0,cw,ch);
+    const blob = await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+    if(!blob) return file;
+    return new File([blob], (file.name||'paste')+'.jpg', {type:'image/jpeg'});
+  }catch(e){
+    console.warn('Nén ảnh lỗi, upload file gốc', e);
+    return file;
+  }finally{ URL.revokeObjectURL(url); }
+}
+
 async function uploadToCloudinary(file){
+  const fastFile = await compressImageFile(file);
   const fd = new FormData();
-  fd.append('file', file);
+  fd.append('file', fastFile);
   fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
   fd.append('folder', CLOUDINARY_FOLDER);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {method:'POST', body:fd});
@@ -790,10 +819,59 @@ async function uploadOrBase64(file){
   }catch(e){
     console.warn('Cloudinary lỗi, fallback base64', e);
     try{ showToast('Cloudinary lỗi, tạm lưu base64'); }catch(_){ }
-    return await new Promise(res=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.readAsDataURL(file)});
+    const f = await compressImageFile(file, 1000, 0.65);
+    return await new Promise(res=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.readAsDataURL(f)});
   }
 }
-document.addEventListener('paste',async function(e){const item=[...(e.clipboardData?.items||[])].find(i=>i.type&&i.type.startsWith('image/'));if(!item)return;e.preventDefault();e.stopImmediatePropagation();const file=item.getAsFile();showToast('Đang tải ảnh...');const url=await uploadOrBase64(file);let handled=false;if(document.getElementById('taskModal').classList.contains('open')){tempTaskImgs.push(url);renderPreview('taskPreview',tempTaskImgs);handled=true}else if(document.getElementById('reportModal').classList.contains('open')){tempReportImgs.push(url);renderPreview('reportPreview',tempReportImgs);handled=true}else if(document.getElementById('adminNoteModal').classList.contains('open')){tempAdminImgs.push(url);renderPreview('adminPreview',tempAdminImgs);handled=true}else if(document.getElementById('detailModal').classList.contains('open')&&detailCurrentId){let t=state.tasks.find(x=>x.id===detailCurrentId);if(t){if(activeDetailPaste==='admin'&&roleAdmin()){t.adminImgs=getAdminImgs(t);t.adminImgs.push(url)}else{t.reportImgs=getReportImgs(t);t.reportImgs.push(url)}t.logs=t.logs||[];t.logs.push(logLine('thêm ảnh '+(activeDetailPaste==='admin'?'admin':'báo cáo'),actorValid()||currentUserLabel()));save();detail(t.id);handled=true}}if(handled)showToast('Đã thêm ảnh')},true);
+window.uploadOrBase64 = uploadOrBase64;
+window.uploadToCloudinary = uploadToCloudinary;
+
+function activePasteTarget(){
+  if(document.getElementById('taskModal')?.classList.contains('open')) return 'taskModal';
+  if(document.getElementById('reportModal')?.classList.contains('open')) return 'reportModal';
+  if(document.getElementById('adminNoteModal')?.classList.contains('open')) return 'adminNoteModal';
+  if(document.getElementById('detailModal')?.classList.contains('open')&&detailCurrentId) return 'detailModal';
+  return '';
+}
+async function addImageUrlToTarget(url){
+  let handled=false;
+  const target=activePasteTarget();
+  if(target==='taskModal'){
+    tempTaskImgs.push(url); renderPreview('taskPreview',tempTaskImgs); handled=true;
+  }else if(target==='reportModal'){
+    tempReportImgs.push(url); renderPreview('reportPreview',tempReportImgs); handled=true;
+  }else if(target==='adminNoteModal'){
+    tempAdminImgs.push(url); renderPreview('adminPreview',tempAdminImgs); handled=true;
+  }else if(target==='detailModal'){
+    let t=state.tasks.find(x=>x.id===detailCurrentId);
+    if(t){
+      if(activeDetailPaste==='admin' && roleAdmin()){
+        t.adminImgs=getAdminImgs(t); t.adminImgs.push(url);
+      }else{
+        t.reportImgs=getReportImgs(t); t.reportImgs.push(url);
+      }
+      t.logs=t.logs||[];
+      t.logs.push(logLine('thêm ảnh '+(activeDetailPaste==='admin'?'admin':'báo cáo'),actorValid()||currentUserLabel()));
+      save(); detail(t.id); handled=true;
+    }
+  }
+  return handled;
+}
+
+document.addEventListener('paste',async function(e){
+  const item=[...(e.clipboardData?.items||[])].find(i=>i.type&&i.type.startsWith('image/'));
+  if(!item || !activePasteTarget()) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const file=item.getAsFile(); if(!file) return;
+  showToast('Đang nén & tải ảnh...');
+  try{
+    const url=await uploadOrBase64(file);
+    const ok=await addImageUrlToTarget(url);
+    if(ok) showToast('Đã thêm ảnh');
+  }catch(err){
+    console.error(err); alert('Tải ảnh lỗi: '+(err.message||err));
+  }
+},true);
 setInterval(updateOperatorBar,30000);
 setTimeout(()=>{try{renderLoginChoices();applyRole();render();}catch(e){console.warn(e)}},300);
 })();
