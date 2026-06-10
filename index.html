@@ -1670,3 +1670,69 @@ body.employeeMode .taskDirectUpload, body.employeeMode .adminDirectUpload{displa
   setTimeout(()=>{ ensurePanels(); ensureHiddenRestorePanel(); loadExtra(); try{render();}catch(e){console.warn(e)} },2200);
 })();
 </script>
+
+<style>
+/* FINAL 38: giờ + ngày, hướng dẫn có ảnh, PBH đối soát */
+.timeStack{display:flex;flex-direction:column;align-items:center;line-height:1.05;min-width:54px}.timeStack .timeMain{font-size:18px;font-weight:950;color:#0f172a}.timeStack .dateSub{font-size:11px;font-weight:800;color:#64748b;margin-top:5px}.compareWrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}.compareBox{background:#fff;border:1px solid #dbe3ef;border-radius:14px;padding:12px}.compareBox h3{margin:0 0 8px;font-size:16px}.compareBox textarea{width:100%;min-height:145px;border:1px solid #cfd8e3;border-radius:12px;padding:10px;font-weight:800;resize:vertical}.compareActions{display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap}.compareResult{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}.resultCol{border:1px solid #dbe3ef;border-radius:14px;background:#fff;padding:10px;min-height:100px}.resultCol h4{margin:0 0 8px;font-size:14px}.resultMatch h4{color:#15803d}.resultMissA h4,.resultMissB h4{color:#b42318}.mvdRow{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:start;border-top:1px solid #eef2f7;padding:7px 0}.mvdCode{font-weight:950;color:#0f172a}.mvdReason{width:100%;min-height:34px;border:1px solid #dbe3ef;border-radius:9px;padding:7px;font-weight:800}.guideImgList{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.guideImgList img{width:90px;height:68px;object-fit:cover;border-radius:10px;border:1px solid #dbe3ef;cursor:pointer}.guideImgWrap{position:relative;display:inline-block}.guideImgWrap button{position:absolute;right:-6px;top:-6px;border:0;background:#ef4444;color:#fff;border-radius:999px;width:22px;height:22px;font-weight:900}.guideCard textarea{width:100%;min-height:100px}.guideCard input{width:100%}.guideActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.compareTabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}.compareTabs button.active{background:#dbeafe;border-color:#2563eb;color:#1d4ed8}.compareDate{font-weight:900;color:#475569;margin-left:auto}.copyHint{font-size:12px;color:#64748b;font-weight:800}.section-title .hint{max-width:none}@media(max-width:760px){.compareWrap,.compareResult{grid-template-columns:1fr}.mvdRow{grid-template-columns:1fr}.timeStack{align-items:flex-start}}
+</style>
+<script>
+/* FINAL 38 PATCH */
+(function(){
+  const ROOT='taskReminder';
+  window.state=window.state||{};
+  state.guides=state.guides||[];
+  state.pbhCompare=state.pbhCompare||{};
+  let pbhMode='pbhCancel';
+  const $=id=>document.getElementById(id);
+  function isAdmin(){try{return $('role')&&$('role').value==='Admin'}catch(e){return false}}
+  function curDate(){return ($('fDate')&&$('fDate').value)||new Date().toISOString().slice(0,10)}
+  function esc2(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+  function dateDMY(d){let x=String(d||curDate()).split('-'); return x.length===3?`${x[2]}/${x[1]}`:''}
+  function arrObj(obj){ if(!obj) return []; if(Array.isArray(obj)) return obj.filter(Boolean); return Object.keys(obj).map(k=>obj[k]&&typeof obj[k]==='object'?{id:obj[k].id||k,...obj[k]}:null).filter(Boolean); }
+  async function saveGuides(){ if(window.db){ await db.ref(ROOT+'/guides').set(state.guides||[]);} else localStorage.setItem('taskReminder_guides',JSON.stringify(state.guides||[])); }
+  async function loadGuides(){ if(window.db){ db.ref(ROOT+'/guides').on('value',s=>{state.guides=arrObj(s.val()); renderGuide();}); } else {try{state.guides=JSON.parse(localStorage.getItem('taskReminder_guides')||'[]')}catch(e){} renderGuide();}}
+  function pbhKey(){return `${pbhMode}/${curDate()}`}
+  function blankCompare(){return {shopText:'',systemText:'',reasons:{},updatedAt:Date.now()}}
+  function getCompare(){const k=pbhKey(); state.pbhCompare[k]=state.pbhCompare[k]||blankCompare(); return state.pbhCompare[k];}
+  function saveCompare(){const k=pbhKey(), data=getCompare(); data.updatedAt=Date.now(); if(window.db){db.ref(ROOT+'/pbhCompare/'+k).set(data).catch(e=>console.warn(e));} else localStorage.setItem('taskReminder_pbhCompare_'+k,JSON.stringify(data));}
+  function loadCompare(){const k=pbhKey(); if(window.db){ db.ref(ROOT+'/pbhCompare/'+k).on('value',s=>{state.pbhCompare[k]=s.val()||blankCompare(); renderPBH();}); } else {try{state.pbhCompare[k]=JSON.parse(localStorage.getItem('taskReminder_pbhCompare_'+k)||'null')||blankCompare()}catch(e){state.pbhCompare[k]=blankCompare()} renderPBH();}}
+  function parseList(txt){return [...new Set(String(txt||'').split(/\r?\n|,|\s+/).map(x=>x.trim()).filter(Boolean))];}
+  function diffData(){const d=getCompare(), a=parseList(d.shopText), b=parseList(d.systemText), bs=new Set(b), as=new Set(a);return {match:a.filter(x=>bs.has(x)), missShop:b.filter(x=>!as.has(x)), missSystem:a.filter(x=>!bs.has(x))};}
+  function reasonBox(code){const d=getCompare(); const val=(d.reasons||{})[code]||''; return `<textarea class="mvdReason" placeholder="Nhập lý do..." oninput="savePbhReason('${esc2(code)}',this.value)">${esc2(val)}</textarea>`;}
+  window.savePbhText=function(field,val){const d=getCompare(); d[field]=val; saveCompare(); renderPbhSummaryOnly();};
+  window.savePbhReason=function(code,val){const d=getCompare(); d.reasons=d.reasons||{}; d.reasons[code]=val; saveCompare();};
+  window.switchPbhMode=function(mode){pbhMode=mode; loadCompare(); renderPBH();};
+  window.renderPbhSummaryOnly=function(){const el=$('pbhSummary'); if(!el)return; const r=diffData(); el.innerHTML=`Khớp: <b>${r.match.length}</b> · Thiếu Shop: <b>${r.missShop.length}</b> · Thiếu bên còn lại: <b>${r.missSystem.length}</b>`;}
+  function renderRows(list,cls){return list.length?list.map(code=>`<div class="mvdRow"><div class="mvdCode">${esc2(code)}</div>${reasonBox(code)}</div>`).join(''):'<div style="color:#64748b;font-weight:800;padding:8px">Không có</div>'}
+  window.renderPBH=function(){
+    const box=$('pbhList'); if(!box)return; const d=getCompare(), r=diffData(); const second=pbhMode==='pbhCancel'?'HỆ THỐNG':'DVVC'; const title=pbhMode==='pbhCancel'?'PBH Hủy':'DVVC Chưa lấy';
+    box.innerHTML=`<div class="compareTabs"><button class="btn gray ${pbhMode==='pbhCancel'?'active':''}" onclick="switchPbhMode('pbhCancel')">PBH Hủy</button><button class="btn gray ${pbhMode==='dvvcPending'?'active':''}" onclick="switchPbhMode('dvvcPending')">DVVC Chưa lấy</button><span class="compareDate">${title} · ${dateDMY(curDate())}</span></div><div class="compareWrap"><div class="compareBox"><h3>SHOP</h3><textarea placeholder="Dán danh sách mã vận đơn, mỗi mã 1 dòng" oninput="savePbhText('shopText',this.value)">${esc2(d.shopText||'')}</textarea></div><div class="compareBox"><h3>${second}</h3><textarea placeholder="Dán danh sách mã vận đơn, mỗi mã 1 dòng" oninput="savePbhText('systemText',this.value)">${esc2(d.systemText||'')}</textarea></div></div><div class="compareActions"><button class="btn blue" onclick="renderPBH()">Đối soát</button><span id="pbhSummary" class="copyHint"></span></div><div class="compareResult"><div class="resultCol resultMatch"><h4>Khớp (${r.match.length})</h4>${renderRows(r.match,'match')}</div><div class="resultCol resultMissA"><h4>Thiếu Shop (${r.missShop.length})</h4>${renderRows(r.missShop,'missShop')}</div><div class="resultCol resultMissB"><h4>Thiếu ${second} (${r.missSystem.length})</h4>${renderRows(r.missSystem,'missSystem')}</div></div>`; renderPbhSummaryOnly();
+  };
+
+  // Đổi panel PBH nếu bản trước tạo đơn giản
+  function ensurePbhPanelText(){const p=$('pbhTab'); if(p){ const title=p.querySelector('.section-title'); if(title){title.innerHTML=`<h2>📦 PBH Hủy/Chưa lấy</h2><span class="hint">Dán danh sách MVD 2 bên để đối soát. Lý do nhập tự do sau khi kiểm tra.</span>`;} if(!$('pbhList')) p.insertAdjacentHTML('beforeend','<div class="card masterbox" id="pbhList"></div>'); }}
+
+  // Hướng dẫn công việc: tên + nội dung + ảnh, admin thêm/sửa/xóa
+  window.addGuide=function(){if(!isAdmin())return; state.guides=state.guides||[]; state.guides.push({id:'g_'+Date.now(),title:'Hướng dẫn mới',content:'',imgs:[],updatedAt:Date.now()}); saveGuides(); renderGuide();};
+  window.saveGuide=function(id,field,val){const g=(state.guides||[]).find(x=>x.id===id); if(!g)return; g[field]=val; g.updatedAt=Date.now(); saveGuides();};
+  window.delGuide=function(id){if(!isAdmin())return; if(confirm('Xóa hướng dẫn này?')){state.guides=(state.guides||[]).filter(x=>x.id!==id); saveGuides(); renderGuide();}};
+  window.pickGuideImage=function(id){const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=async()=>{const f=inp.files&&inp.files[0]; if(f) await addGuideImage(id,f);}; inp.click();};
+  window.addGuideImage=async function(id,file){const g=(state.guides||[]).find(x=>x.id===id); if(!g)return; let url; try{url=window.uploadOrBase64?await window.uploadOrBase64(file):await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file);});}catch(e){alert('Lỗi tải ảnh: '+e.message);return;} g.imgs=g.imgs||[]; g.imgs.push(url); await saveGuides(); renderGuide();};
+  window.delGuideImage=function(id,i){if(!isAdmin())return; const g=(state.guides||[]).find(x=>x.id===id); if(!g)return; (g.imgs||[]).splice(i,1); saveGuides(); renderGuide();};
+  window.openGuideGallery=function(id,i){const g=(state.guides||[]).find(x=>x.id===id); if(g&&window.openGallery) openGallery(g.imgs||[],i||0,'Ảnh hướng dẫn');};
+  window.renderGuide=function(){const box=$('guideList'); if(!box)return; const list=state.guides||[]; box.innerHTML=list.length?list.map(g=>`<div class="guideCard"><div class="guideGrid"><div>${isAdmin()?`<input value="${esc2(g.title||'')}" placeholder="Tên công việc" oninput="saveGuide('${g.id}','title',this.value)">`:`<div class="guideTitle">${esc2(g.title||'')}</div>`}</div><div>${isAdmin()?`<textarea placeholder="Nội dung hướng dẫn" oninput="saveGuide('${g.id}','content',this.value)">${esc2(g.content||'')}</textarea>`:`<div class="guideText">${esc2(g.content||'')}</div>`}<div class="guideImgList">${(g.imgs||[]).map((src,i)=>`<span class="guideImgWrap"><img src="${src}" onclick="openGuideGallery('${g.id}',${i})">${isAdmin()?`<button onclick="event.stopPropagation();delGuideImage('${g.id}',${i})">×</button>`:''}</span>`).join('')}</div>${isAdmin()?`<div class="guideActions"><button class="btn gray" onclick="pickGuideImage('${g.id}')">📷 Thêm ảnh</button><span class="copyHint">Có thể chọn ảnh để thêm vào hướng dẫn</span></div>`:''}</div><div class="adminOnly"><button class="btn red" onclick="delGuide('${g.id}')">Xóa</button></div></div></div>`).join(''):'<div style="padding:20px;color:#667085;font-weight:800">Chưa có hướng dẫn</div>';};
+
+  // cột Giờ: trên giờ, dưới ngày nhỏ
+  const oldRow=window.row;
+  window.row=function(t){let html=oldRow?oldRow(t):''; if(!t)return html; const old=`<td><b>${t.time}</b></td>`; const rep=`<td><div class="timeStack"><div class="timeMain">${esc2(t.time||'')}</div><div class="dateSub">${dateDMY(t.date)}</div></div></td>`; if(html.includes(old)) return html.replace(old,rep); return html.replace(/<td><b>[^<]*<\/b><\/td>/,rep);};
+  const oldRenderDaily=window.renderDaily;
+  window.renderDaily=function(){ if(oldRenderDaily) oldRenderDaily(); document.querySelectorAll('#dailyBody tr').forEach(tr=>{const td=tr.children&&tr.children[0]; if(td && !td.querySelector('.timeStack')){const time=(td.textContent||'').trim(); td.innerHTML=`<div class="timeStack"><div class="timeMain">${esc2(time)}</div><div class="dateSub">${dateDMY(curDate())}</div></div>`;}}); };
+
+  // đổi tên tab CV mẫu nếu còn chữ cũ
+  function renameMasterTab(){document.querySelectorAll('[data-tab="master"]').forEach(b=>{b.textContent='CV mẫu'}); document.querySelectorAll('.section-title h2').forEach(h=>{if((h.textContent||'').includes('Danh sách')) h.textContent='🧾 CV mẫu';});}
+  const oldSwitch=window.switchTab; window.switchTab=function(tab){ if(oldSwitch) oldSwitch(tab); setTimeout(()=>{renameMasterTab(); ensurePbhPanelText(); if(tab==='pbh'){loadCompare();renderPBH()} if(tab==='guide')renderGuide();},30); };
+  const oldRender=window.render; window.render=function(){ if(oldRender) oldRender(); setTimeout(()=>{renameMasterTab(); ensurePbhPanelText(); if(!$('pbhTab')?.classList.contains('hidden')) renderPBH(); if(!$('guideTab')?.classList.contains('hidden')) renderGuide();},20); };
+  document.addEventListener('change',e=>{if(e.target&&e.target.id==='fDate'){loadCompare();}});
+  setTimeout(()=>{renameMasterTab(); ensurePbhPanelText(); loadGuides(); loadCompare(); try{render();}catch(e){console.warn(e)}},1500);
+})();
+</script>
