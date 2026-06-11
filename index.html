@@ -2000,3 +2000,61 @@ body.employeeMode [data-tab="devices"]{display:inline-flex!important}body.employ
 
 </body>
 </html>
+
+<style>
+/* FINAL PATCH: restore detail UI + separate history column + 3-dot action menu */
+.tasktable col[data-col="log"]{display:table-column!important}
+.tasktable th[data-col="log"],.tasktable td.logCell{display:table-cell!important;width:82px!important;text-align:center}
+.tasktable th[data-col="act"],.tasktable td.action{width:86px!important;text-align:center}
+.action .dotbtn{width:38px;height:34px;border:0;border-radius:9px;background:#eef2f7;font-weight:900;font-size:20px;cursor:pointer}
+.action .menu{display:none;position:absolute;right:8px;top:42px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;box-shadow:0 12px 30px #0002;z-index:999;width:150px;overflow:hidden;text-align:left}
+.action .menu.open{display:block!important}
+.action .menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:10px 12px;font-weight:700;cursor:pointer;color:#111}
+.action .menu button:hover{background:#f1f5f9}.action .menu button.danger{color:#dc2626}
+</style>
+<script>
+/* FINAL PATCH: restore old detail layout + log column + action dropdown */
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc3=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const today3=()=>new Date().toISOString().slice(0,10);
+  function tasks3(){ if(!window.state) window.state={}; state.tasks=Array.isArray(state.tasks)?state.tasks:Object.values(state.tasks||{}).filter(Boolean); return state.tasks; }
+  function isAdmin3(){return $('role')?.value==='Admin'}
+  function empChips3(emp){return typeof window.empChips==='function'?window.empChips(emp):esc3(emp)}
+  function color3(emp){return typeof window.empColor==='function'?window.empColor(emp):'#60a5fa'}
+  function imgs3(t){if(typeof window.getImgs==='function')return window.getImgs(t);let a=[];if(t?.img)a.push(t.img);if(Array.isArray(t?.imgs))a=a.concat(t.imgs);return a.filter(Boolean)}
+  function rimgs3(t){return typeof window.getReportImgs==='function'?window.getReportImgs(t):(Array.isArray(t?.reportImgs)?t.reportImgs:[])}
+  function aimgs3(t){return typeof window.getAdminImgs==='function'?window.getAdminImgs(t):(Array.isArray(t?.adminImgs)?t.adminImgs:[])}
+  function mainStatus3(t){return t?.status==='Đã xong'?'Đã xong':'Chưa làm'}
+  function statusHtml3(t){return typeof window.statusHtml==='function'?window.statusHtml(t):`<span class="status ${mainStatus3(t)==='Đã xong'?'done':'todo'}">${mainStatus3(t)}</span>`}
+  function dur3(t){return typeof window.durationText==='function'?window.durationText(t):'-'}
+  function remind3(t){return typeof window.remindHtml==='function'?window.remindHtml(t):''}
+  window.toggleMenu=function(ev,id){
+    if(ev) ev.stopPropagation();
+    document.querySelectorAll('.menu').forEach(m=>{if(m.id!=='menu-'+id)m.classList.remove('open')});
+    const m=$('menu-'+id); if(m)m.classList.toggle('open');
+  };
+  document.addEventListener('click',()=>document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open')));
+  window.row=function(t){
+    const late=!!t._isLate, done=mainStatus3(t)==='Đã xong';
+    const cls=(done?'done ':'')+(late?'overdue ':'');
+    const id=esc3(t.id||''), imgs=imgs3(t), rimgs=rimgs3(t), aimgs=aimgs3(t);
+    const cLong=(t.content||'').length>190, nLong=(t.adminNote||'').length>145;
+    const menuStatus=done?(isAdmin3()?`<button onclick="setStatus('${id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${id}','Đã xong')">Đánh dấu xong</button>`;
+    const adminMenu=isAdmin3()?`<button onclick="openTaskForm('${id}')">Sửa</button><button onclick="manualRemind?.('${id}')">Nhắc ngay</button><button class="danger" onclick="delTask?.('${id}')">Xóa</button>`:'';
+    return `<tr class="${cls}" style="--empColor:${color3(t.emp)}"><td><b>${esc3(t.time||'')}</b></td><td><span class="titlepill" onclick="detail('${id}')">${esc3(t.title||'')}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc3(t.type||'Phát sinh')}</span></td><td><div class="clip contentText">${esc3(t.content||'')}</div>${cLong?`<button class="more" onclick="detail('${id}')">Xem thêm</button>`:''}</td><td>${empChips3(t.emp)}</td><td>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery?.('${id}',0)">📷 ${imgs.length}</button>`:'<span class="imgbadge empty">Không</span>'}</td><td>${isAdmin3()?`<textarea class="quickText" placeholder="Admin ghi chú..." onclick="openAdminNote?.('${id}')" oninput="quickAdminNote?.('${id}',this.value)">${esc3(t.adminNote||'')}</textarea>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery?.('${id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`:`<div class="clip">${esc3(t.adminNote||'')}</div>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery?.('${id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}${nLong?`<button class="more" onclick="detail('${id}')">Xem thêm</button>`:''}`}</td><td><textarea class="quickText" placeholder="Bấm để nhập báo cáo..." onclick="openReport?.('${id}')" oninput="quickReport?.('${id}',this.value)">${esc3(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery?.('${id}',0)">📷 ${rimgs.length} ảnh báo cáo</button>`:''}</td><td>${statusHtml3(t)}</td><td><span class="durationBadge">${dur3(t)}</span></td><td class="remindCell">${remind3(t)}</td><td class="logCell"><button class="logBtn" onclick="showLogs?.('${id}')">${(t.logs||[]).length} dòng</button></td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${id}')">⋮</button><div class="menu" id="menu-${id}"><button onclick="detail('${id}')">Chi tiết</button>${menuStatus}${adminMenu}</div></td></tr>`;
+  };
+  window.detail=function(id){
+    const t=tasks3().find(x=>x.id===id); if(!t)return;
+    if(typeof window.filtered==='function'){try{window.filtered()}catch(e){}}
+    const imgs=imgs3(t), rimgs=rimgs3(t), aimgs=aimgs3(t);
+    window.detailCurrentId=id; window.activeDetailPaste='report';
+    if($('detailTitle')) detailTitle.textContent=(t.time||'')+' - '+(t.title||'');
+    const statusBtn=mainStatus3(t)==='Đã xong'?`<button class="btn orange" onclick="setStatus('${esc3(t.id)}','Chưa làm')">Mở lại</button>`:`<button class="btn green" onclick="setStatus('${esc3(t.id)}','Đã xong')">Đánh dấu xong</button>`;
+    if($('detailBody')) detailBody.innerHTML=`<div class="detailWrap" style="--empColor:${color3(t.emp)}"><div class="detailTop"><span class="info">Nhân viên: ${empChips3(t.emp)}</span><span class="info">Loại: ${esc3(t.type||'')}</span><span class="info">Trạng thái: ${statusHtml3(t)}</span><span class="info">TG xử lý: ${dur3(t)}</span><span class="info">Lịch sử: ${(t.logs||[]).length} dòng</span></div><div class="detailActions">${statusBtn}${isAdmin3()?`<button class="btn gray" onclick="openTaskForm('${esc3(t.id)}')">Sửa việc</button><button class="btn orange" onclick="manualRemind?.('${esc3(t.id)}')">Nhắc ngay</button><button class="btn red" onclick="delTask?.('${esc3(t.id)}')">Xóa</button>`:''}<button class="btn blue" onclick="copyTaskInfo?.('${esc3(t.id)}')">Copy Zalo</button></div><div class="detailMain"><div class="detailCore"><div><b>Giờ</b><div class="bigtime">${esc3(t.time||'')}</div></div><div><b>Tên công việc</b><div class="titlepill bigtitle">${esc3(t.title||'')}</div></div><div class="detailContentFull"><b>Nội dung</b><div class="bigcontent">${esc3(t.content||'').replace(/\n/g,'<br>')}</div></div></div><div class="detailSection"><div class="galleryHead"><h4>Ảnh công việc</h4>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery?.('${esc3(t.id)}',0)">Mở xem ${imgs.length} ảnh</button>`:''}</div>${imgs.length?`<div class="gallery">${imgs.map((src,i)=>`<img class="thumb" src="${src}" onclick="openTaskGallery?.('${esc3(t.id)}',${i})">`).join('')}</div>`:'Không có ảnh'}</div><div class="detailEditGrid"><div class="detailSection adminBox" id="detailAdminBox"><div class="galleryHead"><h4>Admin ghi chú</h4>${aimgs.length?`<button class="imgbadge" onclick="openAdminGallery?.('${esc3(t.id)}',0)">Mở xem ${aimgs.length} ảnh</button>`:''}</div>${isAdmin3()?`<textarea id="detailAdminNote" onfocus="detailSetPaste?.('admin')" oninput="quickAdminNote?.('${esc3(t.id)}',this.value)">${esc3(t.adminNote||'')}</textarea><div class="detailPasteHint">Ctrl+V để thêm ảnh admin. Tự lưu khi gõ.</div>`:`<div>${esc3(t.adminNote||'Không có').replace(/\n/g,'<br>')}</div>`}<div id="detailAdminPreview" class="previewImgs">${aimgs.map((src,i)=>`<img src="${src}" onclick="openAdminGallery?.('${esc3(t.id)}',${i})">`).join('')}</div></div><div class="detailSection reportBox" id="detailReportBox"><div class="galleryHead"><h4>Báo cáo nhân viên</h4>${rimgs.length?`<button class="imgbadge" onclick="openReportGallery?.('${esc3(t.id)}',0)">Mở xem ${rimgs.length} ảnh báo cáo</button>`:''}</div><textarea id="detailReportText" onfocus="detailSetPaste?.('report')" oninput="quickReport?.('${esc3(t.id)}',this.value)" placeholder="Nhân viên nhập báo cáo...">${esc3(t.report||'')}</textarea><div class="detailPasteHint">Ctrl+V để thêm ảnh báo cáo. Tự lưu khi gõ.</div><div id="detailReportPreview" class="previewImgs">${rimgs.map((src,i)=>`<img src="${src}" onclick="openReportGallery?.('${esc3(t.id)}',${i})">`).join('')}</div></div></div><div class="detailSection"><h4>Lịch sử thao tác</h4>${(t.logs||[]).map(x=>'• '+esc3(x)).join('<br>')||'Chưa có lịch sử'}</div></div></div>`;
+    if(typeof window.detailSetPaste==='function') setTimeout(()=>detailSetPaste('report'),0);
+    if(window.openModal) openModal('detailModal'); else $('detailModal')?.classList.add('open');
+  };
+  setTimeout(()=>{try{window.render?.()}catch(e){}},250);
+})();
+</script>
