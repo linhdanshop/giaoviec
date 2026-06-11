@@ -2942,12 +2942,20 @@ body.employeeMode #devicesTab input.deviceInput{background:#f1f5f9!important;col
   function empColor(emp){ if(typeof window.empColor==='function')return window.empColor(emp); return '#60a5fa'; }
   function empChips(emp){ if(typeof window.empChips==='function')return window.empChips(emp); return esc(emp||''); }
   function contentImgs(t){
-    const seen=new Set();
-    return arr(t?.contentImgs||t?.contentImages||t?.imgs).concat(t?.img?[t.img]:[]).filter(Boolean).filter(src=>{
-      if(seen.has(src))return false;
-      seen.add(src);
-      return true;
-    });
+    const unique=list=>{
+      const seen=new Set();
+      return list.filter(Boolean).filter(src=>{
+        if(seen.has(src))return false;
+        seen.add(src);
+        return true;
+      });
+    };
+    if(t?.sourceTemplateId&&Array.isArray(state?.dailyTemplates)){
+      const d=state.dailyTemplates.find(x=>x.id===t.sourceTemplateId);
+      const fromDaily=unique(arr(d?.contentImgs||d?.contentImages||d?.imgs).concat(d?.img?[d.img]:[]));
+      if(fromDaily.length)return fromDaily;
+    }
+    return unique(arr(t?.contentImgs||t?.contentImages||t?.imgs).concat(t?.img?[t.img]:[]));
   }
   function setContentImgs(t,a){t.contentImgs=a.filter(Boolean); t.contentImages=t.contentImgs; t.imgs=t.contentImgs; t.img=t.contentImgs[0]||''}
   function adminImgs(t){return arr(t?.adminImgs).filter(Boolean)}
