@@ -1845,5 +1845,158 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
   setTimeout(()=>{normalizeV43(); refreshMasterSelectV43(); renderDaily?.();},500);
 })();
 </script>
+
+<style>
+/* FINAL STATUS/UI FIX */
+.tasktable col[data-col="log"],.tasktable th[data-col="log"],.tasktable td.logCell{display:none!important}
+.tasktable th[data-col="act"],.tasktable td.action{width:138px!important}
+.tasktable th[data-col="remind"],.tasktable td.remindCell{width:135px!important}
+.statusStack{display:flex;flex-direction:column;gap:5px;align-items:flex-start}.statusStack .status{line-height:1.05}.statusStack .status.second{font-size:11px;padding:4px 8px}.tasktable tr.overdue td{background:#fff7ed!important}.tasktable tr.done td{background:#f4fff8!important}.tasktable tr.done.overdue td{background:#fffaf0!important}
+.remindBox{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.remindBtn{height:30px;border:0;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:900;padding:0 8px;cursor:pointer}.remindMini{width:62px;height:30px;border:1px solid #dbe3ef;border-radius:8px;padding:0 6px;font-size:12px;background:#fff}
+.stats .stat:nth-child(1){background:#eef6ff}.stats .stat:nth-child(2){background:#fff8e6}.stats .stat:nth-child(3){background:#fff1e8}.stats .stat:nth-child(4){background:#effdf4}.stats .stat:nth-child(5){background:#eef2ff}.stats .stat:nth-child(6){background:#f8f4ff}.stats .stat{border:1px solid #dbe3ef!important;box-shadow:0 6px 16px #0f172a08}.stats .stat.active{outline:2px solid #2563eb!important;box-shadow:0 0 0 3px #dbeafe!important}.stats .stat b{color:#0f172a}.stats .stat span{font-weight:800}
+#detailModal{z-index:60}.modal.editOnTop{z-index:80}.menu{z-index:90}.action .btn{height:32px;padding:0 9px;font-size:12px}.actionBtns{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.actionBtns .btn{height:30px}.actionLog{font-size:12px;color:#64748b;font-weight:800;margin-top:4px;display:block}.logBtn{border:0;background:#eef2f7;border-radius:8px;padding:6px 8px;font-weight:900;cursor:pointer;color:#334155}
+body.employeeMode [data-tab="devices"]{display:inline-flex!important}body.employeeMode #devicesTab{display:block}
+</style>
+<script>
+/* FINAL STATUS/UI FIX */
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc2=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const today2=()=>new Date().toISOString().slice(0,10);
+  function splitEmp2(emp){return String(emp||'').split(',').map(x=>x.trim()).filter(Boolean)}
+  function tasks(){
+    if(!window.state) window.state={};
+    state.tasks=Array.isArray(state.tasks)?state.tasks:Object.values(state.tasks||{}).filter(Boolean);
+    return state.tasks;
+  }
+  function dateNowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
+  function timeMin(t){let [h,m]=String(t||'00:00').split(':').map(x=>parseInt(x,10));return (isNaN(h)?0:h)*60+(isNaN(m)?0:m)}
+  function currentDate(){return $('fDate')?.value||today2()}
+  function isAdmin2(){try{return $('role')?.value==='Admin'}catch(e){return false}}
+  function empChips2(emp){return (typeof window.empChips==='function')?window.empChips(emp):esc2(emp)}
+  function color2(emp){return (typeof window.empColor==='function')?window.empColor(emp):'#60a5fa'}
+  function imgsOf(t){if(typeof window.getImgs==='function')return window.getImgs(t);let a=[];if(t.img)a.push(t.img);if(Array.isArray(t.imgs))a=a.concat(t.imgs);return a.filter(Boolean)}
+  function reportImgs(t){return typeof window.getReportImgs==='function'?window.getReportImgs(t):(Array.isArray(t.reportImgs)?t.reportImgs:[])}
+  function adminImgs(t){return typeof window.getAdminImgs==='function'?window.getAdminImgs(t):(Array.isArray(t.adminImgs)?t.adminImgs:[])}
+  function mainStatus(t){return t.status==='Đã xong'?'Đã xong':'Chưa làm'}
+  function computeLate(list){
+    list.forEach(t=>{t._isLate=false;t._lateBy=[]});
+    const by={};
+    list.forEach(t=>splitEmp2(t.emp).forEach(e=>{(by[e]=by[e]||[]).push(t)}));
+    const nowDate=today2(), view=currentDate(), now=dateNowMin();
+    Object.keys(by).forEach(emp=>{
+      const arr=by[emp].slice().sort((a,b)=>timeMin(a.time)-timeMin(b.time)||(a.title||'').localeCompare(b.title||''));
+      arr.forEach((t,i)=>{
+        if(mainStatus(t)==='Đã xong'){
+          // vẫn có thể giữ cờ quá giờ nếu trước khi xong đã trễ, nhưng không có mốc doneAt cũ thì tính theo hiện tại
+        }
+        let deadline = arr[i+1] ? timeMin(arr[i+1].time) : timeMin(t.time)+60;
+        let late=false;
+        if(view<nowDate) late=true;
+        else if(view===nowDate && now>=deadline) late=true;
+        else if(view>nowDate) late=false;
+        if(late){t._isLate=true;t._lateBy.push(emp)}
+      });
+    });
+  }
+  window.statusHtml=function(t){
+    const done=mainStatus(t)==='Đã xong';
+    const late=!!t._isLate;
+    return `<div class="statusStack"><span class="status ${done?'done':'todo'}">${done?'Đã xong':'Chưa làm'}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div>`;
+  };
+  function remindList(t){return String(t.remindPlan||'').split(',').map(x=>parseInt(x.trim(),10)).filter(n=>!isNaN(n)&&n>0)}
+  window.remindHtml=function(t){
+    const plan=remindList(t).join(',');
+    const dis=isAdmin2()?'':'disabled';
+    return `<div class="remindBox"><button class="remindBtn" onclick="manualRemind?.('${esc2(t.id)}')">🔔</button><input class="remindMini" ${dis} value="${esc2(plan)}" placeholder="10,20" onchange="updateRemindPlan('${esc2(t.id)}',this.value)"></div>`;
+  };
+  window.updateRemindPlan=function(id,val){
+    const t=tasks().find(x=>x.id===id); if(!t || !isAdmin2())return;
+    t.remindPlan=val;t.firedReminders=[];t.logs=t.logs||[];t.logs.push((new Date()).toLocaleString('vi-VN')+' cập nhật nhắc việc');
+    try{window.save?.(t.date||currentDate())?.then(()=>window.render?.())}catch(e){try{window.save?.();window.render?.()}catch(_){}}
+  };
+  window.setStatus=function(id,status){
+    const t=tasks().find(x=>x.id===id); if(!t)return;
+    const newStatus=status==='Đã xong'?'Đã xong':'Chưa làm';
+    t.status=newStatus;t.completedAt=newStatus==='Đã xong'?Date.now():null;t.logs=t.logs||[];t.logs.push((new Date()).toLocaleString('vi-VN')+' đổi trạng thái: '+newStatus);
+    try{window.save?.(t.date||currentDate())?.then(()=>window.render?.())}catch(e){try{window.save?.();window.render?.()}catch(_){}}
+  };
+  window.showLogs=function(id){
+    const t=tasks().find(x=>x.id===id); if(!t)return;
+    const html=`<div class="detailWrap"><div class="detailMain"><div class="detailSection"><h4>Lịch sử thao tác</h4><div class="copyBox">${esc2((t.logs||[]).join('\n')||'Chưa có lịch sử')}</div></div></div></div>`;
+    if($('detailTitle')) detailTitle.textContent='Lịch sử: '+(t.title||'');
+    if($('detailBody')) detailBody.innerHTML=html;
+    (window.openModal?openModal('detailModal'):$('detailModal')?.classList.add('open'));
+  };
+  window.editTaskFromDetail=function(id){
+    if($('detailModal')) $('detailModal').classList.remove('open');
+    setTimeout(()=>{if($('taskModal'))$('taskModal').classList.add('editOnTop');window.openTaskForm?.(id);},80);
+  };
+  const oldClose=window.closeModal;
+  window.closeModal=function(id){if(id==='taskModal'&&$('taskModal'))$('taskModal').classList.remove('editOnTop');return oldClose?oldClose(id):$(id)?.classList.remove('open')};
+  window.detail=function(id){
+    const t=tasks().find(x=>x.id===id); if(!t)return;
+    computeLate(tasks().filter(x=>x.date===(t.date||currentDate())));
+    const imgs=imgsOf(t), rimgs=reportImgs(t), aimgs=adminImgs(t);
+    if($('detailTitle')) detailTitle.textContent='Chi tiết công việc';
+    const editBtn=isAdmin2()?`<button class="btn blue" onclick="editTaskFromDetail('${esc2(t.id)}')">Sửa việc</button>`:'';
+    if($('detailBody')) detailBody.innerHTML=`
+      <div class="detailWrap">
+        <div class="detailActions">${editBtn}<button class="btn gray" onclick="showLogs('${esc2(t.id)}')">Lịch sử (${(t.logs||[]).length})</button></div>
+        <div class="detailTop"><span class="info">${esc2(t.time||'')}</span><span class="info">${empChips2(t.emp)}</span><span class="info">${window.statusHtml(t)}</span></div>
+        <div class="detailMain">
+          <div class="detailCore"><div class="bigtime">${esc2(t.time||'')}</div><div class="bigtitle">${esc2(t.title||'')}</div><div class="detailContentFull"><div class="bigcontent">${esc2(t.content||'')}</div></div></div>
+          <div class="detailEditGrid"><div class="detailSection adminBox"><h4>Admin ghi chú</h4><div>${esc2(t.adminNote||'')}</div>${aimgs.length?`<br><button class="imgbadge" onclick="openAdminGallery?.('${esc2(t.id)}',0)">📷 ${aimgs.length} ảnh</button>`:''}</div>
+          <div class="detailSection reportBox"><h4>Báo cáo NV</h4><div>${esc2(t.report||'')}</div>${rimgs.length?`<br><button class="imgbadge" onclick="openReportGallery?.('${esc2(t.id)}',0)">📷 ${rimgs.length} ảnh</button>`:''}</div></div>
+          <div class="detailSection"><h4>Ảnh công việc</h4>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery?.('${esc2(t.id)}',0)">📷 ${imgs.length} ảnh</button>`:'Không có ảnh'}</div>
+        </div>
+      </div>`;
+    (window.openModal?openModal('detailModal'):$('detailModal')?.classList.add('open'));
+  };
+  window.row=function(t){
+    const late=!!t._isLate, done=mainStatus(t)==='Đã xong';
+    const cls=(done?'done ':'')+(late?'overdue ':'');
+    const imgs=imgsOf(t), rimgs=reportImgs(t), aimgs=adminImgs(t);
+    const title=esc2(t.title||''), id=esc2(t.id||'');
+    const statusBtn=done?`<button class="btn gray" onclick="setStatus('${id}','Chưa làm')">Mở lại</button>`:`<button class="btn green" onclick="setStatus('${id}','Đã xong')">Xong</button>`;
+    const edit=isAdmin2()?`<button class="btn gray" onclick="openTaskForm('${id}')">Sửa</button>`:'';
+    const del=isAdmin2()?`<button class="btn red" onclick="delTask?.('${id}')">Xóa</button>`:'';
+    const logBtn=`<button class="logBtn" onclick="showLogs('${id}')">LS ${(t.logs||[]).length}</button>`;
+    return `<tr class="${cls}" style="--empColor:${color2(t.emp)}"><td><b>${esc2(t.time||'')}</b></td><td><span class="titlepill" onclick="detail('${id}')">${title}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc2(t.type||'Phát sinh')}</span></td><td><div class="clip contentText">${esc2(t.content||'')}</div><button class="more" onclick="detail('${id}')">Xem thêm</button></td><td>${empChips2(t.emp)}</td><td>${imgs.length?`<button class="imgbadge" onclick="openTaskGallery?.('${id}',0)">📷 ${imgs.length}</button>`:'<span class="imgbadge empty">Không</span>'}</td><td>${isAdmin2()?`<textarea class="quickText" placeholder="Admin ghi chú..." onclick="openAdminNote?.('${id}')" oninput="quickAdminNote?.('${id}',this.value)">${esc2(t.adminNote||'')}</textarea>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery?.('${id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`:`<div class="clip">${esc2(t.adminNote||'')}</div>${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery?.('${id}',0)">📷 ${aimgs.length} ảnh ghi chú</button>`:''}`}</td><td><textarea class="quickText" placeholder="Bấm để nhập báo cáo..." onclick="openReport?.('${id}')" oninput="quickReport?.('${id}',this.value)">${esc2(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery?.('${id}',0)">📷 ${rimgs.length} ảnh báo cáo</button>`:''}</td><td>${window.statusHtml(t)}</td><td><span class="durationBadge">${typeof durationText==='function'?durationText(t):'-'}</span></td><td class="remindCell">${window.remindHtml(t)}</td><td class="logCell"></td><td class="action"><div class="actionBtns">${statusBtn}${edit}${logBtn}${del}</div></td></tr>`;
+  };
+  window.filtered=function(){
+    let arr=tasks().filter(t=>(t.date||currentDate())===currentDate());
+    computeLate(arr);
+    const emp=$('fEmp')?.value||'Tất cả', st=$('fStatus')?.value||'Tất cả', tp=$('fType')?.value||'Tất cả', q=($('fSearch')?.value||'').toLowerCase().trim();
+    if(emp!=='Tất cả') arr=arr.filter(t=>splitEmp2(t.emp).includes(emp));
+    if(tp!=='Tất cả') arr=arr.filter(t=>(t.type||'Phát sinh')===tp);
+    if(st==='Quá giờ') arr=arr.filter(t=>t._isLate);
+    else if(st!=='Tất cả') arr=arr.filter(t=>mainStatus(t)===st);
+    if(q) arr=arr.filter(t=>[t.title,t.content,t.adminNote,t.report,t.emp].join(' ').toLowerCase().includes(q));
+    return arr.sort((a,b)=>timeMin(a.time)-timeMin(b.time)||(a.title||'').localeCompare(b.title||''));
+  };
+  window.render=function(){
+    try{syncFilterChips?.();syncStatsActive?.();renderDevices?.()}catch(e){}
+    const all=tasks().filter(t=>(t.date||currentDate())===currentDate()); computeLate(all);
+    const arr=window.filtered();
+    if($('stTotal')) stTotal.textContent=all.length;
+    if($('stTodo')) stTodo.textContent=all.filter(t=>mainStatus(t)==='Chưa làm').length;
+    if($('stLate')) stLate.textContent=all.filter(t=>t._isLate).length;
+    if($('stDone')) stDone.textContent=all.filter(t=>mainStatus(t)==='Đã xong').length;
+    if($('stDaily')) stDaily.textContent=all.filter(t=>t.type==='Hằng ngày').length;
+    if($('stOnce')) stOnce.textContent=all.filter(t=>t.type==='Phát sinh').length;
+    if($('taskBody')) taskBody.innerHTML=arr.map(window.row).join('')||'<tr><td colspan="12" style="text-align:center;color:#64748b;padding:24px">Chưa có công việc</td></tr>';
+    try{renderDaily?.();renderMaster?.();renderEmployees?.()}catch(e){}
+  };
+  const oldApplyRole=window.applyRole;
+  window.applyRole=function(){
+    try{oldApplyRole?.()}catch(e){}
+    document.querySelectorAll('[data-tab="devices"]').forEach(x=>x.classList.remove('hidden'));
+    if($('devicesTab') && document.querySelector('[data-tab="devices"]')?.classList.contains('active')) $('devicesTab').classList.remove('hidden');
+  };
+  setTimeout(()=>{try{window.render?.();window.applyRole?.()}catch(e){}},400);
+})();
+</script>
+
 </body>
 </html>
