@@ -1998,6 +1998,154 @@ body.employeeMode [data-tab="devices"]{display:inline-flex!important}body.employ
 })();
 </script>
 
+
+
+<style>
+/* FINAL FIX 3: content images as link refs + delete image + device tab employee + reminder bell restore */
+.previewImgWrap{position:relative;display:inline-block;margin:4px}.previewImgWrap img{width:80px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef}.imgDel{position:absolute;right:-7px;top:-7px;border:0;border-radius:999px;background:#dc2626;color:#fff;width:22px;height:22px;font-weight:900;cursor:pointer;line-height:20px;box-shadow:0 2px 8px #0003}.gallery .thumbWrap{position:relative;display:inline-block}.gallery .thumbWrap .imgDel{right:0;top:0}.contentImgHint{font-size:12px;color:#64748b;font-weight:800;margin-top:6px}.contentImgGallery{margin-top:10px;padding-top:10px;border-top:1px dashed #fed7aa}.contentImgGallery h4{margin:0 0 8px;font-size:13px;color:#92400e}.tasktable td:nth-child(3) .imgbadge{margin-top:6px}.dailyContentBox .imgbadge{margin-left:0}.remindBox.alwaysBell .remindBtn{display:inline-flex!important}.remindBox.empty .remindBtn{background:#f1f5f9;color:#64748b}.deviceInput[disabled]{background:#f1f5f9!important;color:#64748b!important;cursor:not-allowed}.tab[data-tab="devices"]{display:inline-flex!important}
+</style>
+<script>
+/* FINAL FIX 3 */
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const today=()=>new Date().toISOString().slice(0,10);
+  const isAdmin=()=>($('role')?.value==='Admin');
+  const toArr=x=>Array.isArray(x)?x:Object.values(x||{}).filter(Boolean);
+  function norm(){ if(!window.state)window.state={}; state.tasks=toArr(state.tasks); state.dailyTemplates=toArr(state.dailyTemplates); state.masters=toArr(state.masters); state.employees=toArr(state.employees); }
+  function contentImgs(t){
+    let a=[]; if(t?.contentImage)t.contentImages=[t.contentImage];
+    if(Array.isArray(t?.contentImages))a=a.concat(t.contentImages);
+    else if(Array.isArray(t?.imgs))a=a.concat(t.imgs);
+    if(t?.img)a=[t.img].concat(a);
+    return [...new Set(a.filter(Boolean))];
+  }
+  function setContentImgs(t,arr){ t.contentImages=(arr||[]).filter(Boolean); t.imgs=t.contentImages.slice(); t.img=''; }
+  window.getContentImgsV43=contentImgs;
+  window.setContentImgsV43=setContentImgs;
+
+  window.renderPreview=function(id,arr){
+    const box=$(id); if(!box)return;
+    const list=arr||[];
+    box.innerHTML=list.map((src,i)=>`<span class="previewImgWrap"><img src="${esc(src)}"><button type="button" class="imgDel" title="Xóa ảnh" onclick="removePreviewImageV43('${esc(id)}',${i})">×</button></span>`).join('');
+  };
+  window.removePreviewImageV43=function(id,i){
+    let arr=[];
+    if(id==='taskPreview')arr=window.tempTaskImgs||[];
+    else if(id==='reportPreview')arr=window.tempReportImgs||[];
+    else if(id==='adminPreview')arr=window.tempAdminImgs||[];
+    else return;
+    arr.splice(i,1); window.renderPreview(id,arr);
+  };
+
+  const oldOpenTask=window.openTaskForm;
+  window.openTaskForm=function(id=null,type=null){
+    if(oldOpenTask)oldOpenTask(id,type);
+    setTimeout(()=>{
+      norm();
+      let item=null;
+      if(type==='Hằng ngày') item=state.dailyTemplates.find(x=>x.id===id);
+      else item=state.tasks.find(x=>x.id===id);
+      if(item){ window.tempTaskImgs=contentImgs(item).slice(); window.renderPreview('taskPreview',window.tempTaskImgs); }
+      const area=$('mContent');
+      if(area && !area.dataset.contentImgHint){
+        area.dataset.contentImgHint='1';
+        area.insertAdjacentHTML('afterend','<div class="contentImgHint">Ảnh dán vào đây sẽ lưu chung với Nội dung cần làm. Khi sinh việc hằng ngày chỉ copy link ảnh, không nhân bản file ảnh.</div>');
+      }
+      const pb=document.querySelector('#taskModal .pastebox'); if(pb)pb.textContent='Ctrl+V ảnh nội dung cần làm vào popup này';
+    },100);
+  };
+
+  const oldSaveTask=window.saveTask;
+  window.saveTask=function(){
+    norm();
+    const isDaily=($('mType')?.value==='Hằng ngày') || String($('editId')?.value||'').startsWith('daily:') || (state.dailyTemplates||[]).some(x=>x.id===$('editId')?.value);
+    if(isDaily){
+      const idRaw=String($('editId')?.value||''); const id=idRaw.startsWith('daily:')?idRaw.slice(6):(idRaw||('daily_'+Date.now()));
+      const emp=[...document.querySelectorAll('#mEmpGroup input:checked')].map(x=>x.value).join(', ');
+      const title=($('mTitle')?.value||'').trim(); if(!title){alert('Nhập tên công việc');return;}
+      const payload={id,title,time:$('mTime')?.value||'08:00',emp,content:($('mContent')?.value||'').trim(),note:($('mAdminNote')?.value||'').trim(),adminNote:($('mAdminNote')?.value||'').trim(),remindPlan:($('mRemind')?.value||'').trim(),active:true,updatedAt:Date.now()};
+      setContentImgs(payload,window.tempTaskImgs||[]);
+      const old=state.dailyTemplates.find(x=>x.id===id); if(old)Object.assign(old,payload); else state.dailyTemplates.push(payload);
+      const after=()=>{closeModal?.('taskModal');renderDaily?.();render?.();};
+      if(typeof window.saveV43==='function')window.saveV43().then(after); else if(typeof window.saveAll==='function'){window.saveAll();after();} else {try{save?.()}catch(e){} after();}
+      return;
+    }
+    if(oldSaveTask){oldSaveTask(); setTimeout(()=>{ const id=$('editId')?.value; if(id){const t=state.tasks.find(x=>x.id===id); if(t)setContentImgs(t,window.tempTaskImgs||[]);} },50); return;}
+  };
+
+  window.applyDailyToday=function(id){
+    norm(); const d=state.dailyTemplates.find(x=>x.id===id); if(!d)return;
+    const date=today(); let t=state.tasks.find(x=>x.date===date && x.sourceType==='daily' && x.sourceTemplateId===id);
+    const keep={status:t?.status||'Chưa làm',report:t?.report||'',reportImgs:t?.reportImgs||[],adminImgs:t?.adminImgs||[],logs:t?.logs||[]};
+    const data={id:t?.id||('daily_'+id+'_'+date.replace(/-/g,'')),date,type:'Hằng ngày',sourceType:'daily',sourceTemplateId:id,title:d.title,time:d.time,emp:d.emp,content:d.content,adminNote:d.note||d.adminNote||'',note:d.note||d.adminNote||'',remindPlan:d.remindPlan||'',active:true,...keep};
+    setContentImgs(data,contentImgs(d));
+    data.logs=data.logs||[]; data.logs.push(new Date().toLocaleString('vi-VN')+' áp dụng việc hằng ngày hôm nay');
+    if(t)Object.assign(t,data); else state.tasks.push(data);
+    const after=()=>{ if(($('fDate')?.value||date)===date)render?.(); renderDaily?.(); };
+    if(typeof window.saveV43==='function')window.saveV43(date).then(after); else if(typeof window.saveAll==='function'){window.saveAll(date);after();} else {try{save?.()}catch(e){} after();}
+  };
+
+  const oldRenderDaily=window.renderDaily;
+  window.renderDaily=function(){
+    norm(); const body=$('dailyBody'); if(!body){oldRenderDaily?.();return;}
+    const list=state.dailyTemplates.slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99')||(a.title||'').localeCompare(b.title||''));
+    body.innerHTML=list.map(d=>{const imgs=contentImgs(d), id=esc(d.id||'');return `<tr><td><b>${esc(d.time||'')}</b></td><td><b>${esc(d.title||'')}</b></td><td>${esc(d.emp||'')}</td><td><div class="dailyContentBox"><div>${esc(d.content||'')}</div>${imgs.length?`<button class="imgbadge dailyTableImg" onclick="openDailyGallery?.('${id}',0)">📷 ${imgs.length} ảnh nội dung</button>`:''}</div></td><td>${esc(d.note||d.adminNote||'')}</td><td><span class="status ${d.active===false?'todo':'done'}">${d.active===false?'Tắt':'Đang bật'}</span></td><td class="adminOnly"><div class="dailyActions"><button class="btn green" onclick="applyDailyToday('${id}')">Áp dụng hôm nay</button><button class="btn gray" onclick="openTaskForm('${id}','Hằng ngày')">Sửa</button><button class="btn red" onclick="deleteDailyTemplate?.('${id}')">Xóa</button></div></td></tr>`}).join('')||'<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px">Chưa có việc hằng ngày</td></tr>';
+    try{applyRole?.()}catch(e){}
+  };
+
+  window.remindHtml=function(t){
+    const plan=String(t?.remindPlan||'').split(',').map(x=>parseInt(x.trim(),10)).filter(n=>!isNaN(n)&&n>0).join(',');
+    const dis=isAdmin()?'':'disabled';
+    return `<div class="remindBox alwaysBell ${plan?'':'empty'}"><button class="remindBtn" title="Nhắc ngay công việc này" onclick="manualRemind?.('${esc(t.id)}')">🔔</button>${isAdmin()?`<input class="remindMini" value="${esc(plan)}" placeholder="trống" title="Trống thì không tự nhắc" onchange="updateRemindPlan('${esc(t.id)}',this.value)">`:`<input class="remindMini" ${dis} value="${esc(plan)}" placeholder="-">`}</div>`;
+  };
+
+  const oldApplyRole=window.applyRole;
+  window.applyRole=function(){
+    try{oldApplyRole?.()}catch(e){}
+    document.querySelectorAll('[data-tab="devices"]').forEach(x=>x.classList.remove('hidden'));
+    document.body.classList.toggle('employeeMode',!isAdmin());
+    ['devName','devIp'].forEach(id=>{const el=$(id); if(el){el.disabled=!isAdmin(); el.title=isAdmin()?'':'Nhân viên chỉ xem, không chỉnh sửa';}});
+  };
+  const oldSwitch=window.switchTab;
+  window.switchTab=function(t){
+    if(oldSwitch)oldSwitch(t);
+    if(t==='devices'){$('devicesTab')?.classList.remove('hidden');renderDevices?.();}
+    applyRole?.();
+  };
+  const oldSaveDev=window.saveDeviceInfo;
+  window.saveDeviceInfo=function(){ if(!isAdmin())return; return oldSaveDev?.(); };
+
+  const oldRow=window.row;
+  window.row=function(t){
+    if(!oldRow)return '';
+    const html=oldRow(t);
+    const imgs=contentImgs(t);
+    if(!imgs.length)return html;
+    return html.replace(`<div class="clip contentText">${esc(t.content||'')}</div>`,`<div class="clip contentText">${esc(t.content||'')}</div><button class="imgbadge" onclick="openTaskGallery?.('${esc(t.id)}',0)">📷 ${imgs.length} ảnh nội dung</button>`);
+  };
+
+  const oldDetail=window.detail;
+  window.detail=function(id){
+    if(oldDetail)oldDetail(id);
+    setTimeout(()=>{
+      norm(); const t=state.tasks.find(x=>x.id===id); if(!t)return; const imgs=contentImgs(t);
+      const core=document.querySelector('#detailBody .detailContentFull');
+      if(core && imgs.length && !core.dataset.contentImgsAdded){
+        core.dataset.contentImgsAdded='1';
+        core.insertAdjacentHTML('beforeend',`<div class="contentImgGallery"><h4>Ảnh nội dung cần làm</h4><div class="gallery">${imgs.map((src,i)=>`<span class="thumbWrap"><img class="thumb" src="${esc(src)}" onclick="openTaskGallery?.('${esc(id)}',${i})">${isAdmin()?`<button class="imgDel" onclick="removeTaskContentImgV43('${esc(id)}',${i})">×</button>`:''}</span>`).join('')}</div></div>`);
+      }
+    },100);
+  };
+  window.removeTaskContentImgV43=function(id,i){
+    norm(); const t=state.tasks.find(x=>x.id===id); if(!t)return; const arr=contentImgs(t); arr.splice(i,1); setContentImgs(t,arr); t.logs=t.logs||[];t.logs.push(new Date().toLocaleString('vi-VN')+' xóa ảnh nội dung');
+    if(typeof window.saveV43==='function')window.saveV43(t.date||today()).then(()=>{detail(id);render?.();}); else {try{save?.()}catch(e){} detail(id);render?.();}
+  };
+
+  setTimeout(()=>{try{applyRole();renderDaily();render();}catch(e){console.error(e)}},300);
+})();
+</script>
+
 </body>
 </html>
 
