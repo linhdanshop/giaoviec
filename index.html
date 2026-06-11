@@ -718,6 +718,565 @@ refreshEmployeeUI();render();applyRole();renderDevices();initColumnResize();askL
 setInterval(writeDevicePresence,30000);
 </script>
 
+<style id="UX_STATS_BAR_CLEAN_FINAL_20260611">
+#statsRow.stats{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:nowrap!important;
+  gap:0!important;
+  margin:6px 0 10px!important;
+  padding:0!important;
+  min-height:38px!important;
+  background:#ffffff!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  box-shadow:none!important;
+}
+#statsRow .stat{
+  flex:1 1 0!important;
+  min-width:0!important;
+  min-height:38px!important;
+  padding:0 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  border:0!important;
+  border-right:1px solid #e2e8f0!important;
+  border-radius:0!important;
+  background:#fff!important;
+  box-shadow:none!important;
+  transform:none!important;
+  white-space:nowrap!important;
+}
+#statsRow .stat:last-child{border-right:0!important}
+#statsRow .stat span{
+  order:1!important;
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  color:#64748b!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#statsRow .stat span::after{content:":"}
+#statsRow .stat b{
+  order:2!important;
+  font-size:18px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  color:#0f172a!important;
+}
+#statsRow .stat.active{
+  background:#eff6ff!important;
+  box-shadow:inset 0 0 0 2px #3b82f6!important;
+}
+#statsRow .stat.active span,#statsRow .stat.active b{color:#1d4ed8!important}
+@media(max-width:1050px){
+  #statsRow.stats{overflow-x:auto!important;flex-wrap:nowrap!important}
+#statsRow .stat{flex:0 0 118px!important}
+}
+</style>
+
+<style id="UX_STATS_DURATION_POLISH_LAST_20260611">
+#statsRow.stats{min-height:46px!important;margin:8px 0 12px!important;border-radius:12px!important;background:#f8fbff!important;border:1px solid #cfe0f5!important;box-shadow:none!important}
+#statsRow .stat{min-height:46px!important;padding:0 14px!important;gap:7px!important;justify-content:center!important;background:transparent!important}
+#statsRow .stat span{font-size:14px!important;color:#475569!important;letter-spacing:0!important}
+#statsRow .stat b{font-size:23px!important;color:#0f172a!important;min-width:22px!important;text-align:left!important}
+#statsRow .stat.active{background:#dbeafe!important;box-shadow:inset 0 0 0 2px #2563eb!important}
+#statsRow .stat.active span,#statsRow .stat.active b{color:#1d4ed8!important}
+.durationBadge{font-size:12px!important;gap:3px!important}
+</style>
+<script id="UX_DURATION_LATE_ONLY_LAST_20260611">
+(function(){
+  const $=id=>document.getElementById(id),arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+  const dateOf=(date,time)=>{const now=new Date(),d=String(date||now.toISOString().slice(0,10)).split('-').map(Number),tm=String(time||'00:00').split(':').map(Number);return new Date(d[0]||now.getFullYear(),(d[1]||1)-1,d[2]||1,tm[0]||0,tm[1]||0,0,0).getTime()};
+  const fmt=mins=>{mins=Math.max(0,Math.round(mins));if(mins<60)return mins+'p';const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m?String(m).padStart(2,'0'):'')};
+  const deadlineOf=t=>{norm();const date=t.date||$('fDate')?.value||new Date().toISOString().slice(0,10),emps=splitEmp(t.emp);const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>minOf(a.time)-minOf(b.time));const next=same.find(x=>minOf(x.time)>minOf(t.time));const limit=next?minOf(next.time):(minOf(t.time)+60);return dateOf(date,String(Math.floor(limit/60)).padStart(2,'0')+':'+String(limit%60).padStart(2,'0'))};
+  window.durationText=function(t){if(!t)return '-';const start=dateOf(t.date||$('fDate')?.value,t.time||'00:00'),doneAt=Number(t.completedAt||t.doneAt||0),end=t.status==='Đã xong'&&doneAt?doneAt:Date.now(),deadline=deadlineOf(t),elapsed=(end-start)/60000,late=(end-deadline)/60000,main=(t.status==='Đã xong'?'XL ':'Đang ')+fmt(elapsed);return late>0?main+'\nTrễ '+fmt(late):main};
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DURATION_LATE_ONLY_LAST_20260611',e)}},300);
+})();
+</script>
+
+<style id="UX_STATS_DURATION_POLISH_REALLY_FINAL_20260611">
+#statsRow.stats{
+  min-height:46px!important;
+  margin:8px 0 12px!important;
+  border-radius:12px!important;
+  background:#f8fbff!important;
+  border:1px solid #cfe0f5!important;
+}
+#statsRow .stat{
+  min-height:46px!important;
+  padding:0 14px!important;
+  gap:7px!important;
+  justify-content:center!important;
+  background:transparent!important;
+}
+#statsRow .stat span{
+  font-size:14px!important;
+  color:#475569!important;
+  letter-spacing:0!important;
+}
+#statsRow .stat b{
+  font-size:23px!important;
+  color:#0f172a!important;
+  min-width:22px!important;
+  text-align:left!important;
+}
+#statsRow .stat.active{
+  background:#dbeafe!important;
+  box-shadow:inset 0 0 0 2px #2563eb!important;
+}
+#statsRow .stat.active span,#statsRow .stat.active b{color:#1d4ed8!important}
+.durationBadge{font-size:12px!important;gap:3px!important}
+</style>
+<script id="UX_DURATION_LATE_ONLY_REALLY_FINAL_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+  const dateOf=(date,time)=>{const now=new Date(),d=String(date||now.toISOString().slice(0,10)).split('-').map(Number),tm=String(time||'00:00').split(':').map(Number);return new Date(d[0]||now.getFullYear(),(d[1]||1)-1,d[2]||1,tm[0]||0,tm[1]||0,0,0).getTime()};
+  const fmt=mins=>{mins=Math.max(0,Math.round(mins));if(mins<60)return mins+'p';const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m?String(m).padStart(2,'0'):'')};
+  const deadlineOf=t=>{norm();const date=t.date||$('fDate')?.value||new Date().toISOString().slice(0,10),emps=splitEmp(t.emp);const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>minOf(a.time)-minOf(b.time));const next=same.find(x=>minOf(x.time)>minOf(t.time));const limit=next?minOf(next.time):(minOf(t.time)+60);return dateOf(date,String(Math.floor(limit/60)).padStart(2,'0')+':'+String(limit%60).padStart(2,'0'))};
+  window.durationText=function(t){if(!t)return '-';const start=dateOf(t.date||$('fDate')?.value,t.time||'00:00'),doneAt=Number(t.completedAt||t.doneAt||0),end=t.status==='Đã xong'&&doneAt?doneAt:Date.now(),deadline=deadlineOf(t),elapsed=(end-start)/60000,late=(end-deadline)/60000,main=(t.status==='Đã xong'?'XL ':'Đang ')+fmt(elapsed);return late>0?main+'\nTrễ '+fmt(late):main};
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DURATION_LATE_ONLY_REALLY_FINAL_20260611',e)}},300);
+})();
+</script>
+
+<style id="UX_STATS_DURATION_POLISH_FINAL_20260611">
+#statsRow.stats{
+  min-height:46px!important;
+  margin:8px 0 12px!important;
+  border-radius:12px!important;
+  background:#f8fbff!important;
+  border:1px solid #cfe0f5!important;
+}
+#statsRow .stat{
+  min-height:46px!important;
+  padding:0 14px!important;
+  gap:7px!important;
+  justify-content:center!important;
+  background:transparent!important;
+}
+#statsRow .stat span{
+  font-size:14px!important;
+  color:#475569!important;
+  letter-spacing:0!important;
+}
+#statsRow .stat b{
+  font-size:23px!important;
+  color:#0f172a!important;
+  min-width:22px!important;
+  text-align:left!important;
+}
+#statsRow .stat.active{
+  background:#dbeafe!important;
+  box-shadow:inset 0 0 0 2px #2563eb!important;
+}
+#statsRow .stat.active span,#statsRow .stat.active b{color:#1d4ed8!important}
+.durationBadge{font-size:12px!important;gap:3px!important}
+</style>
+<script id="UX_DURATION_LATE_ONLY_FINAL_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+  const dateOf=(date,time)=>{
+    const now=new Date(),d=String(date||now.toISOString().slice(0,10)).split('-').map(Number),tm=String(time||'00:00').split(':').map(Number);
+    return new Date(d[0]||now.getFullYear(),(d[1]||1)-1,d[2]||1,tm[0]||0,tm[1]||0,0,0).getTime();
+  };
+  const fmt=mins=>{mins=Math.max(0,Math.round(mins));if(mins<60)return mins+'p';const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m?String(m).padStart(2,'0'):'')};
+  const deadlineOf=t=>{
+    norm();
+    const date=t.date||$('fDate')?.value||new Date().toISOString().slice(0,10),emps=splitEmp(t.emp);
+    const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>minOf(a.time)-minOf(b.time));
+    const next=same.find(x=>minOf(x.time)>minOf(t.time));
+    const limit=next?minOf(next.time):(minOf(t.time)+60);
+    return dateOf(date,String(Math.floor(limit/60)).padStart(2,'0')+':'+String(limit%60).padStart(2,'0'));
+  };
+  window.durationText=function(t){
+    if(!t)return '-';
+    const start=dateOf(t.date||$('fDate')?.value,t.time||'00:00'),doneAt=Number(t.completedAt||t.doneAt||0),end=t.status==='Đã xong'&&doneAt?doneAt:Date.now(),deadline=deadlineOf(t);
+    const elapsed=(end-start)/60000,late=(end-deadline)/60000;
+    const main=(t.status==='Đã xong'?'XL ':'Đang ')+fmt(elapsed);
+    return late>0?main+'\nTrễ '+fmt(late):main;
+  };
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DURATION_LATE_ONLY_FINAL_20260611',e)}},300);
+})();
+</script>
+
+<style id="UX_COMPACT_STATS_FILTERS_DURATION_20260611">
+#todayTab .filters{
+  display:grid!important;
+  grid-template-columns:170px minmax(260px,1fr) 110px 120px 120px minmax(120px,140px)!important;
+  gap:8px!important;
+  align-items:center!important;
+  padding:10px 12px!important;
+}
+#todayTab .filters .field label{display:none!important}
+#todayTab .filters .field{margin:0!important}
+#todayTab .filters input,#todayTab .filters select,#todayTab .filters button{height:42px!important}
+#todayTab .filters .hideField{display:none!important}
+#statsRow.stats{
+  display:flex!important;
+  gap:0!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  margin:8px 0!important;
+  padding:8px 12px!important;
+  background:#fff!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:12px!important;
+  box-shadow:0 8px 22px #0f172a0a!important;
+}
+#statsRow .stat{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  min-height:30px!important;
+  padding:4px 10px!important;
+  border:0!important;
+  border-right:1px solid #dbe3ef!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  white-space:nowrap!important;
+}
+#statsRow .stat:last-child{border-right:0!important}
+#statsRow .stat b{font-size:20px!important;line-height:1!important;color:#0f172a!important}
+#statsRow .stat span{font-size:13px!important;font-weight:900!important;color:#64748b!important}
+#statsRow .stat span::after{content:":";margin-left:1px}
+#statsRow .stat b{order:2}
+#statsRow .stat span{order:1}
+#statsRow .stat.active{background:#eff6ff!important;border-radius:8px!important;box-shadow:0 0 0 2px #bfdbfe!important}
+#statsRow .stat.active b,#statsRow .stat.active span{color:#2563eb!important}
+.tablebox{overflow-x:auto!important}
+.tasktable{
+  width:100%!important;
+  min-width:1180px!important;
+  table-layout:fixed!important;
+}
+.tasktable col[data-col="time"]{width:68px!important}
+.tasktable col[data-col="title"]{width:180px!important}
+.tasktable col[data-col="content"]{width:250px!important}
+.tasktable col[data-col="emp"]{width:90px!important}
+.tasktable col[data-col="admin"]{width:180px!important}
+.tasktable col[data-col="report"]{width:190px!important}
+.tasktable col[data-col="status"]{width:105px!important}
+.tasktable col[data-col="duration"]{width:110px!important}
+.tasktable col[data-col="remind"]{width:95px!important}
+.tasktable col[data-col="log"]{width:70px!important}
+.tasktable col[data-col="act"]{width:58px!important}
+.tasktable th,.tasktable td{padding-left:8px!important;padding-right:8px!important}
+.tasktable th{font-size:13px!important;line-height:1.05!important;text-align:center!important}
+.tasktable td{font-size:14px!important}
+.tasktable .titlepill{max-width:100%!important;font-size:17px!important;padding:9px 10px!important}
+.taskContentText,.clip3,.adminClip{font-size:15px!important;line-height:1.25!important;-webkit-line-clamp:2!important}
+.taskImgLine{margin-top:5px!important}
+.quickText{min-height:54px!important;height:54px!important;font-size:14px!important}
+.empchips{max-width:84px!important}
+.empchip{font-size:12px!important;padding:3px 7px!important}
+.durationBadge{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:2px!important;
+  border-radius:10px!important;
+  padding:5px 7px!important;
+  line-height:1.1!important;
+  white-space:normal!important;
+  font-size:11px!important;
+}
+.durationBadge .durMain{font-weight:900;color:#0f172a}
+.durationBadge .durLate{font-weight:900;color:#dc2626}
+.durationBadge .durEarly{font-weight:900;color:#15803d}
+.durationBadge .durWait{font-weight:900;color:#64748b}
+body.employeeMode .tasktable{min-width:1180px!important}
+body.employeeMode .tasktable th,body.employeeMode .tasktable td{display:table-cell!important}
+body.employeeMode .tasktable col{display:table-column!important}
+@media(min-width:1500px){
+  .tasktable{min-width:100%!important}
+}
+@media(max-width:1250px){
+  .tasktable{min-width:1120px!important}
+  .tasktable col[data-col="admin"]{width:155px!important}
+  .tasktable col[data-col="report"]{width:165px!important}
+  .tasktable col[data-col="content"]{width:220px!important}
+}
+</style>
+<script id="UX_DURATION_COMPACT_FINAL_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+  const dateOf=(date,time)=>{
+    const [y,m,d]=String(date||new Date().toISOString().slice(0,10)).split('-').map(Number);
+    const [hh,mm]=String(time||'00:00').split(':').map(Number);
+    return new Date(y||new Date().getFullYear(),(m||1)-1,d||1,hh||0,mm||0,0,0).getTime();
+  };
+  const fmt=mins=>{
+    mins=Math.max(0,Math.round(mins));
+    if(mins<60)return mins+'p';
+    const h=Math.floor(mins/60),m=mins%60;
+    return h+'h'+(m?String(m).padStart(2,'0'):'');
+  };
+  const deadlineOf=t=>{
+    norm();
+    const date=t.date||$('fDate')?.value||new Date().toISOString().slice(0,10);
+    const emps=splitEmp(t.emp);
+    const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>minOf(a.time)-minOf(b.time));
+    const next=same.find(x=>minOf(x.time)>minOf(t.time));
+    const limitMin=next?minOf(next.time):(minOf(t.time)+60);
+    return dateOf(date,String(Math.floor(limitMin/60)).padStart(2,'0')+':'+String(limitMin%60).padStart(2,'0'));
+  };
+  window.durationText=function(t){
+    if(!t)return '<span class="durWait">-</span>';
+    const start=dateOf(t.date||$('fDate')?.value,t.time||'00:00');
+    const doneAt=Number(t.completedAt||t.doneAt||0);
+    const end=t.status==='Đã xong'&&doneAt?doneAt:Date.now();
+    const deadline=deadlineOf(t);
+    const elapsed=(end-start)/60000;
+    const delta=(end-deadline)/60000;
+    const main=(t.status==='Đã xong'?'XL ':'Đang ')+fmt(elapsed);
+    const detail=delta>0?`<span class="durLate">Trễ ${fmt(delta)}</span>`:`<span class="durEarly">Sớm ${fmt(Math.abs(delta))}</span>`;
+    return `<span class="durMain">${main}</span>${detail}`;
+  };
+  const oldConfirm=window.confirmActor;
+  window.confirmActor=function(){
+    oldConfirm?.();
+    window.updateOperatorBar?.();
+  };
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DURATION_COMPACT_FINAL_20260611',e)}},500);
+})();
+</script>
+
+<style id="UX_NOTES_DATES_EMPLOYEE_20260611">
+.dateQuickActive{background:#2563eb!important;color:#fff!important;box-shadow:0 0 0 3px #dbeafe!important}
+body.employeeMode .tasktable{min-width:1180px!important}
+body.employeeMode .tasktable th:nth-child(8),body.employeeMode .tasktable td:nth-child(8),
+body.employeeMode .tasktable th:nth-child(9),body.employeeMode .tasktable td:nth-child(9),
+body.employeeMode .tasktable th:nth-child(10),body.employeeMode .tasktable td:nth-child(10){display:none!important}
+body.employeeMode .tasktable th:nth-child(1),body.employeeMode .tasktable td:nth-child(1){width:78px!important}
+body.employeeMode .tasktable th:nth-child(2),body.employeeMode .tasktable td:nth-child(2){width:210px!important}
+body.employeeMode .tasktable th:nth-child(3),body.employeeMode .tasktable td:nth-child(3){width:360px!important}
+body.employeeMode .tasktable th:nth-child(5),body.employeeMode .tasktable td:nth-child(5),
+body.employeeMode .tasktable th:nth-child(6),body.employeeMode .tasktable td:nth-child(6){width:245px!important}
+.notePopupView .previewImgs:empty{display:none!important}
+.notePopupView textarea[readonly]{background:#f8fafc!important;color:#0f172a!important}
+</style>
+<script id="UX_NOTES_DATES_EMPLOYEE_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const todayStr=()=>new Date().toISOString().slice(0,10);
+  const yesterdayStr=()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10)};
+  const isAdmin=()=>$('role')?.value==='Admin';
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);state.employees=arr(state.employees)};
+  const getTask=id=>{norm();return state.tasks.find(t=>t.id===id)};
+  const imgList=(t,key)=>arr(t?.[key]).filter(Boolean);
+  const setActiveDateButton=()=>{
+    const value=$('fDate')?.value||todayStr();
+    document.querySelectorAll('.filters .btn.gray').forEach(btn=>{
+      const txt=(btn.textContent||'').trim();
+      btn.classList.toggle('dateQuickActive',(txt==='Hôm nay'&&value===todayStr())||(txt==='Hôm qua'&&value===yesterdayStr()));
+    });
+  };
+  window.today=function(){window.switchTab?.('today');if($('fDate'))$('fDate').value=todayStr();setActiveDateButton();window.render?.()};
+  window.yesterday=function(){window.switchTab?.('today');if($('fDate'))$('fDate').value=yesterdayStr();setActiveDateButton();window.render?.()};
+  $('fDate')?.addEventListener('change',setActiveDateButton);
+
+  const oldRender=window.render;
+  window.render=function(){oldRender?.();document.body.classList.toggle('employeeMode',!isAdmin());setActiveDateButton();};
+
+  const oldApplyRole=window.applyRole;
+  window.applyRole=function(){oldApplyRole?.();document.body.classList.toggle('employeeMode',!isAdmin());};
+
+  window.openAdminNote=function(id){
+    const t=getTask(id); if(!t)return;
+    if($('aId'))aId.value=id;
+    if($('aText')){aText.value=t.adminNote||'';aText.readOnly=!isAdmin();}
+    window.tempAdminImgs=imgList(t,'adminImgs').slice();
+    window.renderPreview?.('adminPreview',window.tempAdminImgs);
+    $('adminNoteModal')?.classList.add('notePopupView');
+    const saveBtn=document.querySelector('#adminNoteModal .panelfoot .btn.blue');
+    if(saveBtn)saveBtn.style.display=isAdmin()?'':'none';
+    window.openModal?.('adminNoteModal');
+  };
+  window.saveAdminNote=function(){
+    if(!isAdmin())return window.closeModal?.('adminNoteModal');
+    const t=getTask($('aId')?.value); if(!t)return;
+    t.adminNote=$('aText')?.value||''; t.adminImgs=(window.tempAdminImgs||[]).slice(); t.logs=t.logs||[]; t.logs.push(new Date().toLocaleString('vi-VN')+' cập nhật Admin ghi chú');
+    if(typeof save==='function')save(); else if(typeof saveV43==='function')saveV43(t.date);
+    window.closeModal?.('adminNoteModal'); window.render?.();
+  };
+  window.openReport=function(id){
+    const t=getTask(id); if(!t)return;
+    if($('rId'))rId.value=id;
+    if($('rText'))rText.value=t.report||'';
+    window.tempReportImgs=imgList(t,'reportImgs').slice();
+    window.renderPreview?.('reportPreview',window.tempReportImgs);
+    $('reportModal')?.classList.add('notePopupView');
+    window.openModal?.('reportModal');
+  };
+  window.saveReport=function(){
+    const t=getTask($('rId')?.value); if(!t)return;
+    t.report=$('rText')?.value||''; t.reportImgs=(window.tempReportImgs||[]).slice(); t.logs=t.logs||[]; t.logs.push(new Date().toLocaleString('vi-VN')+' cập nhật Báo cáo NV');
+    if(typeof save==='function')save(); else if(typeof saveV43==='function')saveV43(t.date);
+    window.closeModal?.('reportModal'); window.render?.();
+  };
+
+  const oldRow=window.row;
+  window.row=function(t){
+    const html=oldRow?oldRow(t):'';
+    if(!html)return html;
+    const id=esc(t.id||'');
+    return html
+      .replace(/onclick="detail\('([^']+)'\)" oninput="quickAdminNote/g,`onclick="openAdminNote('${id}')" oninput="quickAdminNote`)
+      .replace(/onclick="detail\('([^']+)'\)" oninput="quickReport/g,`onclick="openReport('${id}')" oninput="quickReport`)
+      .replace(/<div class="clip3 adminClip" onclick="detail\('([^']+)'\)">/g,`<div class="clip3 adminClip" onclick="openAdminNote('${id}')">`);
+  };
+
+  setTimeout(()=>{setActiveDateButton();document.body.classList.toggle('employeeMode',!isAdmin());render?.();},1700);
+})();
+</script>
+
+<style id="UX_FINAL_LAST_20260611">
+.tasktable th{height:44px!important;text-align:center!important;vertical-align:middle!important;line-height:1.1!important;font-size:12px!important;letter-spacing:0!important;white-space:normal!important;padding:6px 8px!important}
+.tasktable td{vertical-align:top!important}
+.tasktable th:nth-child(1),.tasktable td:nth-child(1){width:82px!important}
+.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:220px!important}
+.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:390px!important}
+.tasktable th:nth-child(5),.tasktable td:nth-child(5),.tasktable th:nth-child(6),.tasktable td:nth-child(6){width:255px!important}
+.timeCell{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;line-height:1.05!important}
+.timeMain{font-size:22px!important;font-weight:900!important;color:#0f172a!important}
+.dateSub{font-size:11px!important;font-weight:800!important;color:#64748b!important}
+.titlepill{font-size:17px!important;line-height:1.2!important;padding:9px 12px!important}
+.taskContentBox{cursor:pointer!important}
+.taskContentText{display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;line-height:1.28!important;max-height:2.6em!important;font-size:17px!important;font-weight:900!important;color:#dc2626!important;word-break:break-word!important}
+.taskImgLine{display:block!important;margin-top:7px!important;min-height:24px!important}
+.taskImgLine .imgbadge{padding:4px 8px!important;font-size:13px!important}
+.taskContentBox .more{display:none!important}
+.quickText{height:62px!important;min-height:62px!important;max-height:62px!important;font-size:15px!important;line-height:1.35!important;cursor:pointer!important}
+.modal.open{z-index:10000!important}
+.modal.modalTop{z-index:10000!important}
+.imageViewer.modal.open{z-index:12000!important}
+#taskModal.open{z-index:13000!important}
+</style>
+<script id="UX_FINAL_LAST_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const today=()=>new Date().toISOString().slice(0,10);
+  const curDate=()=>$('fDate')?.value||today();
+  const newId=p=>(p||'id')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const isAdmin=()=>($('role')?.value==='Admin');
+  const byId=a=>{const o={};(a||[]).forEach(x=>{if(x&&x.id)o[x.id]=x});return o};
+  function norm(){if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);state.employees=arr(state.employees).map(x=>typeof x==='string'?x:(x.name||x.id)).filter(Boolean);state.system=state.system||{}}
+  function saveAll(date){norm();try{localStorage.setItem(typeof K==='string'?K:'task_reminder_v27_firebase',JSON.stringify({employees:state.employees,masters:state.masters,dailyTemplates:state.dailyTemplates,tasks:state.tasks,system:state.system}))}catch(e){};if(!window.db)return Promise.resolve();const d=date||curDate(),up={};up['taskReminder/employees']=state.employees;up['taskReminder/masters']=byId(state.masters);up['taskReminder/dailyTemplates']=byId(state.dailyTemplates);up['taskReminder/system']=state.system;up['taskReminder/tasks/'+d]=byId(state.tasks.filter(t=>(t.date||d)===d));return db.ref().update(up).catch(e=>alert('Firebase lỗi ghi: '+e.message))}
+  function uniqueImgs(list){const seen=new Set();return list.filter(Boolean).filter(src=>{if(seen.has(src))return false;seen.add(src);return true})}
+  function contentImgs(t){norm();if(t?.sourceTemplateId){const d=state.dailyTemplates.find(x=>x.id===t.sourceTemplateId);const a=uniqueImgs(arr(d?.contentImgs||d?.contentImages||d?.imgs).concat(d?.img?[d.img]:[]));if(a.length)return a}return uniqueImgs(arr(t?.contentImgs||t?.contentImages||t?.imgs).concat(t?.img?[t.img]:[]))}
+  function adminImgs(t){return arr(t?.adminImgs).filter(Boolean)}
+  function reportImgs(t){return arr(t?.reportImgs).filter(Boolean)}
+  function setContentImgs(t,a){t.contentImgs=a.filter(Boolean);t.contentImages=t.contentImgs;t.imgs=t.contentImgs;t.img=t.contentImgs[0]||''}
+  function mainStatus(t){return t&&t.status==='Đã xong'?'Đã xong':'Chưa làm'}
+  function empChips(emp){return typeof window.empChips==='function'?window.empChips(emp):esc(emp||'')}
+  function empColor(emp){return typeof window.empColor==='function'?window.empColor(emp):'#60a5fa'}
+  function statusHtml(t){return typeof window.statusHtml==='function'?window.statusHtml(t):`<span class="status todo">Chưa làm</span>`}
+  function remindHtml(t){return typeof window.remindHtml==='function'?window.remindHtml(t):''}
+  function duration(t){return typeof window.durationText==='function'?window.durationText(t):(typeof window.duration==='function'?window.duration(t):'-')}
+  function logLine(txt){return new Date().toLocaleString('vi-VN')+' '+txt+' - '+(isAdmin()?'Admin':($('currentEmp')?.value||'NV'))}
+  function fmtDate(d){if(!d)return '';const [y,m,day]=String(d).split('-');return day&&m?`${day}/${m}`:d}
+  function computeLate(date){if(typeof window.computeLate==='function')return window.computeLate(date);return state.tasks.filter(t=>(t.date||date)===date)}
+  window.fixTable=function(){const table=$('taskTable');if(!table)return;table.innerHTML='<colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time">GIỜ<br><span class="thSub">NGÀY</span></th><th data-col="title">TÊN CV</th><th data-col="content">NỘI DUNG</th><th data-col="emp">NHÂN VIÊN</th><th data-col="admin">ADMIN GHI CHÚ</th><th data-col="report">BÁO CÁO NV</th><th data-col="status">TRẠNG THÁI</th><th data-col="duration">TG XỬ LÝ</th><th data-col="remind">NHẮC VIỆC</th><th data-col="log">LỊCH SỬ</th><th data-col="act">THAO TÁC</th></tr></thead><tbody id="taskBody"></tbody>'};
+  window.row=function(t){const id=esc(t.id||''),cimgs=contentImgs(t),aimgs=adminImgs(t),rimgs=reportImgs(t),done=mainStatus(t)==='Đã xong';const menuStatus=done?(isAdmin()?`<button onclick="setStatus('${id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${id}','Đã xong')">Đánh dấu xong</button>`;const adminMenu=isAdmin()?`<button onclick="openTaskForm('${id}')">Sửa</button><button onclick="manualRemind('${id}')">Nhắc ngay</button><button class="danger" onclick="delTask('${id}')">Xóa</button>`:'';return `<tr class="${done?'done ':''}${t._isLate?'overdue ':''}" style="--empColor:${empColor(t.emp)}"><td><div class="timeCell"><span class="timeMain">${esc(t.time||'')}</span><span class="dateSub">${esc(fmtDate(t.date||curDate()))}</span></div></td><td><span class="titlepill" onclick="detail('${id}')">${esc(t.title||'')}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc(t.type||'Phát sinh')}</span></td><td><div class="taskContentBox" onclick="detail('${id}')"><div class="taskContentText">${esc(t.content||'')}</div><div class="taskImgLine">${cimgs.length?`<button class="imgbadge inlineImgBtn" onclick="event.stopPropagation();openTaskGallery('${id}',0)">📷 ${cimgs.length} ảnh</button>`:''}</div></div></td><td>${empChips(t.emp)}</td><td>${isAdmin()?`<textarea class="quickText paste-admin" data-task-id="${id}" placeholder="Admin ghi chú..." onclick="detail('${id}')" oninput="quickAdminNote?.('${id}',this.value)">${esc(t.adminNote||'')}</textarea>`:`<div class="clip3 adminClip" onclick="detail('${id}')">${esc(t.adminNote||'')}</div>`}${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${id}',0)">📷 ${aimgs.length} ảnh</button>`:''}</td><td><textarea class="quickText paste-report" data-task-id="${id}" placeholder="Bấm để nhập báo cáo..." onclick="detail('${id}')" oninput="quickReport?.('${id}',this.value)">${esc(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery('${id}',0)">📷 ${rimgs.length} ảnh</button>`:''}</td><td>${statusHtml(t)}</td><td><span class="durationBadge">${esc(duration(t))}</span></td><td class="remindCell">${remindHtml(t)}</td><td class="logCell"><button class="logBtn" onclick="showLogs?.('${id}')">${(t.logs||[]).length}</button></td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${id}')">⋮</button><div class="menu" id="menu-${id}"><button onclick="detail('${id}')">Chi tiết</button>${menuStatus}${adminMenu}</div></td></tr>`};
+  window.render=function(){fixTable();try{syncFilterChips?.();syncStatsActive?.();renderDevices?.();applyRole?.()}catch(e){}const date=curDate(),all=computeLate(date),list=typeof window.filtered==='function'?window.filtered():all;if($('stTotal'))stTotal.textContent=all.length;if($('stTodo'))stTodo.textContent=all.filter(t=>mainStatus(t)==='Chưa làm').length;if($('stLate'))stLate.textContent=all.filter(t=>t._isLate).length;if($('stDone'))stDone.textContent=all.filter(t=>mainStatus(t)==='Đã xong').length;if($('stDaily'))stDaily.textContent=all.filter(t=>t.type==='Hằng ngày').length;if($('stOnce'))stOnce.textContent=all.filter(t=>(t.type||'Phát sinh')==='Phát sinh').length;const body=$('taskBody');if(body)body.innerHTML=list.map(row).join('')||'<tr><td colspan="11" style="text-align:center;color:#64748b;padding:24px">Chưa có công việc</td></tr>';try{renderDaily?.();renderMaster?.();renderEmployees?.()}catch(e){}};
+  let modalZ=30000;window.openModal=function(id){const el=$(id);if(!el)return;el.style.zIndex=String(++modalZ);el.classList.add('open','modalTop')};window.closeModal=function(id){const el=$(id);if(el){el.classList.remove('open','modalTop');el.style.zIndex=''}};
+  const oldOpenTask=window.openTaskForm;
+  window.openTaskForm=function(id=null,type=null){if($('detailModal')?.classList.contains('open'))closeModal('detailModal');oldOpenTask?.(id,type);setTimeout(()=>{const t=state.tasks?.find(x=>x.id===id),d=state.dailyTemplates?.find(x=>x.id===id);if($('mType'))mType.value=type||t?.type||d?.type||(d?'Hằng ngày':mType.value||'Phát sinh');if($('taskModal'))openModal('taskModal')},80)};
+  window.saveTask=function(){norm();const edit=String($('editId')?.value||''),selectedType=$('mType')?.value||'Phát sinh',existingTask=state.tasks.find(x=>x.id===edit),existingTemplate=state.dailyTemplates.find(x=>x.id===edit);const emp=[...document.querySelectorAll('#mEmpGroup input[type="checkbox"]:checked')].map(x=>x.value).join(', '),title=($('mTitle')?.value||'').trim();if(!title){alert('Nhập tên công việc');return}const base={title,time:$('mTime')?.value||'08:00',emp,content:($('mContent')?.value||'').trim(),adminNote:($('mAdminNote')?.value||'').trim(),note:($('mAdminNote')?.value||'').trim(),img:$('mImg')?.value||'',contentImgs:(window.tempContentImgs6||[]).slice(),contentImages:(window.tempContentImgs6||[]).slice(),imgs:(window.tempContentImgs6||[]).slice(),adminImgs:(window.tempAdminImgs6||[]).slice(),remindPlan:$('mRemind')?.value||'',updatedAt:Date.now()};if(existingTemplate&&!existingTask){Object.assign(existingTemplate,{id:edit,...base,type:'Hằng ngày',active:existingTemplate.active!==false});saveAll(curDate()).then(()=>{closeModal('taskModal');renderDaily?.();render?.()});return}const date=$('mDate')?.value||curDate();if(existingTask){Object.assign(existingTask,{...base,date,type:selectedType});existingTask.logs=existingTask.logs||[];existingTask.logs.push(logLine('sửa công việc'))}else if(selectedType==='Hằng ngày'){const id=newId('daily');state.dailyTemplates.push({id,...base,type:'Hằng ngày',active:true});saveAll(date).then(()=>{closeModal('taskModal');renderDaily?.();render?.()});return}else state.tasks.push({id:newId('task'),...base,date,type:selectedType,status:'Chưa làm',report:'',reportImgs:[],logs:[logLine('tạo công việc')]});saveAll(date).then(()=>{closeModal('taskModal');render()})};
+  window.openTaskGallery=function(id,i=0){norm();const t=state.tasks.find(x=>x.id===id);openGallery6?.(contentImgs(t),i,'Ảnh nội dung cần làm')};
+  window.removeContentImage=function(id,i){norm();const t=state.tasks.find(x=>x.id===id);if(!t)return;const a=contentImgs(t);a.splice(i,1);setContentImgs(t,a);saveAll(t.date||curDate()).then(()=>{detail?.(t.id);render()})};
+  setTimeout(()=>{try{render()}catch(e){console.error('UX_FINAL_LAST_20260611',e)}},900);
+})();
+</script>
+
+<style id="UX_FINAL_20260611">
+.tasktable th{height:44px!important;text-align:center!important;vertical-align:middle!important;line-height:1.1!important;font-size:12px!important;letter-spacing:0!important;white-space:normal!important;padding:6px 8px!important}
+.tasktable td{vertical-align:top!important}
+.tasktable th:nth-child(1),.tasktable td:nth-child(1){width:82px!important}
+.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:220px!important}
+.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:390px!important}
+.tasktable th:nth-child(5),.tasktable td:nth-child(5),.tasktable th:nth-child(6),.tasktable td:nth-child(6){width:255px!important}
+.timeCell{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;line-height:1.05!important}
+.timeMain{font-size:22px!important;font-weight:900!important;color:#0f172a!important}
+.dateSub{font-size:11px!important;font-weight:800!important;color:#64748b!important}
+.titlepill{font-size:17px!important;line-height:1.2!important;padding:9px 12px!important}
+.taskContentBox{cursor:pointer!important}
+.taskContentText{display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;line-height:1.28!important;max-height:2.6em!important;font-size:17px!important;font-weight:900!important;color:#dc2626!important;word-break:break-word!important}
+.taskImgLine{display:block!important;margin-top:7px!important;min-height:24px!important}
+.taskImgLine .imgbadge{padding:4px 8px!important;font-size:13px!important}
+.taskContentBox .more{display:none!important}
+.quickText{height:62px!important;min-height:62px!important;max-height:62px!important;font-size:15px!important;line-height:1.35!important;cursor:pointer!important}
+.modal.open{z-index:10000!important}
+.modal.modalTop{z-index:10000!important}
+.imageViewer.modal.open{z-index:12000!important}
+#taskModal.open{z-index:13000!important}
+</style>
+<script id="UX_FINAL_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const today=()=>new Date().toISOString().slice(0,10);
+  const curDate=()=>$('fDate')?.value||today();
+  const newId=p=>(p||'id')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const isAdmin=()=>($('role')?.value==='Admin');
+  const splitEmp=emp=>String(emp||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const byId=a=>{const o={};(a||[]).forEach(x=>{if(x&&x.id)o[x.id]=x});return o};
+  function norm(){if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);state.employees=arr(state.employees).map(x=>typeof x==='string'?x:(x.name||x.id)).filter(Boolean);state.system=state.system||{}}
+  function saveAll(date){norm();try{localStorage.setItem(typeof K==='string'?K:'task_reminder_v27_firebase',JSON.stringify({employees:state.employees,masters:state.masters,dailyTemplates:state.dailyTemplates,tasks:state.tasks,system:state.system}))}catch(e){};if(!window.db)return Promise.resolve();const d=date||curDate(),up={};up['taskReminder/employees']=state.employees;up['taskReminder/masters']=byId(state.masters);up['taskReminder/dailyTemplates']=byId(state.dailyTemplates);up['taskReminder/system']=state.system;up['taskReminder/tasks/'+d]=byId(state.tasks.filter(t=>(t.date||d)===d));return db.ref().update(up).catch(e=>alert('Firebase lỗi ghi: '+e.message))}
+  function uniqueImgs(list){const seen=new Set();return list.filter(Boolean).filter(src=>{if(seen.has(src))return false;seen.add(src);return true})}
+  function contentImgs(t){norm();if(t?.sourceTemplateId){const d=state.dailyTemplates.find(x=>x.id===t.sourceTemplateId);const a=uniqueImgs(arr(d?.contentImgs||d?.contentImages||d?.imgs).concat(d?.img?[d.img]:[]));if(a.length)return a}return uniqueImgs(arr(t?.contentImgs||t?.contentImages||t?.imgs).concat(t?.img?[t.img]:[]))}
+  function adminImgs(t){return arr(t?.adminImgs).filter(Boolean)}
+  function reportImgs(t){return arr(t?.reportImgs).filter(Boolean)}
+  function setContentImgs(t,a){t.contentImgs=a.filter(Boolean);t.contentImages=t.contentImgs;t.imgs=t.contentImgs;t.img=t.contentImgs[0]||''}
+  function mainStatus(t){return t&&t.status==='Đã xong'?'Đã xong':'Chưa làm'}
+  function empChips(emp){return typeof window.empChips==='function'?window.empChips(emp):esc(emp||'')}
+  function empColor(emp){return typeof window.empColor==='function'?window.empColor(emp):'#60a5fa'}
+  function statusHtml(t){return typeof window.statusHtml==='function'?window.statusHtml(t):`<span class="status todo">Chưa làm</span>`}
+  function remindHtml(t){return typeof window.remindHtml==='function'?window.remindHtml(t):''}
+  function duration(t){return typeof window.durationText==='function'?window.durationText(t):(typeof window.duration==='function'?window.duration(t):'-')}
+  function logLine(txt){return new Date().toLocaleString('vi-VN')+' '+txt+' - '+(isAdmin()?'Admin':($('currentEmp')?.value||'NV'))}
+  function fmtDate(d){if(!d)return '';const [y,m,day]=String(d).split('-');return day&&m?`${day}/${m}`:d}
+  function computeLate(date){if(typeof window.computeLate==='function')return window.computeLate(date);return state.tasks.filter(t=>(t.date||date)===date)}
+
+  window.fixTable=function(){const table=$('taskTable');if(!table)return;table.innerHTML='<colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time">GIỜ<br><span class="thSub">NGÀY</span></th><th data-col="title">TÊN CV</th><th data-col="content">NỘI DUNG</th><th data-col="emp">NHÂN VIÊN</th><th data-col="admin">ADMIN GHI CHÚ</th><th data-col="report">BÁO CÁO NV</th><th data-col="status">TRẠNG THÁI</th><th data-col="duration">TG XỬ LÝ</th><th data-col="remind">NHẮC VIỆC</th><th data-col="log">LỊCH SỬ</th><th data-col="act">THAO TÁC</th></tr></thead><tbody id="taskBody"></tbody>'};
+  window.row=function(t){const id=esc(t.id||''),cimgs=contentImgs(t),aimgs=adminImgs(t),rimgs=reportImgs(t),done=mainStatus(t)==='Đã xong';const menuStatus=done?(isAdmin()?`<button onclick="setStatus('${id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${id}','Đã xong')">Đánh dấu xong</button>`;const adminMenu=isAdmin()?`<button onclick="openTaskForm('${id}')">Sửa</button><button onclick="manualRemind('${id}')">Nhắc ngay</button><button class="danger" onclick="delTask('${id}')">Xóa</button>`:'';return `<tr class="${done?'done ':''}${t._isLate?'overdue ':''}" style="--empColor:${empColor(t.emp)}"><td><div class="timeCell"><span class="timeMain">${esc(t.time||'')}</span><span class="dateSub">${esc(fmtDate(t.date||curDate()))}</span></div></td><td><span class="titlepill" onclick="detail('${id}')">${esc(t.title||'')}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc(t.type||'Phát sinh')}</span></td><td><div class="taskContentBox" onclick="detail('${id}')"><div class="taskContentText">${esc(t.content||'')}</div><div class="taskImgLine">${cimgs.length?`<button class="imgbadge inlineImgBtn" onclick="event.stopPropagation();openTaskGallery('${id}',0)">📷 ${cimgs.length} ảnh</button>`:''}</div></div></td><td>${empChips(t.emp)}</td><td>${isAdmin()?`<textarea class="quickText paste-admin" data-task-id="${id}" placeholder="Admin ghi chú..." onclick="detail('${id}')" oninput="quickAdminNote?.('${id}',this.value)">${esc(t.adminNote||'')}</textarea>`:`<div class="clip3 adminClip" onclick="detail('${id}')">${esc(t.adminNote||'')}</div>`}${aimgs.length?`<button class="noteImgsLink" onclick="openAdminGallery('${id}',0)">📷 ${aimgs.length} ảnh</button>`:''}</td><td><textarea class="quickText paste-report" data-task-id="${id}" placeholder="Bấm để nhập báo cáo..." onclick="detail('${id}')" oninput="quickReport?.('${id}',this.value)">${esc(t.report||'')}</textarea>${rimgs.length?`<button class="reportImgsLink" onclick="openReportGallery('${id}',0)">📷 ${rimgs.length} ảnh</button>`:''}</td><td>${statusHtml(t)}</td><td><span class="durationBadge">${esc(duration(t))}</span></td><td class="remindCell">${remindHtml(t)}</td><td class="logCell"><button class="logBtn" onclick="showLogs?.('${id}')">${(t.logs||[]).length}</button></td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${id}')">⋮</button><div class="menu" id="menu-${id}"><button onclick="detail('${id}')">Chi tiết</button>${menuStatus}${adminMenu}</div></td></tr>`};
+  window.render=function(){fixTable();try{syncFilterChips?.();syncStatsActive?.();renderDevices?.();applyRole?.()}catch(e){}const date=curDate(),all=computeLate(date),list=typeof window.filtered==='function'?window.filtered():all; if($('stTotal'))stTotal.textContent=all.length;if($('stTodo'))stTodo.textContent=all.filter(t=>mainStatus(t)==='Chưa làm').length;if($('stLate'))stLate.textContent=all.filter(t=>t._isLate).length;if($('stDone'))stDone.textContent=all.filter(t=>mainStatus(t)==='Đã xong').length;if($('stDaily'))stDaily.textContent=all.filter(t=>t.type==='Hằng ngày').length;if($('stOnce'))stOnce.textContent=all.filter(t=>(t.type||'Phát sinh')==='Phát sinh').length;const body=$('taskBody');if(body)body.innerHTML=list.map(row).join('')||'<tr><td colspan="11" style="text-align:center;color:#64748b;padding:24px">Chưa có công việc</td></tr>';try{renderDaily?.();renderMaster?.();renderEmployees?.()}catch(e){}};
+
+  let modalZ=20000;window.openModal=function(id){const el=$(id);if(!el)return;el.style.zIndex=String(++modalZ);el.classList.add('open','modalTop')};window.closeModal=function(id){const el=$(id);if(el){el.classList.remove('open','modalTop');el.style.zIndex=''}};
+  const oldOpenTask=window.openTaskForm;
+  window.openTaskForm=function(id=null,type=null){if($('detailModal')?.classList.contains('open'))closeModal('detailModal');oldOpenTask?.(id,type);setTimeout(()=>{const t=state.tasks?.find(x=>x.id===id),d=state.dailyTemplates?.find(x=>x.id===id);if($('mType'))mType.value=type||t?.type||d?.type||(d?'Hằng ngày':mType.value||'Phát sinh');if($('taskModal'))openModal('taskModal')},80)};
+  window.saveTask=function(){norm();const edit=String($('editId')?.value||''),selectedType=$('mType')?.value||'Phát sinh',existingTask=state.tasks.find(x=>x.id===edit),existingTemplate=state.dailyTemplates.find(x=>x.id===edit);const emp=[...document.querySelectorAll('#mEmpGroup input[type="checkbox"]:checked')].map(x=>x.value).join(', '),title=($('mTitle')?.value||'').trim();if(!title){alert('Nhập tên công việc');return}const base={title,time:$('mTime')?.value||'08:00',emp,content:($('mContent')?.value||'').trim(),adminNote:($('mAdminNote')?.value||'').trim(),note:($('mAdminNote')?.value||'').trim(),img:$('mImg')?.value||'',contentImgs:(window.tempContentImgs6||[]).slice(),contentImages:(window.tempContentImgs6||[]).slice(),imgs:(window.tempContentImgs6||[]).slice(),adminImgs:(window.tempAdminImgs6||[]).slice(),remindPlan:$('mRemind')?.value||'',updatedAt:Date.now()};if(existingTemplate&&!existingTask){Object.assign(existingTemplate,{id:edit,...base,type:'Hằng ngày',active:existingTemplate.active!==false});saveAll(curDate()).then(()=>{closeModal('taskModal');renderDaily?.();render?.()});return}const date=$('mDate')?.value||curDate();if(existingTask){Object.assign(existingTask,{...base,date,type:selectedType});existingTask.logs=existingTask.logs||[];existingTask.logs.push(logLine('sửa công việc'))}else if(selectedType==='Hằng ngày'){const id=newId('daily');state.dailyTemplates.push({id,...base,type:'Hằng ngày',active:true});saveAll(date).then(()=>{closeModal('taskModal');renderDaily?.();render?.()});return}else state.tasks.push({id:newId('task'),...base,date,type:selectedType,status:'Chưa làm',report:'',reportImgs:[],logs:[logLine('tạo công việc')]});saveAll(date).then(()=>{closeModal('taskModal');render()})};
+  window.openTaskGallery=function(id,i=0){norm();const t=state.tasks.find(x=>x.id===id);openGallery6?.(contentImgs(t),i,'Ảnh nội dung cần làm')};
+  window.removeContentImage=function(id,i){norm();const t=state.tasks.find(x=>x.id===id);if(!t)return;const a=contentImgs(t);a.splice(i,1);setContentImgs(t,a);saveAll(t.date||curDate()).then(()=>{detail?.(t.id);render()})};
+  setTimeout(()=>{try{render()}catch(e){console.error('UX_FINAL_20260611',e)}},650);
+})();
+</script>
+
 <script>
 /* FINAL 28 overrides */
 (function(){
@@ -3015,3 +3574,650 @@ body.employeeMode #devicesTab input.deviceInput{background:#f1f5f9!important;col
   setTimeout(()=>{try{fixTable();applyRole();render();}catch(e){console.error('FINAL_FIX_6',e)}},500);
 })();
 </script>
+
+<style id="UX_LAST_PATCH_20260611">
+.tasktable th{height:44px!important;text-align:center!important;vertical-align:middle!important;line-height:1.1!important;font-size:12px!important;letter-spacing:0!important;white-space:normal!important;padding:6px 8px!important}
+.tasktable th:nth-child(1),.tasktable td:nth-child(1){width:82px!important}.tasktable th:nth-child(2),.tasktable td:nth-child(2){width:220px!important}.tasktable th:nth-child(3),.tasktable td:nth-child(3){width:390px!important}
+.timeCell{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important}.timeMain{font-size:22px!important;font-weight:900!important}.dateSub{font-size:11px!important;font-weight:800!important;color:#64748b!important}
+.taskContentText{display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;line-height:1.28!important;max-height:2.6em!important;font-size:17px!important;font-weight:900!important;color:#dc2626!important;word-break:break-word!important}.taskImgLine{display:block!important;margin-top:7px!important;min-height:24px!important}.taskContentBox .more{display:none!important}.quickText{height:62px!important;min-height:62px!important;max-height:62px!important;font-size:15px!important;cursor:pointer!important}
+.imageViewer.modal.open{z-index:12000!important}#taskModal.open{z-index:13000!important}
+</style>
+<script id="UX_LAST_PATCH_20260611">
+setTimeout(()=>{try{
+  const ux=document.getElementById('UX_FINAL_LAST_20260611');
+  if(typeof render==='function')render();
+  document.querySelectorAll('.modal.open').forEach((m,i)=>m.style.zIndex=String(10000+i));
+}catch(e){console.error('UX_LAST_PATCH_20260611',e)}},1200);
+</script>
+
+<script id="UX_LAST_FUNCTIONS_20260611">
+(function(){
+  const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean),today=()=>new Date().toISOString().slice(0,10),curDate=()=>$('fDate')?.value||today(),newId=p=>(p||'id')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),isAdmin=()=>$('role')?.value==='Admin';
+  const byId=a=>{const o={};(a||[]).forEach(x=>{if(x&&x.id)o[x.id]=x});return o},norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);state.employees=arr(state.employees).map(x=>typeof x==='string'?x:(x.name||x.id)).filter(Boolean);state.system=state.system||{}};
+  const saveAll=date=>{norm();try{localStorage.setItem(typeof K==='string'?K:'task_reminder_v27_firebase',JSON.stringify({employees:state.employees,masters:state.masters,dailyTemplates:state.dailyTemplates,tasks:state.tasks,system:state.system}))}catch(e){};if(!window.db)return Promise.resolve();const d=date||curDate(),up={};up['taskReminder/employees']=state.employees;up['taskReminder/masters']=byId(state.masters);up['taskReminder/dailyTemplates']=byId(state.dailyTemplates);up['taskReminder/system']=state.system;up['taskReminder/tasks/'+d]=byId(state.tasks.filter(t=>(t.date||d)===d));return db.ref().update(up).catch(e=>alert('Firebase lỗi ghi: '+e.message))};
+  const uniq=list=>{const seen=new Set();return list.filter(Boolean).filter(x=>seen.has(x)?false:(seen.add(x),true))},imgs=t=>{norm();if(t?.sourceTemplateId){const d=state.dailyTemplates.find(x=>x.id===t.sourceTemplateId),a=uniq(arr(d?.contentImgs||d?.contentImages||d?.imgs).concat(d?.img?[d.img]:[]));if(a.length)return a}return uniq(arr(t?.contentImgs||t?.contentImages||t?.imgs).concat(t?.img?[t.img]:[]))},setImgs=(t,a)=>{t.contentImgs=a.filter(Boolean);t.contentImages=t.contentImgs;t.imgs=t.contentImgs;t.img=t.contentImgs[0]||''};
+  const adminImgs=t=>arr(t?.adminImgs).filter(Boolean),reportImgs=t=>arr(t?.reportImgs).filter(Boolean),mainStatus=t=>t&&t.status==='Đã xong'?'Đã xong':'Chưa làm',empChips=e=>typeof window.empChips==='function'?window.empChips(e):esc(e||''),empColor=e=>typeof window.empColor==='function'?window.empColor(e):'#60a5fa',status=t=>typeof window.statusHtml==='function'?window.statusHtml(t):'<span class="status todo">Chưa làm</span>',remind=t=>typeof window.remindHtml==='function'?window.remindHtml(t):'',dur=t=>typeof window.durationText==='function'?window.durationText(t):(typeof window.duration==='function'?window.duration(t):'-'),fmt=d=>{const [y,m,day]=String(d||'').split('-');return day&&m?`${day}/${m}`:''},log=txt=>new Date().toLocaleString('vi-VN')+' '+txt+' - '+(isAdmin()?'Admin':($('currentEmp')?.value||'NV'));
+  window.fixTable=function(){const table=$('taskTable');if(!table)return;table.innerHTML='<colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th>GIỜ<br><span class="thSub">NGÀY</span></th><th>TÊN CV</th><th>NỘI DUNG</th><th>NHÂN VIÊN</th><th>ADMIN GHI CHÚ</th><th>BÁO CÁO NV</th><th>TRẠNG THÁI</th><th>TG XỬ LÝ</th><th>NHẮC VIỆC</th><th>LỊCH SỬ</th><th>THAO TÁC</th></tr></thead><tbody id="taskBody"></tbody>'};
+  window.row=function(t){const id=esc(t.id||''),ci=imgs(t),ai=adminImgs(t),ri=reportImgs(t),done=mainStatus(t)==='Đã xong',menuStatus=done?(isAdmin()?`<button onclick="setStatus('${id}','Chưa làm')">Mở lại</button>`:''):`<button onclick="setStatus('${id}','Đã xong')">Đánh dấu xong</button>`,adminMenu=isAdmin()?`<button onclick="openTaskForm('${id}')">Sửa</button><button onclick="manualRemind('${id}')">Nhắc ngay</button><button class="danger" onclick="delTask('${id}')">Xóa</button>`:'';return `<tr class="${done?'done ':''}${t._isLate?'overdue ':''}" style="--empColor:${empColor(t.emp)}"><td><div class="timeCell"><span class="timeMain">${esc(t.time||'')}</span><span class="dateSub">${esc(fmt(t.date||curDate()))}</span></div></td><td><span class="titlepill" onclick="detail('${id}')">${esc(t.title||'')}</span><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc(t.type||'Phát sinh')}</span></td><td><div class="taskContentBox" onclick="detail('${id}')"><div class="taskContentText">${esc(t.content||'')}</div><div class="taskImgLine">${ci.length?`<button class="imgbadge inlineImgBtn" onclick="event.stopPropagation();openTaskGallery('${id}',0)">📷 ${ci.length} ảnh</button>`:''}</div></div></td><td>${empChips(t.emp)}</td><td>${isAdmin()?`<textarea class="quickText paste-admin" data-task-id="${id}" placeholder="Admin ghi chú..." onclick="detail('${id}')" oninput="quickAdminNote?.('${id}',this.value)">${esc(t.adminNote||'')}</textarea>`:`<div class="clip3 adminClip" onclick="detail('${id}')">${esc(t.adminNote||'')}</div>`}${ai.length?`<button class="noteImgsLink" onclick="openAdminGallery('${id}',0)">📷 ${ai.length} ảnh</button>`:''}</td><td><textarea class="quickText paste-report" data-task-id="${id}" placeholder="Bấm để nhập báo cáo..." onclick="detail('${id}')" oninput="quickReport?.('${id}',this.value)">${esc(t.report||'')}</textarea>${ri.length?`<button class="reportImgsLink" onclick="openReportGallery('${id}',0)">📷 ${ri.length} ảnh</button>`:''}</td><td>${status(t)}</td><td><span class="durationBadge">${esc(dur(t))}</span></td><td class="remindCell">${remind(t)}</td><td class="logCell"><button class="logBtn" onclick="showLogs?.('${id}')">${(t.logs||[]).length}</button></td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,'${id}')">⋮</button><div class="menu" id="menu-${id}"><button onclick="detail('${id}')">Chi tiết</button>${menuStatus}${adminMenu}</div></td></tr>`};
+  const oldFiltered=window.filtered;window.render=function(){fixTable();try{syncFilterChips?.();syncStatsActive?.();renderDevices?.();applyRole?.()}catch(e){}const date=curDate(),all=typeof computeLate==='function'?computeLate(date):state.tasks.filter(t=>(t.date||date)===date),list=typeof oldFiltered==='function'?oldFiltered():all;if($('stTotal'))stTotal.textContent=all.length;if($('stTodo'))stTodo.textContent=all.filter(t=>mainStatus(t)==='Chưa làm').length;if($('stLate'))stLate.textContent=all.filter(t=>t._isLate).length;if($('stDone'))stDone.textContent=all.filter(t=>mainStatus(t)==='Đã xong').length;if($('stDaily'))stDaily.textContent=all.filter(t=>t.type==='Hằng ngày').length;if($('stOnce'))stOnce.textContent=all.filter(t=>(t.type||'Phát sinh')==='Phát sinh').length;const body=$('taskBody');if(body)body.innerHTML=list.map(row).join('')||'<tr><td colspan="11" style="text-align:center;color:#64748b;padding:24px">Chưa có công việc</td></tr>';try{renderDaily?.();renderMaster?.();renderEmployees?.()}catch(e){}};
+  let modalZ=40000;window.openModal=id=>{const el=$(id);if(!el)return;el.style.zIndex=String(++modalZ);el.classList.add('open','modalTop')};window.closeModal=id=>{const el=$(id);if(el){el.classList.remove('open','modalTop');el.style.zIndex=''}};
+  const oldOpenTask=window.openTaskForm;window.openTaskForm=function(id=null,type=null){if($('detailModal')?.classList.contains('open'))closeModal('detailModal');oldOpenTask?.(id,type);setTimeout(()=>{const t=state.tasks?.find(x=>x.id===id),d=state.dailyTemplates?.find(x=>x.id===id);if($('mType'))mType.value=type||t?.type||d?.type||(d?'Hằng ngày':mType.value||'Phát sinh');if($('taskModal'))openModal('taskModal')},80)};
+  window.saveTask=function(){norm();const edit=String($('editId')?.value||''),selectedType=$('mType')?.value||'Phát sinh',existingTask=state.tasks.find(x=>x.id===edit),existingTemplate=state.dailyTemplates.find(x=>x.id===edit),emp=[...document.querySelectorAll('#mEmpGroup input[type="checkbox"]:checked')].map(x=>x.value).join(', '),title=($('mTitle')?.value||'').trim();if(!title){alert('Nhập tên công việc');return}const base={title,time:$('mTime')?.value||'08:00',emp,content:($('mContent')?.value||'').trim(),adminNote:($('mAdminNote')?.value||'').trim(),note:($('mAdminNote')?.value||'').trim(),img:$('mImg')?.value||'',contentImgs:(window.tempContentImgs6||[]).slice(),contentImages:(window.tempContentImgs6||[]).slice(),imgs:(window.tempContentImgs6||[]).slice(),adminImgs:(window.tempAdminImgs6||[]).slice(),remindPlan:$('mRemind')?.value||'',updatedAt:Date.now()};if(existingTemplate&&!existingTask){Object.assign(existingTemplate,{id:edit,...base,type:'Hằng ngày',active:existingTemplate.active!==false});saveAll(curDate()).then(()=>{closeModal('taskModal');renderDaily?.();render?.()});return}const date=$('mDate')?.value||curDate();if(existingTask){Object.assign(existingTask,{...base,date,type:selectedType});existingTask.logs=existingTask.logs||[];existingTask.logs.push(log('sửa công việc'))}else if(selectedType==='Hằng ngày'){state.dailyTemplates.push({id:newId('daily'),...base,type:'Hằng ngày',active:true});saveAll(date).then(()=>{closeModal('taskModal');renderDaily?.();render?.()});return}else state.tasks.push({id:newId('task'),...base,date,type:selectedType,status:'Chưa làm',report:'',reportImgs:[],logs:[log('tạo công việc')]});saveAll(date).then(()=>{closeModal('taskModal');render()})};
+  window.openTaskGallery=function(id,i=0){norm();const t=state.tasks.find(x=>x.id===id);openGallery6?.(imgs(t),i,'Ảnh nội dung cần làm')};window.removeContentImage=function(id,i){norm();const t=state.tasks.find(x=>x.id===id);if(!t)return;const a=imgs(t);a.splice(i,1);setImgs(t,a);saveAll(t.date||curDate()).then(()=>{detail?.(t.id);render()})};
+  setTimeout(()=>{try{render()}catch(e){console.error('UX_LAST_FUNCTIONS_20260611',e)}},1500);
+})();
+</script>
+
+<style id="UX_NOTES_DATES_EMPLOYEE_FINAL_20260611">
+.dateQuickActive{background:#2563eb!important;color:#fff!important;box-shadow:0 0 0 3px #dbeafe!important}
+body.employeeMode .tasktable{min-width:1180px!important}
+body.employeeMode .tasktable th:nth-child(8),body.employeeMode .tasktable td:nth-child(8),
+body.employeeMode .tasktable th:nth-child(9),body.employeeMode .tasktable td:nth-child(9),
+body.employeeMode .tasktable th:nth-child(10),body.employeeMode .tasktable td:nth-child(10){display:none!important}
+body.employeeMode .tasktable th:nth-child(1),body.employeeMode .tasktable td:nth-child(1){width:78px!important}
+body.employeeMode .tasktable th:nth-child(2),body.employeeMode .tasktable td:nth-child(2){width:210px!important}
+body.employeeMode .tasktable th:nth-child(3),body.employeeMode .tasktable td:nth-child(3){width:360px!important}
+body.employeeMode .tasktable th:nth-child(5),body.employeeMode .tasktable td:nth-child(5),
+body.employeeMode .tasktable th:nth-child(6),body.employeeMode .tasktable td:nth-child(6){width:245px!important}
+.notePopupView .previewImgs:empty{display:none!important}
+.notePopupView textarea[readonly]{background:#f8fafc!important;color:#0f172a!important}
+</style>
+<script id="UX_NOTES_DATES_EMPLOYEE_FINAL_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const todayStr=()=>new Date().toISOString().slice(0,10);
+  const yesterdayStr=()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10)};
+  const isAdmin=()=>$('role')?.value==='Admin';
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);state.employees=arr(state.employees)};
+  const getTask=id=>{norm();return state.tasks.find(t=>t.id===id)};
+  const imgList=(t,key)=>arr(t?.[key]).filter(Boolean);
+  const setActiveDateButton=()=>{
+    const value=$('fDate')?.value||todayStr();
+    document.querySelectorAll('.filters .btn.gray').forEach(btn=>{
+      const txt=(btn.textContent||'').trim();
+      btn.classList.toggle('dateQuickActive',(txt==='Hôm nay'&&value===todayStr())||(txt==='Hôm qua'&&value===yesterdayStr()));
+    });
+  };
+  window.today=function(){switchTab?.('today');if($('fDate'))fDate.value=todayStr();setActiveDateButton();render?.()};
+  window.yesterday=function(){switchTab?.('today');if($('fDate'))fDate.value=yesterdayStr();setActiveDateButton();render?.()};
+  $('fDate')?.addEventListener('change',setActiveDateButton);
+
+  const oldRender=window.render;
+  window.render=function(){oldRender?.();document.body.classList.toggle('employeeMode',!isAdmin());setActiveDateButton();};
+
+  const oldApplyRole=window.applyRole;
+  window.applyRole=function(){oldApplyRole?.();document.body.classList.toggle('employeeMode',!isAdmin());};
+
+  window.openAdminNote=function(id){
+    const t=getTask(id); if(!t)return;
+    if($('aId'))aId.value=id;
+    if($('aText')){aText.value=t.adminNote||'';aText.readOnly=!isAdmin();}
+    window.tempAdminImgs=imgList(t,'adminImgs').slice();
+    renderPreview?.('adminPreview',window.tempAdminImgs);
+    $('adminNoteModal')?.classList.add('notePopupView');
+    const saveBtn=document.querySelector('#adminNoteModal .panelfoot .btn.blue');
+    if(saveBtn)saveBtn.style.display=isAdmin()?'':'none';
+    openModal?.('adminNoteModal');
+  };
+  window.saveAdminNote=function(){
+    if(!isAdmin())return closeModal?.('adminNoteModal');
+    const t=getTask($('aId')?.value); if(!t)return;
+    t.adminNote=$('aText')?.value||''; t.adminImgs=(window.tempAdminImgs||[]).slice(); t.logs=t.logs||[]; t.logs.push(new Date().toLocaleString('vi-VN')+' cập nhật Admin ghi chú');
+    if(typeof save==='function')save(); else if(typeof saveV43==='function')saveV43(t.date);
+    closeModal?.('adminNoteModal'); render?.();
+  };
+  window.openReport=function(id){
+    const t=getTask(id); if(!t)return;
+    if($('rId'))rId.value=id;
+    if($('rText'))rText.value=t.report||'';
+    window.tempReportImgs=imgList(t,'reportImgs').slice();
+    renderPreview?.('reportPreview',window.tempReportImgs);
+    $('reportModal')?.classList.add('notePopupView');
+    openModal?.('reportModal');
+  };
+  window.saveReport=function(){
+    const t=getTask($('rId')?.value); if(!t)return;
+    t.report=$('rText')?.value||''; t.reportImgs=(window.tempReportImgs||[]).slice(); t.logs=t.logs||[]; t.logs.push(new Date().toLocaleString('vi-VN')+' cập nhật Báo cáo NV');
+    if(typeof save==='function')save(); else if(typeof saveV43==='function')saveV43(t.date);
+    closeModal?.('reportModal'); render?.();
+  };
+
+  const oldRow=window.row;
+  window.row=function(t){
+    let html=oldRow?oldRow(t):'';
+    if(!html)return html;
+    const id=esc(t.id||'');
+    html=html
+      .replaceAll(`onclick="detail('${id}')" oninput="quickAdminNote?.('${id}',this.value)"`,`onclick="event.stopPropagation();openAdminNote('${id}')" oninput="quickAdminNote?.('${id}',this.value)"`)
+      .replaceAll(`onclick="detail('${id}')">${esc(t.adminNote||'')}</div>`,`onclick="event.stopPropagation();openAdminNote('${id}')">${esc(t.adminNote||'')}</div>`)
+      .replaceAll(`onclick="openAdminGallery('${id}',0)"`,`onclick="event.stopPropagation();openAdminNote('${id}')"`)
+      .replaceAll(`onclick="detail('${id}')" oninput="quickReport?.('${id}',this.value)"`,`onclick="event.stopPropagation();openReport('${id}')" oninput="quickReport?.('${id}',this.value)"`)
+      .replaceAll(`onclick="openReportGallery('${id}',0)"`,`onclick="event.stopPropagation();openReport('${id}')"`);
+    return html;
+  };
+
+  setTimeout(()=>{try{document.body.classList.toggle('employeeMode',!isAdmin());setActiveDateButton();window.render?.()}catch(e){console.error('UX_NOTES_DATES_EMPLOYEE_FINAL_20260611',e)}},1700);
+})();
+</script>
+
+<style id="UX_EMPLOYEE_FULL_COLUMNS_20260611">
+body.employeeMode .tasktable{min-width:1580px!important}
+body.employeeMode .tasktable th,body.employeeMode .tasktable td{display:table-cell!important}
+body.employeeMode .tasktable th:nth-child(8),body.employeeMode .tasktable td:nth-child(8),
+body.employeeMode .tasktable th:nth-child(9),body.employeeMode .tasktable td:nth-child(9),
+body.employeeMode .tasktable th:nth-child(10),body.employeeMode .tasktable td:nth-child(10){display:table-cell!important}
+body.employeeMode .tasktable col[data-col="duration"],
+body.employeeMode .tasktable col[data-col="remind"],
+body.employeeMode .tasktable col[data-col="log"]{display:table-column!important}
+body.employeeMode .remindCell .remindNow,
+body.employeeMode .remindCell .remindMini{display:none!important}
+body.employeeMode .durationBadge{opacity:.75}
+</style>
+<script id="UX_EMPLOYEE_ACTOR_HISTORY_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.employees=arr(state.employees)};
+  const roleAdmin=()=>$('role')?.value==='Admin';
+  const curDate=()=>$('fDate')?.value||new Date().toISOString().slice(0,10);
+  const taskById=id=>{norm();return state.tasks.find(t=>t.id===id)};
+  const actorName=()=>roleAdmin()?'Admin':(($('currentEmp')?.value)||'Nhân viên');
+  const logActor=(text,actor)=>new Date().toLocaleString('vi-VN')+' '+text+' - '+(actor||actorName());
+  const saveDate=d=>typeof window.save==='function'?window.save(d||curDate()):(typeof window.saveV43==='function'?window.saveV43(d||curDate()):Promise.resolve());
+
+  const showActorPicker=callback=>{
+    norm();
+    window.pendingActorCallback=callback;
+    const sel=$('actorSelect');
+    if(sel){
+      const current=$('currentEmp')?.value||state.employees[0]||'';
+      sel.innerHTML=state.employees.map(e=>`<option value="${String(e).replace(/"/g,'&quot;')}" ${e===current?'selected':''}>${e}</option>`).join('');
+    }
+    window.openModal?.('actorModal');
+  };
+
+  window.withActor=function(callback){
+    if(roleAdmin()){callback('Admin');window.updateOperatorBar?.();return;}
+    let session={};
+    try{session=JSON.parse(localStorage.getItem('task_actor_session_v25')||'{}')}catch(e){}
+    if(session.name&&session.expires&&Date.now()<session.expires){
+      if($('currentEmp'))$('currentEmp').value=session.name;
+      callback(session.name);
+      window.updateOperatorBar?.();
+      return;
+    }
+    showActorPicker(callback);
+  };
+
+  window.confirmActor=function(){
+    const name=$('actorSelect')?.value||$('currentEmp')?.value||state.employees?.[0]||'Nhân viên';
+    if($('currentEmp'))$('currentEmp').value=name;
+    localStorage.setItem('task_user_role_v23','Nhân viên');
+    localStorage.setItem('task_user_emp_v23',name);
+    localStorage.setItem('task_actor_session_v25',JSON.stringify({name,expires:Date.now()+60*60*1000}));
+    window.closeModal?.('actorModal');
+    window.updateOperatorBar?.();
+    if(window.pendingActorCallback){const cb=window.pendingActorCallback;window.pendingActorCallback=null;cb(name);}
+  };
+
+  const oldAsk=window.askLoginIfNeeded;
+  window.askLoginIfNeeded=function(){
+    const savedRole=localStorage.getItem('task_user_role_v23');
+    const savedEmp=localStorage.getItem('task_user_emp_v23');
+    if(savedRole==='Nhân viên'){
+      if($('role'))$('role').value='Nhân viên';
+      if($('currentEmp')&&savedEmp)$('currentEmp').value=savedEmp;
+      window.applyRole?.();
+      window.render?.();
+      let session={};
+      try{session=JSON.parse(localStorage.getItem('task_actor_session_v25')||'{}')}catch(e){}
+      if(!session.name||!session.expires||Date.now()>=session.expires)showActorPicker(()=>{});
+      return;
+    }
+    oldAsk?.();
+  };
+
+  window.setStatus=function(id,status){
+    const t=taskById(id); if(!t)return;
+    if(!roleAdmin()&&status!=='Đã xong'){alert('Nhân viên chỉ được đánh dấu xong');return;}
+    window.withActor(actor=>{
+      try{window.computeLate?.(t.date||curDate())}catch(e){}
+      if(status==='Đã xong'&&t._isLate)t.wasLate=true;
+      t.status=status==='Đã xong'?'Đã xong':'Chưa làm';
+      t.completedAt=status==='Đã xong'?Date.now():null;
+      t.logs=t.logs||[];
+      t.logs.push(logActor('đổi trạng thái: '+t.status,actor));
+      saveDate(t.date||curDate()).then(()=>window.render?.());
+    });
+  };
+
+  window.saveAdminNote=function(){
+    const t=taskById($('aId')?.value); if(!t)return;
+    if(!roleAdmin())return window.closeModal?.('adminNoteModal');
+    window.withActor(actor=>{
+      t.adminNote=$('aText')?.value||'';
+      t.adminImgs=(window.tempAdminImgs||[]).slice();
+      t.logs=t.logs||[];
+      t.logs.push(logActor('cập nhật Admin ghi chú',actor));
+      saveDate(t.date||curDate()).then(()=>{window.closeModal?.('adminNoteModal');window.render?.();});
+    });
+  };
+
+  window.saveReport=function(){
+    const t=taskById($('rId')?.value); if(!t)return;
+    window.withActor(actor=>{
+      t.report=$('rText')?.value||'';
+      t.reportImgs=(window.tempReportImgs||[]).slice();
+      t.logs=t.logs||[];
+      t.logs.push(logActor('cập nhật Báo cáo NV',actor));
+      saveDate(t.date||curDate()).then(()=>{window.closeModal?.('reportModal');window.render?.();});
+    });
+  };
+
+  window.quickReport=function(id,val){
+    clearTimeout(window.__reportTimer);
+    window.__reportTimer=setTimeout(()=>window.withActor(actor=>{
+      const t=taskById(id); if(!t)return;
+      t.report=val;
+      t.logs=t.logs||[];
+      t.logs.push(logActor('sửa nhanh Báo cáo NV',actor));
+      saveDate(t.date||curDate()).then(()=>window.render?.());
+    }),450);
+  };
+
+  const oldApply=window.applyRole;
+  window.applyRole=function(){
+    oldApply?.();
+    document.body.classList.toggle('employeeMode',!roleAdmin());
+    document.querySelectorAll('[data-tab="devices"]').forEach(el=>el.classList.remove('hidden'));
+  };
+
+  const checkExpiredActor=()=>{
+    if(roleAdmin())return;
+    let session={};
+    try{session=JSON.parse(localStorage.getItem('task_actor_session_v25')||'{}')}catch(e){}
+    window.updateOperatorBar?.();
+    if((!session.name||!session.expires||Date.now()>=session.expires)&&!$('actorModal')?.classList.contains('open')){
+      showActorPicker(()=>{});
+    }
+  };
+  setTimeout(()=>{try{window.applyRole?.();window.updateOperatorBar?.();checkExpiredActor();}catch(e){console.error('UX_EMPLOYEE_ACTOR_HISTORY_20260611',e)}},1200);
+  setInterval(checkExpiredActor,30000);
+})();
+</script>
+
+<style id="UX_COMPACT_STATS_FILTERS_DURATION_FINAL_20260611">
+#todayTab .filters{
+  display:grid!important;
+  grid-template-columns:170px minmax(260px,1fr) 110px 120px 120px minmax(120px,140px)!important;
+  gap:8px!important;
+  align-items:center!important;
+  padding:10px 12px!important;
+}
+#todayTab .filters .field label{display:none!important}
+#todayTab .filters .field{margin:0!important}
+#todayTab .filters input,#todayTab .filters select,#todayTab .filters button{height:42px!important}
+#todayTab .filters .hideField{display:none!important}
+#statsRow.stats{
+  display:flex!important;
+  gap:0!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  margin:8px 0!important;
+  padding:8px 12px!important;
+  background:#fff!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:12px!important;
+  box-shadow:0 8px 22px #0f172a0a!important;
+}
+#statsRow .stat{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  min-height:30px!important;
+  padding:4px 10px!important;
+  border:0!important;
+  border-right:1px solid #dbe3ef!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  white-space:nowrap!important;
+}
+#statsRow .stat:last-child{border-right:0!important}
+#statsRow .stat b{font-size:20px!important;line-height:1!important;color:#0f172a!important;order:2}
+#statsRow .stat span{font-size:13px!important;font-weight:900!important;color:#64748b!important;order:1}
+#statsRow .stat span::after{content:":";margin-left:1px}
+#statsRow .stat.active{background:#eff6ff!important;border-radius:8px!important;box-shadow:0 0 0 2px #bfdbfe!important}
+#statsRow .stat.active b,#statsRow .stat.active span{color:#2563eb!important}
+.tablebox{overflow-x:auto!important}
+.tasktable{width:100%!important;min-width:1180px!important;table-layout:fixed!important}
+.tasktable col[data-col="time"]{width:68px!important}
+.tasktable col[data-col="title"]{width:180px!important}
+.tasktable col[data-col="content"]{width:250px!important}
+.tasktable col[data-col="emp"]{width:90px!important}
+.tasktable col[data-col="admin"]{width:180px!important}
+.tasktable col[data-col="report"]{width:190px!important}
+.tasktable col[data-col="status"]{width:105px!important}
+.tasktable col[data-col="duration"]{width:110px!important}
+.tasktable col[data-col="remind"]{width:95px!important}
+.tasktable col[data-col="log"]{width:70px!important}
+.tasktable col[data-col="act"]{width:58px!important}
+.tasktable th,.tasktable td{padding-left:8px!important;padding-right:8px!important}
+.tasktable th{font-size:13px!important;line-height:1.05!important;text-align:center!important}
+.tasktable td{font-size:14px!important}
+.tasktable .titlepill{max-width:100%!important;font-size:17px!important;padding:9px 10px!important}
+.taskContentText,.clip3,.adminClip{font-size:15px!important;line-height:1.25!important;-webkit-line-clamp:2!important}
+.taskImgLine{margin-top:5px!important}
+.quickText{min-height:54px!important;height:54px!important;font-size:14px!important}
+.empchips{max-width:84px!important}
+.empchip{font-size:12px!important;padding:3px 7px!important}
+.durationBadge{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:2px!important;border-radius:10px!important;padding:5px 7px!important;line-height:1.15!important;white-space:pre-line!important;font-size:11px!important}
+.durationBadge .durMain{font-weight:900;color:#0f172a}
+.durationBadge .durLate{font-weight:900;color:#dc2626}
+.durationBadge .durEarly{font-weight:900;color:#15803d}
+.durationBadge .durWait{font-weight:900;color:#64748b}
+body.employeeMode .tasktable{min-width:1180px!important}
+body.employeeMode .tasktable th,body.employeeMode .tasktable td{display:table-cell!important}
+body.employeeMode .tasktable col{display:table-column!important}
+@media(min-width:1500px){.tasktable{min-width:100%!important}}
+@media(max-width:1250px){
+  .tasktable{min-width:1120px!important}
+  .tasktable col[data-col="admin"]{width:155px!important}
+  .tasktable col[data-col="report"]{width:165px!important}
+  .tasktable col[data-col="content"]{width:220px!important}
+}
+</style>
+<script id="UX_DURATION_COMPACT_REALLY_FINAL_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+  const dateOf=(date,time)=>{
+    const now=new Date(),parts=String(date||now.toISOString().slice(0,10)).split('-').map(Number),tm=String(time||'00:00').split(':').map(Number);
+    return new Date(parts[0]||now.getFullYear(),(parts[1]||1)-1,parts[2]||1,tm[0]||0,tm[1]||0,0,0).getTime();
+  };
+  const fmt=mins=>{mins=Math.max(0,Math.round(mins));if(mins<60)return mins+'p';const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m?String(m).padStart(2,'0'):'')};
+  const deadlineOf=t=>{
+    norm();
+    const date=t.date||$('fDate')?.value||new Date().toISOString().slice(0,10),emps=splitEmp(t.emp);
+    const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>minOf(a.time)-minOf(b.time));
+    const next=same.find(x=>minOf(x.time)>minOf(t.time));
+    const limit=next?minOf(next.time):(minOf(t.time)+60);
+    return dateOf(date,String(Math.floor(limit/60)).padStart(2,'0')+':'+String(limit%60).padStart(2,'0'));
+  };
+  window.durationText=function(t){
+    if(!t)return '<span class="durWait">-</span>';
+    const start=dateOf(t.date||$('fDate')?.value,t.time||'00:00'),doneAt=Number(t.completedAt||t.doneAt||0),end=t.status==='Đã xong'&&doneAt?doneAt:Date.now(),deadline=deadlineOf(t);
+    const elapsed=(end-start)/60000,delta=(end-deadline)/60000;
+    const main=(t.status==='Đã xong'?'XL ':'Đang ')+fmt(elapsed);
+    const detail=delta>0?'Trễ '+fmt(delta):'Sớm '+fmt(Math.abs(delta));
+    return main+'\n'+detail;
+  };
+  const oldConfirm=window.confirmActor;
+  window.confirmActor=function(){oldConfirm?.();window.updateOperatorBar?.()};
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DURATION_COMPACT_REALLY_FINAL_20260611',e)}},500);
+})();
+</script>
+
+<style id="UX_STATS_BAR_CLEAN_REALLY_FINAL_20260611">
+#statsRow.stats{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:nowrap!important;
+  gap:0!important;
+  margin:6px 0 10px!important;
+  padding:0!important;
+  min-height:38px!important;
+  background:#ffffff!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  box-shadow:none!important;
+}
+#statsRow .stat{
+  flex:1 1 0!important;
+  min-width:0!important;
+  min-height:38px!important;
+  padding:0 10px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  border:0!important;
+  border-right:1px solid #e2e8f0!important;
+  border-radius:0!important;
+  background:#fff!important;
+  box-shadow:none!important;
+  transform:none!important;
+  white-space:nowrap!important;
+}
+#statsRow .stat:last-child{border-right:0!important}
+#statsRow .stat span{
+  order:1!important;
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  color:#64748b!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+#statsRow .stat span::after{content:":"}
+#statsRow .stat b{
+  order:2!important;
+  font-size:18px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  color:#0f172a!important;
+}
+#statsRow .stat.active{
+  background:#eff6ff!important;
+  box-shadow:inset 0 0 0 2px #3b82f6!important;
+}
+#statsRow .stat.active span,#statsRow .stat.active b{color:#1d4ed8!important}
+@media(max-width:1050px){
+  #statsRow.stats{overflow-x:auto!important;flex-wrap:nowrap!important}
+  #statsRow .stat{flex:0 0 118px!important}
+}
+</style>
+<style id="UX_STATS_DURATION_TRUE_END_20260611">
+#statsRow.stats{min-height:46px!important;margin:8px 0 12px!important;border-radius:12px!important;background:#f8fbff!important;border:1px solid #cfe0f5!important;box-shadow:none!important}
+#statsRow .stat{min-height:46px!important;padding:0 14px!important;gap:7px!important;justify-content:center!important;background:transparent!important}
+#statsRow .stat span{font-size:14px!important;color:#475569!important;letter-spacing:0!important}
+#statsRow .stat b{font-size:23px!important;color:#0f172a!important;min-width:22px!important;text-align:left!important}
+#statsRow .stat.active{background:#dbeafe!important;box-shadow:inset 0 0 0 2px #2563eb!important}
+#statsRow .stat.active span,#statsRow .stat.active b{color:#1d4ed8!important}
+.durationBadge{font-size:12px!important;gap:3px!important}
+</style>
+<script id="UX_DURATION_LATE_ONLY_TRUE_END_20260611">
+(function(){
+  const $=id=>document.getElementById(id),arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
+  const dateOf=(date,time)=>{const now=new Date(),d=String(date||now.toISOString().slice(0,10)).split('-').map(Number),tm=String(time||'00:00').split(':').map(Number);return new Date(d[0]||now.getFullYear(),(d[1]||1)-1,d[2]||1,tm[0]||0,tm[1]||0,0,0).getTime()};
+  const fmt=mins=>{mins=Math.max(0,Math.round(mins));if(mins<60)return mins+'p';const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m?String(m).padStart(2,'0'):'')};
+  const deadlineOf=t=>{norm();const date=t.date||$('fDate')?.value||new Date().toISOString().slice(0,10),emps=splitEmp(t.emp);const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>minOf(a.time)-minOf(b.time));const next=same.find(x=>minOf(x.time)>minOf(t.time));const limit=next?minOf(next.time):(minOf(t.time)+60);return dateOf(date,String(Math.floor(limit/60)).padStart(2,'0')+':'+String(limit%60).padStart(2,'0'))};
+  window.durationText=function(t){if(!t)return '-';const start=dateOf(t.date||$('fDate')?.value,t.time||'00:00'),doneAt=Number(t.completedAt||t.doneAt||0),end=t.status==='Đã xong'&&doneAt?doneAt:Date.now(),deadline=deadlineOf(t),elapsed=(end-start)/60000,late=(end-deadline)/60000,main=(t.status==='Đã xong'?'XL ':'Đang ')+fmt(elapsed);return late>0?main+'\nTrễ '+fmt(late):main};
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DURATION_LATE_ONLY_TRUE_END_20260611',e)}},300);
+})();
+</script>
+</script>
+<script id="UX_REMINDER_SORT_TRUE_END_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const timeMin=t=>{const [h,m]=String(t||'99:99').split(':').map(Number);return (Number.isFinite(h)?h:99)*60+(Number.isFinite(m)?m:99)};
+  const done=t=>t&&t.status==='Đã xong';
+  const currentDate=()=>$('fDate')?.value||new Date().toISOString().slice(0,10);
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const computeLate=window.computeLateForDate||window.computeLate||function(date){norm();return state.tasks.filter(t=>(t.date||date)===date)};
+  const oldFiltered=window.filtered;
+  window.filtered=function(){
+    const date=currentDate();
+    let list;
+    try{list=oldFiltered?oldFiltered():computeLate(date).slice()}catch(e){list=computeLate(date).slice()}
+    list=arr(list);
+    return list.sort((a,b)=>
+      (done(a)?1:0)-(done(b)?1:0) ||
+      timeMin(a.time)-timeMin(b.time) ||
+      String(a.title||'').localeCompare(String(b.title||''),'vi') ||
+      String(a.emp||'').localeCompare(String(b.emp||''),'vi')
+    );
+  };
+
+  const oldRender=window.render;
+  window.render=function(){
+    oldRender?.();
+    const body=$('taskBody');
+    if(body&&typeof window.row==='function'){
+      const rows=window.filtered();
+      body.innerHTML=rows.map(window.row).join('')||'<tr><td colspan="11" style="text-align:center;color:#64748b;padding:24px">Chưa có công việc</td></tr>';
+    }
+    document.querySelectorAll('#attentionModal .attentionFoot .btn.gray').forEach(btn=>{
+      if((btn.textContent||'').trim()!=='Không phải tôi')btn.textContent='Không phải tôi';
+    });
+  };
+
+  let lastSoundAt=0,lastSoundTask='';
+  window.playAttentionSound=function(taskId=''){
+    const now=Date.now();
+    if(taskId&&taskId===lastSoundTask&&now-lastSoundAt<5000)return;
+    if(!taskId&&now-lastSoundAt<3000)return;
+    lastSoundAt=now;lastSoundTask=taskId||lastSoundTask;
+    try{
+      const AudioCtx=window.AudioContext||window.webkitAudioContext;
+      if(!AudioCtx)return;
+      const ctx=new AudioCtx();
+      let count=0;
+      const beep=()=>{
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.frequency.value=count%2?880:660;
+        gain.gain.value=0.12;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        setTimeout(()=>osc.stop(),180);
+        count++;
+        if(count<6)setTimeout(beep,360);
+        else setTimeout(()=>ctx.close(),600);
+      };
+      beep();
+    }catch(e){}
+  };
+
+  const oldShowAttention=window.showAttention;
+  window.showAttention=function(t,reason='Nhắc việc'){
+    if(!t)return;
+    const key=(t.id||'')+'|'+reason;
+    const now=Date.now();
+    if(window.__lastAttentionKey===key&&now-(window.__lastAttentionAt||0)<5000)return;
+    window.__lastAttentionKey=key;window.__lastAttentionAt=now;
+    const oldSound=window.playAttentionSound;
+    window.playAttentionSound=function(){};
+    try{oldShowAttention?oldShowAttention(t,reason):null;}finally{window.playAttentionSound=oldSound;}
+    window.playAttentionSound(t.id||'');
+    document.querySelectorAll('#attentionModal .attentionFoot .btn.gray').forEach(btn=>btn.textContent='Không phải tôi');
+  };
+
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_REMINDER_SORT_TRUE_END_20260611',e)}},500);
+})();
+</script>
+<style id="UX_DONE_ROW_GREEN_TRUE_END_20260611">
+.tasktable tr.done td{background:#ecfdf3!important}
+.tasktable tr.done:hover td{background:#dcfce7!important}
+.tasktable tr.done .badge{box-shadow:none!important}
+</style>
+<style id="UX_DONE_ROW_ONLY_BACKGROUND_TRUE_END_20260611">
+.tasktable tr.done td{background:#ecfdf3!important}
+.tasktable tr.done:hover td{background:#dcfce7!important}
+.tasktable tr.done .titlepill{background:#fff!important;border-left-color:var(--empColor,#64748b)!important}
+</style>
+<style id="UX_DONE_ROW_FIX_TRUE_END_20260611">
+.tasktable tr.done td,
+.tasktable tr.done.overdue td{
+  background:#f3fff7!important;
+}
+.tasktable tr.done:hover td,
+.tasktable tr.done.overdue:hover td{
+  background:#ecfdf3!important;
+}
+.tasktable tr.done .titlepill,
+.tasktable tr.done.overdue .titlepill{
+  background:#fff!important;
+  border-left-color:var(--empColor,#64748b)!important;
+}
+.tasktable tr.done .status.late,
+.tasktable tr.done.overdue .status.late{
+  display:none!important;
+}
+</style>
+<script id="UX_DONE_STATUS_FIX_TRUE_END_20260611">
+(function(){
+  const oldStatus=window.statusHtml;
+  window.statusHtml=function(t){
+    if(t&&t.status==='Đã xong')return '<div class="statusStack"><span class="status done">Đã xong</span></div>';
+    return oldStatus?oldStatus(t):'<span class="status todo">Chưa làm</span>';
+  };
+  setTimeout(()=>{try{window.render?.()}catch(e){console.error('UX_DONE_STATUS_FIX_TRUE_END_20260611',e)}},300);
+})();
+</script>
+<style id="UX_STATS_ORIGINAL_COMPACT_TRUE_END_20260611">
+#statsRow.stats{
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin:8px 0 8px!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+#statsRow .stat{
+  display:block!important;
+  min-height:58px!important;
+  padding:9px 16px!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:0 8px 22px #0f172a0a!important;
+  white-space:normal!important;
+}
+#statsRow .stat b{
+  display:block!important;
+  font-size:25px!important;
+  line-height:1!important;
+  margin:0 0 4px!important;
+  color:#0f172a!important;
+  min-width:0!important;
+}
+#statsRow .stat span{
+  display:block!important;
+  font-size:13px!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+  color:#64748b!important;
+}
+#statsRow .stat span::after{content:""!important}
+#statsRow .stat.active{
+  border:2px solid #2563eb!important;
+  background:#eef6ff!important;
+  box-shadow:0 0 0 2px #dbeafe!important;
+}
+#statsRow .stat:nth-child(1){background:#eef6ff!important}
+#statsRow .stat:nth-child(2){background:#fff8e6!important}
+#statsRow .stat:nth-child(3){background:#fff1e8!important}
+#statsRow .stat:nth-child(4){background:#ecfdf3!important}
+#statsRow .stat:nth-child(5){background:#eef2ff!important}
+#statsRow .stat:nth-child(6){background:#f7f0ff!important}
+@media(max-width:1050px){
+  #statsRow.stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
