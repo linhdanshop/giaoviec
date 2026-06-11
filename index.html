@@ -1658,6 +1658,192 @@ body.employeeMode .remindBox,body.employeeMode .remindCell,body.employeeMode .bt
     renderAll();
   },2200);
 })();
+
+
+/* ================= V43 FIX DAILY CREATE + MASTER FLOW =================
+   Sửa lỗi không tạo được Việc hằng ngày khi Firebase rỗng.
+   CV mẫu chỉ dùng đổ form tạo nhanh, không tự nhảy vào Công việc hôm nay.
+*/
+(function(){
+  const ROOT='taskReminder';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const today=()=>new Date().toISOString().slice(0,10);
+  const nowTime=()=>new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+  const newId=p=>(p||'id')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const toArr=v=>!v?[]:(Array.isArray(v)?v.filter(Boolean):Object.entries(v).map(([id,x])=>x&&typeof x==='object'?({id:x.id||id,...x}):null).filter(Boolean));
+  const byId=arr=>{const o={};(arr||[]).filter(Boolean).forEach(x=>{const id=x.id||newId('id');o[id]={...x,id};});return o};
+  const splitEmp=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const curDate=()=>($('fDate')&&$('fDate').value)||today();
+  const actorName=()=>{try{return (typeof actorValid==='function'&&actorValid())||(typeof currentUserLabel==='function'&&currentUserLabel())||'Không rõ'}catch(e){return 'Không rõ'}};
+  const logLine2=txt=>`${nowTime()} ${txt} — ${actorName()}${typeof machineLabel==='function'?' — '+machineLabel():''}`;
+
+  function normalizeV43(){
+    if(!window.state && typeof state==='undefined') window.state={};
+    if(typeof state==='undefined') return;
+    state.employees=Array.isArray(state.employees)?state.employees:toArr(state.employees).map(x=>x.name||x.id).filter(Boolean);
+    state.masters=Array.isArray(state.masters)?state.masters:toArr(state.masters);
+    state.dailyTemplates=Array.isArray(state.dailyTemplates)?state.dailyTemplates:toArr(state.dailyTemplates);
+    state.tasks=Array.isArray(state.tasks)?state.tasks:toArr(state.tasks);
+    state.system=state.system||{};
+    state.system.dailyGenerated=state.system.dailyGenerated||{};
+  }
+  function getMasters(){normalizeV43();return state.masters||[]}
+  function getDaily(){normalizeV43();return state.dailyTemplates||[]}
+  function getTasks(){normalizeV43();return state.tasks||[]}
+  function getModalEmployees(){
+    const picked=[...document.querySelectorAll('#mEmpGroup input[type="checkbox"]:checked')].map(x=>x.value);
+    return picked.join(', ');
+  }
+  function setModalEmployees(emp){
+    const list=splitEmp(emp);
+    document.querySelectorAll('#mEmpGroup input[type="checkbox"]').forEach(cb=>cb.checked=list.includes(cb.value));
+  }
+  function saveV43(date){
+    normalizeV43();
+    try{localStorage.setItem(typeof K==='string'?K:'task_reminder_v27_firebase',JSON.stringify({employees:state.employees,masters:state.masters,dailyTemplates:state.dailyTemplates,tasks:state.tasks,system:state.system}))}catch(e){}
+    if(!window.db) return Promise.resolve();
+    const d=date||curDate();
+    const up={};
+    up[ROOT+'/employees']=state.employees||[];
+    up[ROOT+'/masters']=byId(state.masters||[]);
+    up[ROOT+'/dailyTemplates']=byId(state.dailyTemplates||[]);
+    up[ROOT+'/system']=state.system||{};
+    up[ROOT+'/tasks/'+d]=byId((state.tasks||[]).filter(t=>(t.date||d)===d));
+    return db.ref().update(up).catch(e=>{alert('Firebase lỗi ghi: '+e.message);throw e;});
+  }
+  window.save=saveV43;
+
+  function refreshMasterSelectV43(){
+    const sel=$('mMaster'); if(!sel)return;
+    const old=sel.value||'';
+    sel.innerHTML='<option value="">-- Không chọn mẫu --</option>'+getMasters().map(m=>`<option value="${esc(m.id)}">${esc(m.title||'Mẫu')}</option>`).join('');
+    if([...sel.options].some(o=>o.value===old)) sel.value=old;
+  }
+  window.fillFromMaster=function(){
+    const id=$('mMaster')?.value||''; if(!id)return;
+    const m=getMasters().find(x=>x.id===id); if(!m)return;
+    if($('mTime')) mTime.value=m.time||'';
+    if($('mTitle')) mTitle.value=m.title||'';
+    if($('mContent')) mContent.value=m.content||'';
+    if($('mAdminNote')) mAdminNote.value=m.note||m.adminNote||'';
+    if($('mRemind')) mRemind.value=m.remindPlan||'';
+    setModalEmployees(m.emp||'');
+    if($('mType')) mType.value='Phát sinh';
+  };
+
+  window.openTaskForm=function(id=null,type=null){
+    if(typeof roleAdmin==='function' && !roleAdmin()) return;
+    normalizeV43();
+    refreshMasterSelectV43();
+    if($('editId')) editId.value='';
+    if($('taskModalTitle')) taskModalTitle.textContent= type==='Hằng ngày' ? 'Tạo việc hằng ngày' : 'Thêm công việc';
+    if($('mDate')) mDate.value=today();
+    if($('mTime')) mTime.value=new Date().toTimeString().slice(0,5);
+    if($('mType')) mType.value= type==='Hằng ngày' ? 'Hằng ngày' : 'Phát sinh';
+    if($('mMaster')) { mMaster.value=''; mMaster.disabled=(type==='Hằng ngày'); }
+    if($('mTitle')) mTitle.value='';
+    if($('mContent')) mContent.value='';
+    if($('mAdminNote')) mAdminNote.value='';
+    if($('mRemind')) mRemind.value='';
+    if($('mImg')) mImg.value='';
+    window.tempTaskImgs=[];
+    try{renderPreview?.('taskPreview',[])}catch(e){}
+    setModalEmployees('');
+
+    // Sửa Việc hằng ngày
+    if(type==='Hằng ngày' && id){
+      const d=getDaily().find(x=>x.id===id);
+      if(d){
+        editId.value='daily:'+d.id;
+        taskModalTitle.textContent='Sửa việc hằng ngày';
+        mTime.value=d.time||'08:00'; mTitle.value=d.title||''; mContent.value=d.content||'';
+        mAdminNote.value=d.note||d.adminNote||''; if($('mRemind'))mRemind.value=d.remindPlan||''; if($('mImg'))mImg.value=d.img||'';
+        window.tempTaskImgs=Array.isArray(d.imgs)?d.imgs.slice():[]; try{renderPreview?.('taskPreview',window.tempTaskImgs)}catch(e){}
+        setModalEmployees(d.emp||'');
+      }
+    }
+    // Sửa công việc thật
+    if(type!=='Hằng ngày' && id){
+      const t=getTasks().find(x=>x.id===id);
+      if(t){
+        editId.value=t.id; taskModalTitle.textContent='Sửa công việc';
+        mDate.value=t.date||curDate(); mTime.value=t.time||'08:00'; mType.value='Phát sinh';
+        mTitle.value=t.title||''; mContent.value=t.content||''; mAdminNote.value=t.adminNote||'';
+        if($('mRemind'))mRemind.value=t.remindPlan||''; if($('mImg'))mImg.value=t.img||'';
+        window.tempTaskImgs=Array.isArray(t.imgs)?t.imgs.slice():[]; try{renderPreview?.('taskPreview',window.tempTaskImgs)}catch(e){}
+        setModalEmployees(t.emp||'');
+      }
+    }
+    if(typeof openModal==='function') openModal('taskModal'); else $('taskModal')?.classList.add('open');
+  };
+
+  window.saveTask=function(){
+    normalizeV43();
+    const id=$('editId')?.value||'';
+    const type=$('mType')?.value||'Phát sinh';
+    const base={
+      title:($('mTitle')?.value||'').trim(),
+      time:$('mTime')?.value||'08:00',
+      emp:getModalEmployees(),
+      content:($('mContent')?.value||'').trim(),
+      adminNote:($('mAdminNote')?.value||'').trim(),
+      note:($('mAdminNote')?.value||'').trim(),
+      img:$('mImg')?.value||'',
+      imgs:Array.isArray(window.tempTaskImgs)?window.tempTaskImgs:[],
+      remindPlan:$('mRemind')?.value||'',
+      updatedAt:Date.now()
+    };
+    if(!base.title){alert('Nhập tên công việc');return;}
+    if(type==='Hằng ngày' || id.startsWith('daily:')){
+      const did=id.startsWith('daily:')?id.slice(6):newId('daily');
+      const old=getDaily().find(x=>x.id===did);
+      const payload={id:did,...base,active:true};
+      if(old) Object.assign(old,payload); else state.dailyTemplates.push(payload);
+      saveV43().then(()=>{
+        if(typeof closeModal==='function')closeModal('taskModal');
+        if($('mMaster'))mMaster.disabled=false;
+        renderDaily?.();
+        try{showToast?.('Đã lưu việc hằng ngày')}catch(e){}
+      });
+      return;
+    }
+    const date=$('mDate')?.value||today();
+    const taskData={date,...base,type:'Phát sinh'};
+    const old=getTasks().find(x=>x.id===id);
+    if(old){Object.assign(old,taskData); old.logs=old.logs||[]; old.logs.push(logLine2('sửa công việc'));}
+    else state.tasks.push({id:newId('task'),...taskData,sourceType:$('mMaster')?.value?'master':'manual',sourceMasterId:$('mMaster')?.value||'',status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[logLine2('tạo công việc phát sinh')]});
+    saveV43(date).then(()=>{ if(typeof closeModal==='function')closeModal('taskModal'); if($('mMaster'))mMaster.disabled=false; render?.(); });
+  };
+
+  window.renderDaily=function(){
+    normalizeV43(); const body=$('dailyBody'); if(!body)return;
+    const list=getDaily().slice().sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99')||(a.title||'').localeCompare(b.title||''));
+    body.innerHTML=list.map(d=>`<tr><td><b>${esc(d.time||'')}</b></td><td><b>${esc(d.title||'')}</b></td><td>${esc(d.emp||'')}</td><td>${esc(d.content||'')}</td><td>${esc(d.note||d.adminNote||'')}</td><td><span class="status ${d.active===false?'todo':'done'}">${d.active===false?'Tắt':'Đang bật'}</span></td><td class="adminOnly"><button class="btn green" onclick="applyDailyToday('${esc(d.id)}')">Áp dụng hôm nay</button> <button class="btn gray" onclick="openTaskForm('${esc(d.id)}','Hằng ngày')">Sửa</button> <button class="btn red" onclick="deleteDailyTemplate('${esc(d.id)}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px">Chưa có việc hằng ngày</td></tr>';
+    try{applyRole?.()}catch(e){}
+  };
+
+  window.deleteDailyTemplate=function(id){
+    if(!confirm('Xóa việc hằng ngày này? Công việc đã sinh trước đó không bị xóa.'))return;
+    state.dailyTemplates=getDaily().filter(x=>x.id!==id);
+    saveV43().then(()=>renderDaily?.());
+  };
+
+  window.applyDailyToday=function(id){
+    normalizeV43(); const d=getDaily().find(x=>x.id===id); if(!d)return;
+    const date=today();
+    let t=getTasks().find(x=>x.date===date && x.sourceType==='daily' && x.sourceTemplateId===id);
+    if(t){
+      Object.assign(t,{title:d.title,time:d.time,emp:d.emp,content:d.content,adminNote:d.note||d.adminNote||'',note:d.note||d.adminNote||'',img:d.img||'',imgs:d.imgs||t.imgs||[],remindPlan:d.remindPlan||''});
+      t.logs=t.logs||[]; t.logs.push(logLine2('áp dụng lại việc hằng ngày hôm nay'));
+    }else{
+      state.tasks.push({id:'daily_'+id+'_'+date.replace(/-/g,''),date,type:'Hằng ngày',sourceType:'daily',sourceTemplateId:id,title:d.title,time:d.time,emp:d.emp,content:d.content,adminNote:d.note||d.adminNote||'',note:d.note||d.adminNote||'',img:d.img||'',imgs:d.imgs||[],remindPlan:d.remindPlan||'',status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[logLine2('áp dụng việc hằng ngày hôm nay')]});
+    }
+    saveV43(date).then(()=>{ if(curDate()===date)render?.(); renderDaily?.(); });
+  };
+
+  setTimeout(()=>{normalizeV43(); refreshMasterSelectV43(); renderDaily?.();},500);
+})();
 </script>
 </body>
 </html>
