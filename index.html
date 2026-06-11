@@ -793,6 +793,7 @@ setInterval(writeDevicePresence,30000);
   const $=id=>document.getElementById(id),arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
   const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
   const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const minOf=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (Number.isFinite(h)?h:0)*60+(Number.isFinite(m)?m:0)};
   const dateOf=(date,time)=>{const now=new Date(),d=String(date||now.toISOString().slice(0,10)).split('-').map(Number),tm=String(time||'00:00').split(':').map(Number);return new Date(d[0]||now.getFullYear(),(d[1]||1)-1,d[2]||1,tm[0]||0,tm[1]||0,0,0).getTime()};
   const fmt=mins=>{mins=Math.max(0,Math.round(mins));if(mins<60)return mins+'p';const h=Math.floor(mins/60),m=mins%60;return h+'h'+(m?String(m).padStart(2,'0'):'')};
@@ -3725,7 +3726,7 @@ body.employeeMode .durationBadge{opacity:.75}
   const taskById=id=>{norm();return state.tasks.find(t=>t.id===id)};
   const actorName=()=>roleAdmin()?'Admin':(($('currentEmp')?.value)||'Nhân viên');
   const logActor=(text,actor)=>new Date().toLocaleString('vi-VN')+' '+text+' - '+(actor||actorName());
-  const saveDate=d=>typeof window.save==='function'?window.save(d||curDate()):(typeof window.saveV43==='function'?window.saveV43(d||curDate()):Promise.resolve());
+  const saveDate=d=>Promise.resolve(typeof window.save==='function'?window.save(d||curDate()):(typeof window.saveV43==='function'?window.saveV43(d||curDate()):undefined));
 
   const showActorPicker=callback=>{
     norm();
@@ -4343,5 +4344,226 @@ body.employeeMode .tasktable col{display:table-column!important}
   window.render=function(){oldRender?.();window.renderMobileCards?.()};
   window.addEventListener('resize',()=>setTimeout(()=>window.renderMobileCards?.(),120));
   setTimeout(()=>{try{window.renderMobileCards?.()}catch(e){console.error('UX_IPHONE_MOBILE_CARDS_TRUE_END_20260611',e)}},500);
+})();
+</script>
+<style id="UX_HEADER_TOGGLE_REMINDER_TRUE_END_20260611">
+#headerToggleBtn{
+  position:fixed;
+  right:14px;
+  bottom:72px;
+  z-index:12000;
+  height:38px;
+  border:0;
+  border-radius:999px;
+  padding:0 14px;
+  background:#0f172a;
+  color:#fff;
+  font-weight:900;
+  box-shadow:0 10px 26px #0f172a33;
+}
+body.headerHidden .top,
+body.headerHidden .tabs,
+body.headerHidden #todayTab>.filters{
+  display:none!important;
+}
+body.headerHidden .wrap{
+  margin-top:6px!important;
+}
+body.headerHidden .section-title{
+  margin-top:8px!important;
+}
+@media(max-width:760px){
+  #headerToggleBtn{right:10px;bottom:72px;height:34px;padding:0 11px;font-size:12px}
+  #todayTab .filters{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:6px!important;
+    padding:6px!important;
+  }
+  #todayTab .filters .field:has(#fDate),
+  #todayTab .filters .field:has(#fSearch){
+    grid-column:span 2!important;
+  }
+  #todayTab .filters>.btn{
+    height:34px!important;
+    min-width:0!important;
+    padding:0 4px!important;
+    font-size:12px!important;
+  }
+  #todayTab .filters input{
+    height:36px!important;
+    font-size:13px!important;
+    padding:0 8px!important;
+  }
+  body.headerHidden #statsRow.stats{
+    margin-top:4px!important;
+  }
+}
+</style>
+<script id="UX_HEADER_TOGGLE_REMINDER_TRUE_END_20260611">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:Object.values(v||{}).filter(Boolean);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks)};
+  const today=()=>new Date().toISOString().slice(0,10);
+  const curDate=()=>$('fDate')?.value||today();
+  const timeMin=t=>{const [h,m]=String(t||'99:99').split(':').map(Number);return (Number.isFinite(h)?h:99)*60+(Number.isFinite(m)?m:99)};
+  const splitEmp=e=>String(e||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const taskStart=t=>{const d=String(t.date||curDate()).split('-').map(Number),tm=String(t.time||'00:00').split(':').map(Number);return new Date(d[0],(d[1]||1)-1,d[2]||1,tm[0]||0,tm[1]||0,0,0).getTime()};
+  const deadlineOf=t=>{
+    norm();
+    const date=t.date||curDate(),emps=splitEmp(t.emp);
+    const same=state.tasks.filter(x=>(x.date||date)===date&&x.id!==t.id&&x.status!=='Đã xong'&&splitEmp(x.emp).some(e=>emps.includes(e))).sort((a,b)=>timeMin(a.time)-timeMin(b.time));
+    const next=same.find(x=>timeMin(x.time)>timeMin(t.time));
+    const limit=next?timeMin(next.time):(timeMin(t.time)+60);
+    const d=String(date).split('-').map(Number);
+    return new Date(d[0],(d[1]||1)-1,d[2]||1,Math.floor(limit/60),limit%60,0,0).getTime();
+  };
+  const remindNums=t=>String(t?.remindPlan||'').split(',').map(x=>parseInt(x.trim(),10)).filter(n=>Number.isFinite(n)&&n>0);
+  const saveDate=d=>typeof window.save==='function'?window.save(d||curDate()):(typeof window.saveV43==='function'?window.saveV43(d||curDate()):Promise.resolve());
+  const actorLabel=()=>($('role')?.value==='Admin'?'Admin':($('currentEmp')?.value||'Nhân viên'));
+  const logLine=(text,actor)=>new Date().toLocaleString('vi-VN')+' '+text+' - '+(actor||actorLabel());
+  const machine=()=>typeof window.machineLabel==='function'?window.machineLabel():(window.device||'Máy đang mở');
+
+  function ensureHeaderToggle(){
+    let btn=$('headerToggleBtn');
+    if(!btn){
+      btn=document.createElement('button');
+      btn.id='headerToggleBtn';
+      btn.type='button';
+      btn.onclick=toggleHeaderCompact;
+      document.body.appendChild(btn);
+    }
+    const hidden=localStorage.getItem('task_header_hidden_v1')==='1';
+    document.body.classList.toggle('headerHidden',hidden);
+    btn.textContent=hidden?'Hiện header':'Ẩn header';
+  }
+  window.toggleHeaderCompact=function(){
+    const next=!document.body.classList.contains('headerHidden');
+    localStorage.setItem('task_header_hidden_v1',next?'1':'0');
+    if(next&&typeof window.switchTab==='function')window.switchTab('today');
+    ensureHeaderToggle();
+    setTimeout(()=>{try{window.render?.();window.renderMobileCards?.()}catch(e){}},80);
+  };
+
+  let currentAttentionTaskId='';
+  let currentAttentionReminderId='';
+  const dismissedLocal=new Set();
+  const shownLocal=new Set();
+  const oldPlay=window.playAttentionSound;
+  const oldClose=window.closeAttention;
+  window.closeAttention=function(){
+    if(currentAttentionReminderId)dismissedLocal.add(currentAttentionReminderId);
+    currentAttentionTaskId='';
+    currentAttentionReminderId='';
+    if(oldClose)oldClose(); else window.closeModal?.('attentionModal');
+  };
+  window.showAttention=function(t,reason='Nhắc việc'){
+    if(!t||t.status==='Đã xong')return;
+    const r=t.activeReminder||{id:'local_'+(t.id||'')+'_'+Date.now(),type:'manual'};
+    if(r.ackBy||dismissedLocal.has(r.id))return;
+    currentAttentionTaskId=t.id;
+    currentAttentionReminderId=r.id;
+    const body=$('attentionBody');
+    if(body){
+      const deadline=new Date(deadlineOf(t));
+      body.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(splitEmp(t.emp).join(', '))}</span><span>${esc(reason)}</span><span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
+    }
+    window.openModal?.('attentionModal');
+    document.querySelectorAll('#attentionModal .attentionFoot .btn.gray').forEach(btn=>btn.textContent='Không phải tôi');
+    if(!shownLocal.has(r.id)){
+      shownLocal.add(r.id);
+      if(typeof oldPlay==='function')oldPlay(); else window.playAttentionSound?.();
+    }
+  };
+  window.attentionAck=function(){
+    norm();
+    const t=state.tasks.find(x=>x.id===currentAttentionTaskId);
+    if(!t){window.closeAttention();return}
+    window.withActor?.(actor=>{
+      t.logs=t.logs||[];
+      t.logs.push(logLine('đã nhận thông báo nhắc việc trên '+machine(),actor));
+      if(t.activeReminder)t.activeReminder={...t.activeReminder,ackBy:actor,ackAt:Date.now(),ackMachine:machine()};
+      t.activeReminder=null;
+      saveDate(t.date||curDate()).then(()=>{window.closeAttention();window.render?.()});
+    });
+  };
+  window.manualRemind=function(id){
+    norm();
+    const t=state.tasks.find(x=>x.id===id);
+    if(!t||t.status==='Đã xong')return;
+    window.withActor?.(actor=>{
+      t.logs=t.logs||[];
+      t.logs.push(logLine('nhắc việc thủ công',actor));
+      t.activeReminder={id:'manual_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),type:'manual',at:Date.now(),by:actor,ackBy:null};
+      saveDate(t.date||curDate()).then(()=>{window.render?.();window.showAttention(t,'Nhắc thủ công')});
+    });
+  };
+  window.updateRemindPlan=function(id,val){
+    norm();
+    if($('role')?.value!=='Admin')return;
+    const t=state.tasks.find(x=>x.id===id); if(!t)return;
+    window.withActor?.(actor=>{
+      t.remindPlan=String(val||'').trim();
+      t.firedReminders=[];
+      t.lastRepeatReminder=null;
+      t.activeReminder=null;
+      t.logs=t.logs||[];
+      t.logs.push(logLine('cập nhật nhắc việc: '+(t.remindPlan||'trống'),actor));
+      saveDate(t.date||curDate()).then(()=>window.render?.());
+    });
+  };
+  function nextReminderMinute(t,now){
+    const nums=remindNums(t); if(!nums.length)return null;
+    const elapsed=Math.floor((now-taskStart(t))/60000);
+    if(elapsed<0)return null;
+    if(nums.length===1){
+      const interval=nums[0];
+      if(elapsed<interval)return null;
+      const slot=Math.floor(elapsed/interval)*interval;
+      return Number(t.lastRepeatReminder||0)<slot?slot:null;
+    }
+    t.firedReminders=arr(t.firedReminders);
+    return nums.find(m=>elapsed>=m&&!t.firedReminders.includes(m))??null;
+  }
+  window.checkAutoReminders=function(){
+    norm();
+    const now=Date.now(),date=today();
+    let changed=false;
+    state.tasks.forEach(t=>{
+      if((t.date||date)!==date)return;
+      const deadline=deadlineOf(t);
+      if(t.status==='Đã xong'||now>=deadline){
+        if(t.activeReminder){t.activeReminder=null;changed=true}
+        return;
+      }
+      if(t.activeReminder&&!t.activeReminder.ackBy){
+        window.showAttention(t,t.activeReminder.type==='manual'?'Nhắc thủ công':'Tự nhắc');
+        return;
+      }
+      const minute=nextReminderMinute(t,now);
+      if(minute===null)return;
+      const nums=remindNums(t);
+      if(nums.length===1)t.lastRepeatReminder=minute;
+      else{t.firedReminders=arr(t.firedReminders);t.firedReminders.push(minute)}
+      t.activeReminder={id:'auto_'+t.id+'_'+minute+'_'+Date.now(),type:'auto',at:now,minute,ackBy:null};
+      t.logs=t.logs||[];
+      t.logs.push(logLine(nums.length===1?'tự nhắc mỗi '+nums[0]+'p':'tự nhắc sau '+minute+'p',machine()));
+      changed=true;
+      window.showAttention(t,nums.length===1?'Tự nhắc mỗi '+nums[0]+' phút':'Tự nhắc sau '+minute+' phút');
+    });
+    if(changed)saveDate(date);
+  };
+  const oldSetStatus=window.setStatus;
+  window.setStatus=function(id,status){
+    norm();
+    const t=state.tasks.find(x=>x.id===id);
+    if(status==='Đã xong'&&t)t.activeReminder=null;
+    return oldSetStatus?oldSetStatus(id,status):undefined;
+  };
+  const oldRender=window.render;
+  window.render=function(){oldRender?.();ensureHeaderToggle();};
+  ensureHeaderToggle();
+  setInterval(()=>{try{window.checkAutoReminders()}catch(e){console.error('checkAutoReminders final',e)}},30000);
+  setTimeout(()=>{try{window.checkAutoReminders();window.render?.()}catch(e){console.error('UX_HEADER_TOGGLE_REMINDER_TRUE_END_20260611',e)}},800);
 })();
 </script>
