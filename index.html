@@ -717,7 +717,6 @@ initFirebase();
 refreshEmployeeUI();render();applyRole();renderDevices();initColumnResize();askLoginIfNeeded();
 setInterval(writeDevicePresence,30000);
 </script>
-
 <style id="UX_STATS_BAR_CLEAN_FINAL_20260611">
 #statsRow.stats{
   display:flex!important;
@@ -4776,5 +4775,116 @@ body.headerHidden .wrap{
   window.render=function(){window.ensureTodayDateAndDaily();oldRender?.()};
   setInterval(()=>{try{window.ensureTodayDateAndDaily();window.checkAutoReminders()}catch(e){console.error('daily/reminder final',e)}},30000);
   setTimeout(()=>{try{window.ensureTodayDateAndDaily();window.checkAutoReminders();window.renderDevices?.();window.render?.()}catch(e){console.error('UX_FINAL_DATE_DAILY_DEVICES_REMINDER_TRUE_END_20260612',e)}},800);
+})();
+</script>
+<style id="UX_FINAL_LAST_DATE_DAILY_REMINDER_20260612">
+#headerToggleBtn{position:fixed!important;right:18px!important;bottom:18px!important;top:auto!important;z-index:1300!important}
+body.headerHidden #todayTab,body.headerHidden #dailyTab,body.headerHidden #masterTab,body.headerHidden #devicesTab{min-height:calc(100vh - 24px)!important}
+body.headerHidden .tablebox{max-height:calc(100vh - 142px)!important}
+body.headerHidden #dailyTab .tablebox,body.headerHidden #masterTab .tablebox,body.headerHidden #devicesTab .tablebox{max-height:none!important;background:#fff!important}
+#dailyTab .miniTable{table-layout:fixed;width:100%;background:#fff;border-collapse:collapse}
+#dailyTab .miniTable th,#dailyTab .miniTable td{vertical-align:middle;padding:12px 10px;border-bottom:1px solid #e5edf6}
+#dailyTab .miniTable th:nth-child(1),#dailyTab .miniTable td:nth-child(1){width:66px}
+#dailyTab .miniTable th:nth-child(2),#dailyTab .miniTable td:nth-child(2){width:130px}
+#dailyTab .miniTable th:nth-child(3),#dailyTab .miniTable td:nth-child(3){width:92px}
+#dailyTab .miniTable th:nth-child(6),#dailyTab .miniTable td:nth-child(6){width:92px;text-align:center}
+#dailyTab .miniTable th:nth-child(7),#dailyTab .miniTable td:nth-child(7){width:116px;text-align:center}
+.dailyCellTitle{font-weight:900;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dailyCellText{line-height:1.35;max-height:2.7em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.dailyRowActions{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap}
+.dailyRowActions .btn{padding:8px 10px;border-radius:8px;min-width:0}
+@media(max-width:700px){
+  .topFilters,.filters{gap:6px!important}
+  .topFilters .chip,.filters .chip{min-height:36px!important;padding:7px 10px!important;font-size:13px!important}
+  .filters input,.filters button{min-height:38px!important;font-size:13px!important}
+  body.headerHidden #headerToggleBtn,#headerToggleBtn{right:12px!important;bottom:78px!important}
+}
+</style>
+<script id="UX_FINAL_LAST_DATE_DAILY_REMINDER_20260612">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
+  const norm=()=>{if(!window.state)window.state={};state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const todayVN=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const key='task_auto_day_state_v2';
+  const readAuto=()=>{try{return JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){return {}}};
+  const writeAuto=s=>{try{localStorage.setItem(key,JSON.stringify(s||{}))}catch(e){}};
+  const imgs=d=>[...new Set(arr(d?.contentImgs||d?.contentImages||d?.imgs).concat(d?.img?[d.img]:[]).filter(Boolean))];
+  const adminImgs=d=>[...new Set(arr(d?.adminImgs||d?.noteImgs||d?.adminImages).filter(Boolean))];
+  const saveDay=date=>typeof window.saveDate==='function'?window.saveDate(date):(typeof window.saveAll==='function'?window.saveAll(date):(typeof window.save==='function'?(window.save(),Promise.resolve()):Promise.resolve()));
+  function createDailyForDate(date,reason){
+    norm();
+    let changed=false;
+    const list=state.dailyTemplates.length?state.dailyTemplates:state.masters;
+    list.forEach((d,i)=>{
+      if(!d||d.active===false)return;
+      const sourceId=d.id||d.masterId||('daily_'+i+'_'+String(d.title||'').replace(/\s+/g,'_'));
+      const exists=state.tasks.some(t=>(t.date||date)===date&&(t.sourceTemplateId===sourceId||t.masterId===sourceId||(t.type==='Hằng ngày'&&t.title===d.title&&t.time===d.time)));
+      if(exists)return;
+      const ci=imgs(d),ai=adminImgs(d);
+      state.tasks.push({id:'daily_'+sourceId+'_'+date.replace(/-/g,'')+'_'+Date.now()+Math.random().toString(36).slice(2,5),sourceTemplateId:sourceId,masterId:d.masterId||(!state.dailyTemplates.length?sourceId:''),sourceType:'daily',date,time:d.time||'08:00',title:d.title||'',emp:d.emp||'',type:'Hằng ngày',content:d.content||'',adminNote:d.note||d.adminNote||'',note:d.note||d.adminNote||'',img:ci[0]||'',imgs:ci.slice(),contentImgs:ci.slice(),contentImages:ci.slice(),adminImgs:ai.slice(),remindPlan:d.remindPlan||'',status:'Chưa làm',report:'',reportImgs:[],logs:[typeof logLine==='function'?logLine(reason||'tự tạo việc hằng ngày khi sang ngày mới'):(new Date().toLocaleString('vi-VN')+' '+(reason||'tự tạo việc hằng ngày khi sang ngày mới'))]});
+      changed=true;
+    });
+    if(changed)saveDay(date).then(()=>{try{window.renderDaily?.();window.render?.()}catch(e){}});
+    return changed;
+  }
+  window.ensureTodayDateAndDaily=function(opts={}){
+    const today=todayVN(),fd=$('fDate'),current=(fd&&fd.value)||today;
+    const s=readAuto();
+    if(opts.forceToday){if(fd)fd.value=today;writeAuto({lastSeenDate:today,autoDate:today});return false}
+    if(!s.lastSeenDate){
+      writeAuto({lastSeenDate:current,autoDate:current});
+      if(current!==today){if(fd)fd.value=today;writeAuto({lastSeenDate:today,autoDate:today});createDailyForDate(today,'tự tạo việc hằng ngày khi sang ngày mới');return true}
+      return false;
+    }
+    if(s.lastSeenDate!==today){
+      const wasAuto=!fd||!fd.value||fd.value===s.lastSeenDate||fd.value===s.autoDate;
+      writeAuto({lastSeenDate:today,autoDate:today});
+      if(wasAuto&&fd)fd.value=today;
+      createDailyForDate(today,'tự tạo việc hằng ngày khi sang ngày mới');
+      return true;
+    }
+    return false;
+  };
+  const oldToday=window.today;
+  window.today=function(){window.ensureTodayDateAndDaily({forceToday:true});try{oldToday?.()}catch(e){};try{window.render?.()}catch(e){};return todayVN()};
+  const oldRender=window.render;
+  window.render=function(){window.ensureTodayDateAndDaily();oldRender?.()};
+  window.renderDaily=function(){
+    norm();
+    const body=$('dailyBody'); if(!body)return;
+    const list=state.dailyTemplates.slice().sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99'))||String(a.title||'').localeCompare(String(b.title||'')));
+    body.innerHTML=list.map(d=>{
+      const id=esc(d.id||''),ci=imgs(d),ai=adminImgs(d),active=d.active!==false;
+      return `<tr><td><b>${esc(d.time||'')}</b></td><td><div class="dailyCellTitle">${esc(d.title||'')}</div></td><td>${esc(d.emp||'')}</td><td><div class="dailyCellText">${esc(d.content||'')}</div>${ci.length?`<button class="imgbadge" onclick="openDailyGallery('${id}',0)">📷 ${ci.length} ảnh</button>`:''}</td><td><div class="dailyCellText">${esc(d.note||d.adminNote||'')}</div>${ai.length?`<button class="noteImgsLink" onclick="openDailyAdminGallery('${id}',0)">📷 ${ai.length} ảnh</button>`:''}</td><td><button class="statusToggle ${active?'on':'off'}" onclick="toggleDailyActive('${id}')">${active?'Đang bật':'Tắt'}</button></td><td class="adminOnly"><div class="dailyRowActions"><button class="btn green" onclick="applyDailyToday('${id}')">Áp dụng</button><button class="btn gray" onclick="openTaskForm('${id}','Hằng ngày')">Sửa</button><button class="btn red" onclick="deleteDailyTemplate('${id}')">Xóa</button></div></td></tr>`;
+    }).join('')||'<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px">Chưa có việc hằng ngày</td></tr>';
+    try{window.applyRole?.()}catch(e){}
+  };
+  const oldCloseAttention=window.closeAttention;
+  window.closeAttention=function(){try{oldCloseAttention?.()}catch(e){window.closeModal?.('attentionModal')}window.__currentAttentionTaskId='';window.__currentAttentionReminderId=''};
+  window.attentionAck=function(){
+    const id=window.__currentAttentionTaskId||'',rid=window.__currentAttentionReminderId||'';
+    norm();
+    const t=state.tasks.find(x=>x.id===id);
+    if(!t){window.closeAttention?.();return}
+    window.withActor?.(actor=>{
+      t.logs=t.logs||[];
+      t.logs.push(typeof logLine==='function'?logLine('đã nhận nhắc việc',actor):(new Date().toLocaleString('vi-VN')+' đã nhận nhắc việc - '+actor));
+      if(t.activeReminder)t.activeReminder={...t.activeReminder,id:rid||t.activeReminder.id,ackBy:actor,ackAt:Date.now()};
+      saveDay(t.date||todayVN()).then(()=>{window.__currentAttentionTaskId='';window.__currentAttentionReminderId='';window.closeModal?.('attentionModal');window.render?.()});
+    });
+  };
+  setInterval(()=>{
+    try{
+      const id=window.__currentAttentionTaskId||'',rid=window.__currentAttentionReminderId||'';
+      if(!id||!rid)return;
+      norm();
+      const t=state.tasks.find(x=>x.id===id);
+      if(t&&t.activeReminder&&t.activeReminder.id===rid&&t.activeReminder.ackBy){window.__currentAttentionTaskId='';window.__currentAttentionReminderId='';window.closeModal?.('attentionModal')}
+    }catch(e){}
+  },1500);
+  setInterval(()=>{try{window.ensureTodayDateAndDaily()}catch(e){}},30000);
+  setTimeout(()=>{try{window.ensureTodayDateAndDaily();window.renderDaily?.();window.render?.()}catch(e){console.error('UX_FINAL_LAST_DATE_DAILY_REMINDER_20260612',e)}},800);
 })();
 </script>
