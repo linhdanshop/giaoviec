@@ -244,6 +244,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 <script>
 const K='task_reminder_v27_firebase';
+const TASK_ROOT='taskReminder';
+window.APP_ROOTS=window.APP_ROOTS||{taskReminder:TASK_ROOT};
+window.getAppRoot=name=>window.APP_ROOTS?.[name]||name;
+window.appPath=(root,...parts)=>[root,...parts].filter(Boolean).join('/').replace(/\/+/g,'/');
+window.rootRef=(root,...parts)=>window.db?window.db.ref(window.appPath(window.getAppRoot(root),...parts)):null;
 // ================= FIREBASE CONFIG =================
 // Dán config Firebase Web App của mày vào đây.
 // Nếu chưa dán, file vẫn chạy demo bằng localStorage.
@@ -278,7 +283,7 @@ function save(){
   normalizeState();
   saveLocal();
   if(db && !savingRemote){
-    db.ref('taskReminder/settings').set({masters:state.masters||[],defaultMasterId:state.defaultMasterId||''}).catch(e=>showToast('Firebase lỗi ghi: '+e.message));
+    db.ref(window.appPath(TASK_ROOT,'settings')).set({masters:state.masters||[],defaultMasterId:state.defaultMasterId||''}).catch(e=>showToast('Firebase lỗi ghi: '+e.message));
   }
 }
 function resetDemo(){
@@ -304,7 +309,7 @@ function writeDevicePresence(){
   let info=getDeviceInfo();
   const data={id:device,name:info.name||'Máy đang mở',ip:info.ip||'',user:currentUserLabel(),lastSeen:Date.now(),online:true};
   localStorage.setItem('task_device_last_presence',JSON.stringify(data));
-  if(db) db.ref('taskReminder/devices/'+device).set(data).catch(()=>{});
+  if(db) db.ref(window.appPath(TASK_ROOT,'devices',device)).set(data).catch(()=>{});
 }
 function renderDevices(){let info=getDeviceInfo();let d1=document.getElementById('d1');if(!d1)return;d1.textContent=device;let dn=document.getElementById('devName'); if(dn) dn.value=info.name||'Máy đang mở';let dip=document.getElementById('devIp'); if(dip) dip.value=info.ip||'';let du=document.getElementById('devUser'); if(du) du.textContent=currentUserLabel();let ls=document.getElementById('devLastSeen'); if(ls) ls.textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});writeDevicePresence();}
 function empClassName(e){return e==='An'?'an':e==='Nguyệt'?'nguyet':e==='Thủy'?'thuy':''}
@@ -730,7 +735,7 @@ function row(t){
 }
 function setStatus(id,s){let t=state.tasks.find(x=>x.id===id);if(!roleAdmin() && s!=='Đã xong'){alert('Nhân viên chỉ được đánh dấu đã xong');return;}withActor(actor=>{t.status=s;if(s==='Đã xong')t.doneAt=Date.now();else t.doneAt=null;t.logs=t.logs||[];t.logs.push(logLine('đổi trạng thái: '+s,actor));save();render();if(document.getElementById('detailModal').classList.contains('open'))detail(id)});}
 function copyTaskInfo(id){let t=state.tasks.find(x=>x.id===id); if(!t) return; const deadline=taskDeadlineDate(t); const txt=`🔔 NHẮC VIỆC\n\nThời gian: ${t.time} - ${fmtDate(t.date)}${deadline?'\nHạn trước: '+deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):''}\nTên CV: ${t.title}\nNhân viên: ${t.emp}\nTrạng thái: ${displayStatus(t)}${isLateTask(t)?' / Quá giờ':''}\nTG xử lý: ${durationText(t)}\n\nNội dung:\n${t.content||''}\n\nAdmin ghi chú:\n${t.adminNote||''}\n\nBáo cáo NV:\n${t.report||''}`; if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>showToast('Đã copy thông tin việc để gửi Zalo'));}else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Đã copy thông tin việc');}}
-setInterval(()=>{checkAutoReminders();render();},60000);
+/* legacy reminder/render interval removed: FINAL41 handles reminders every 3s */
 
 initFirebase();
 initColumnResize();
@@ -778,7 +783,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 @media(max-width:760px){.actorChoiceGrid{grid-template-columns:1fr}.actorChoiceBtn{min-height:50px}}</style>
 <script id="APP_CLEAN_20260612">
 (function(){
-  const ROOT='taskReminder';
+  const ROOT=window.APP_ROOTS?.taskReminder||'taskReminder';
+
+  /* FINAL 42 - data root notes */
+  window.taskReminderRoot=ROOT;
   const DEFAULTS=new Set(['An','Nguyệt','Thủy']);
   const $=id=>document.getElementById(id);
   const toArr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
@@ -852,7 +860,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   window.applyRole=function(){if(typeof baseApplyRole==='function')baseApplyRole();updateOperatorBar()};
   function applyEmployees(incoming){state.employees=cleanEmployees(incoming);saveLocal();refreshEmployeeUI();renderEmployees();renderLoginChoices();updateOperatorBar()}
   function loadEmployeesOnce(){if(!window.db)return Promise.resolve();return window.db.ref(ROOT+'/employees').once('value').then(s=>{applyEmployees(s.val());return state.employees}).catch(()=>{})}
-  window.renderDevices=function(devices){devices=devices||window.__lastDevices||{};const box=$('devicesTab');if(!box)return;const info=getDevInfo();const selected=devices[selectedDeviceId]||{};const editName=selectedDeviceId===device?(info.name||''):(selected.name||'');const editIp=selectedDeviceId===device?(info.ip||''):(selected.ip||'');const rows=Object.values(devices||{}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d=>`<div class="row ${d.id===selectedDeviceId?'active':''}" onclick="selectDevice('${esc(d.id||'')}','${esc(d.name||'')}','${esc(d.ip||'')}')"><b>${esc(d.id||'')}</b><span>${esc(d.name||'Máy đang mở')}${d.ip?' - '+esc(d.ip):''}</span><span>${esc(d.user||'')}</span><b>${Date.now()-(d.lastSeen||0)<90000?'Online':'Vắng'}</b><span>${d.lastSeen?new Date(d.lastSeen).toLocaleString('vi-VN'):'-'}</span></div>`).join('');box.innerHTML=`<div class="section-title"><h2>Thiết bị online</h2><span class="hint">Bấm một máy trong danh sách để sửa tên</span></div><div class="card masterbox"><div class="deviceEditor"><div><label>Máy đang sửa</label><b>${esc(selectedDeviceId||device)}</b></div><div><label>Tên máy</label><input id="devName" ${roleAdmin()?'':'readonly'} value="${esc(editName)}" placeholder="VD: Máy gói đơn" oninput="saveDeviceInfo()"></div><div><label>Ghi chú/IP</label><input id="devIp" ${roleAdmin()?'':'readonly'} value="${esc(editIp)}" placeholder="VD: Quầy 1" oninput="saveDeviceInfo()"></div><div><label>Quyền</label><b>${esc(role.value||'')}</b></div></div><div class="deviceRows">${rows||'<div style="padding:10px;color:#64748b">Chưa có thiết bị online</div>'}</div></div>`};  function startFirebaseClean(){if(!window.db)return;cleanupGhosts();window.db.ref(ROOT+'/employees').on('value',s=>{const incoming=cleanEmployees(s.val());if(Date.now()<employeeWriteLockUntil&&!incoming.length)return;applyEmployees(incoming)});window.db.ref(ROOT+'/dailyTemplates').on('value',s=>{state.dailyTemplates=toArr(s.val());saveLocal();renderDaily()});window.db.ref(ROOT+'/masters').on('value',s=>{state.masters=toArr(s.val());saveLocal();try{renderMaster();fillMasterSelect()}catch(e){}});window.db.ref(ROOT+'/tasks').on('value',s=>{const all=[];const v=s.val()||{};Object.values(v).forEach(day=>Object.values(day||{}).forEach(t=>all.push(t)));state.tasks=all;saveLocal();if(attentionTaskId){const at=state.tasks.find(x=>x.id===attentionTaskId);if(!at||!at.activeReminder||at.activeReminder.ackBy)closeAttention()}render()});window.db.ref(ROOT+'/devices').on('value',s=>{window.__lastDevices=s.val()||{};renderDevices(window.__lastDevices)});}
+  window.renderDevices=function(devices){devices=devices||window.__lastDevices||{};const box=$('devicesTab');if(!box)return;const info=getDevInfo();const selected=devices[selectedDeviceId]||{};const editName=selectedDeviceId===device?(info.name||''):(selected.name||'');const editIp=selectedDeviceId===device?(info.ip||''):(selected.ip||'');const rows=Object.values(devices||{}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d=>`<div class="row ${d.id===selectedDeviceId?'active':''}" onclick="selectDevice('${esc(d.id||'')}','${esc(d.name||'')}','${esc(d.ip||'')}')"><b>${esc(d.id||'')}</b><span>${esc(d.name||'Máy đang mở')}${d.ip?' - '+esc(d.ip):''}</span><span>${esc(d.user||'')}</span><b>${Date.now()-(d.lastSeen||0)<90000?'Online':'Vắng'}</b><span>${d.lastSeen?new Date(d.lastSeen).toLocaleString('vi-VN'):'-'}</span></div>`).join('');box.innerHTML=`<div class="section-title"><h2>Thiết bị online</h2><span class="hint">Bấm một máy trong danh sách để sửa tên</span></div><div class="card masterbox"><div class="deviceEditor"><div><label>Máy đang sửa</label><b>${esc(selectedDeviceId||device)}</b></div><div><label>Tên máy</label><input id="devName" ${roleAdmin()?'':'readonly'} value="${esc(editName)}" placeholder="VD: Máy gói đơn" oninput="saveDeviceInfo()"></div><div><label>Ghi chú/IP</label><input id="devIp" ${roleAdmin()?'':'readonly'} value="${esc(editIp)}" placeholder="VD: Quầy 1" oninput="saveDeviceInfo()"></div><div><label>Quyền</label><b>${esc(role.value||'')}</b></div></div><div class="deviceRows">${rows||'<div style="padding:10px;color:#64748b">Chưa có thiết bị online</div>'}</div></div>`};  function startFirebaseClean(){if(!window.db)return;cleanupGhosts();window.db.ref(ROOT+'/employees').on('value',s=>{const incoming=cleanEmployees(s.val());if(Date.now()<employeeWriteLockUntil&&!incoming.length)return;applyEmployees(incoming)});window.db.ref(ROOT+'/dailyTemplates').on('value',s=>{state.dailyTemplates=toArr(s.val());saveLocal();renderDaily()});window.db.ref(ROOT+'/masters').on('value',s=>{state.masters=toArr(s.val());saveLocal();try{renderMaster();fillMasterSelect()}catch(e){}});window.db.ref(ROOT+'/tasks').on('value',s=>{const all=[];const v=s.val()||{};Object.values(v).forEach(day=>Object.values(day||{}).forEach(t=>all.push(t)));state.tasks=all;saveLocal();if(attentionTaskId){const at=state.tasks.find(x=>x.id===attentionTaskId);if(!at||!at.activeReminder||at.activeReminder.ackBy)closeAttention()}if(window.handleRealtimeReminders41)window.handleRealtimeReminders41(all);render()});window.db.ref(ROOT+'/devices').on('value',s=>{window.__lastDevices=s.val()||{};renderDevices(window.__lastDevices)});}
   function fmtMinutes(m){m=Math.max(0,Math.round(m||0));const h=Math.floor(m/60),mm=m%60;return h&&mm?`${h}h${String(mm).padStart(2,'0')}`:h?`${h}h`:`${mm}p`}
   window.durationText=function(t){const start=taskStartDate(t).getTime();const end=t.status==='Đã xong'&&t.doneAt?Number(t.doneAt):Date.now();const total=Math.max(0,(end-start)/60000);const deadline=taskDeadlineDate(t);let late='';if(deadline){const lateMin=Math.max(0,(end-deadline.getTime())/60000);if(lateMin>0)late=`<br><span class="lateLine">Trễ ${fmtMinutes(lateMin)}</span>`}return `<span>${t.status==='Đã xong'?'XL':'Đang'} ${fmtMinutes(total)}</span>${late}`};
   function ensureHistoryModal(){let m=$('historyModal');if(m)return m;document.body.insertAdjacentHTML('beforeend',`<div id="historyModal" class="modal"><div class="panel"><div class="panelhead"><h3>Lịch sử thao tác</h3><button class="x" onclick="closeModal('historyModal')">×</button></div><div id="historyBody" class="detailSection" style="margin:14px;max-height:70vh;overflow:auto"></div></div></div>`);return $('historyModal')}
@@ -920,7 +928,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   window.renderMaster=function(){if(typeof oldRenderMaster30==='function')oldRenderMaster30();document.querySelectorAll('#masterTab .miniTable tbody tr').forEach(tr=>{[...tr.children].forEach((td,i)=>td.setAttribute('data-label',['Mặc định','Tên CV','Nội dung','NV mặc định','Ghi chú','Thao tác'][i]||''))});applyRole()};
   const oldRender30=window.render;
   window.render=function(){if(typeof oldRender30==='function')oldRender30();updateOperatorBarFinal();try{durationText=window.durationText;row=window.row;checkAutoReminders=window.checkAutoReminders;showAttention=window.showAttention;shouldRepeatReminder=window.shouldRepeatReminder}catch(e){}};
-  setInterval(updateOperatorBarFinal,30000);
+  /* redundant operator 30s interval removed: 1s updater remains active */
   /* FINAL 31 behavior overrides */
   window.durationText=function(t){const start=taskStartDate(t).getTime();const end=t.status==='Đã xong'&&t.doneAt?Number(t.doneAt):Date.now();const total=Math.max(0,(end-start)/60000);const deadline=taskDeadlineDate(t);let late='';if(deadline){const lateMin=Math.max(0,(end-deadline.getTime())/60000);if(lateMin>0)late=`<span class="lateLine">Trễ ${fmtDuration30(lateMin)}</span>`}return `<span>${t.status==='Đã xong'?'Xong':'Đang'} ${fmtDuration30(total)}</span>${late}`};
   window.empChips=function(emp){const list=empList(emp);if(!list.length)return '<div class="empchips"></div>';return '<div class="empchips" title="'+esc(list.join(', '))+'">'+list.slice(0,3).map(e=>`<span class="empchip" style="--empColor:${empColor(e)}">${esc(e)}</span>`).join('')+(list.length>3?`<span class="empchip moreEmp">+${list.length-3}</span>`:'')+'</div>'};
@@ -951,7 +959,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   window.applyRole=function(){if(typeof oldApplyRole33==='function')oldApplyRole33();updateOperatorBarFinal()};
   const oldRender33=window.render;
   window.render=function(){if(typeof oldRender33==='function')oldRender33();try{remindHtml=window.remindHtml;manualRemind=window.manualRemind}catch(e){}updateOperatorBarFinal()};
-  setInterval(updateOperatorBarFinal,30000);
+  /* redundant operator 30s interval removed: 1s updater remains active */
   /* FINAL 34 - actor before employee actions */
   function renderActorChoices(){const wrap=$('actorChoiceGrid');if(!wrap)return;wrap.innerHTML=(state.employees||[]).map(e=>`<button type="button" class="actorChoiceBtn" onclick="confirmActorName('${q(e)}')">${esc(e)}</button>`).join('')||'<div style="color:#dc2626;font-weight:900">Chưa có nhân viên</div>'}
   function ensureActorChoiceUi(){const form=document.querySelector('#actorModal .form');if(!form||$('actorChoiceGrid'))return;form.innerHTML='<div class="full"><label>Chọn người thao tác</label><div id="actorChoiceGrid" class="actorChoiceGrid"></div></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div>'}
@@ -1342,15 +1350,8 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       break;
     }
   }
-  if(window.db&&!window.__reminderFastListener41){
-    window.__reminderFastListener41=true;
-    window.db.ref(ROOT+'/tasks').on('value',snap=>{
-      const tasks=[];
-      const v=snap.val()||{};
-      Object.values(v).forEach(day=>Object.values(day||{}).forEach(t=>tasks.push(t)));
-      handleRealtimeReminders41(tasks);
-    });
-  }
+  window.handleRealtimeReminders41=handleRealtimeReminders41;
+  setTimeout(()=>{try{handleRealtimeReminders41(state.tasks||[])}catch(e){}},0);
   setInterval(()=>{try{window.checkAutoReminders()}catch(e){}},3000);
   try{
     showAttention=window.showAttention;
