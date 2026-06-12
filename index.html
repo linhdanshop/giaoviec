@@ -1210,5 +1210,156 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   };
   generateDailyForDate=function(date){return generateDailyForDateSafe(date||todayVN())};
 
+
+  /* FINAL 41 - reliable realtime reminders */
+  function reminderDismissKey41(t){
+    const rid=t&&t.activeReminder&&t.activeReminder.id;
+    return rid?'dismiss_reminder_'+rid:'';
+  }
+  function reminderReason41(t){
+    if(!t||!t.activeReminder)return 'Nhắc việc';
+    return t.activeReminder.type==='manual'?'Nhắc thủ công':'Tự nhắc mỗi '+(t.activeReminder.interval||remindList(t)[0]||'')+' phút';
+  }
+  function reminderSlot41(t,now){
+    const list=remindList(t);
+    const interval=Number(list[0]||0);
+    if(!interval||interval<1||!t||t.status==='Đã xong'||isLateTask(t))return null;
+    const start=taskStartDate(t).getTime();
+    const elapsed=Math.floor((now-start)/60000);
+    if(elapsed<interval)return null;
+    return Math.floor(elapsed/interval)*interval;
+  }
+  function saveOneTaskReminder41(t){
+    if(!t||!t.id)return Promise.resolve();
+    norm();
+    saveLocal();
+    if(!window.db)return Promise.resolve();
+    const d=t.date||currentDate();
+    return window.db.ref(ROOT+'/tasks/'+d+'/'+t.id).set(t).catch(e=>alert('Firebase lỗi ghi nhắc việc: '+e.message));
+  }
+  function syncTaskIntoState41(t){
+    if(!t||!t.id)return;
+    const i=state.tasks.findIndex(x=>x.id===t.id);
+    if(i>=0)state.tasks[i]=Object.assign(state.tasks[i],t);
+    else state.tasks.push(t);
+  }
+  function showReminderNow41(t,reason){
+    if(!t||!t.id||t.status==='Đã xong')return;
+    if(roleAdmin()&&!window.__notifyTest)return;
+    if(t.activeReminder&&t.activeReminder.ackBy)return;
+    const k=reminderDismissKey41(t);
+    if(k&&localStorage.getItem(k))return;
+    syncTaskIntoState41(t);
+    attentionTaskId=t.id;
+    const deadline=taskDeadlineDate(t);
+    attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(empList(t.emp).join(', ')||'-')}</span><span>${esc(reason||reminderReason41(t))}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
+    openModal('attentionModal');
+    playAttentionSound();
+  }
+  window.showAttention=showReminderNow41;
+  window.closeAttention=function(){
+    const t=state.tasks.find(x=>x.id===attentionTaskId);
+    const k=reminderDismissKey41(t);
+    if(k)localStorage.setItem(k,'1');
+    closeModal('attentionModal');
+    attentionTaskId=null;
+  };
+  window.attentionDone=window.closeAttention;
+  window.attentionAck=function(){
+    const id=attentionTaskId;
+    if(!id)return closeAttention();
+    const t=state.tasks.find(x=>x.id===id);
+    if(!t)return closeAttention();
+    withActor(actor=>{
+      t.logs=t.logs||[];
+      t.logs.push(logLine('đã nhận thông báo nhắc việc',actor));
+      t.activeReminder=null;
+      t.lastAckReminderAt=Date.now();
+      saveOneTaskReminder41(t).then(()=>{render();closeAttention();});
+    });
+  };
+  window.manualRemind=function(id){
+    if(!roleAdmin())return;
+    const t=state.tasks.find(x=>x.id===id);
+    if(!t||t.status==='Đã xong')return;
+    withActor(actor=>{
+      const rid='manual_'+id+'_'+Date.now();
+      t.logs=t.logs||[];
+      t.logs.push(logLine('nhắc việc thủ công',actor));
+      t.activeReminder={id:rid,type:'manual',at:Date.now(),by:actor,ackBy:null};
+      localStorage.removeItem(reminderDismissKey41(t));
+      render();
+      showReminderNow41(t,'Nhắc thủ công');
+      saveOneTaskReminder41(t);
+    });
+  };
+  window.shouldRepeatReminder=function(t,now){return reminderSlot41(t,now)};
+  window.checkAutoReminders=function(){
+    const d=todayVN();
+    const now=Date.now();
+    const dirty=[];
+    state.tasks.forEach(t=>{
+      if((t.date||d)!==d||t.status==='Đã xong')return;
+      if(isLateTask(t)){
+        if(t.activeReminder&&t.activeReminder.type==='auto'){t.activeReminder=null;dirty.push(t)}
+        return;
+      }
+      const active=t.activeReminder;
+      const slot=reminderSlot41(t,now);
+      if(active&&!active.ackBy){
+        if(active.type==='manual'){
+          showReminderNow41(t,'Nhắc thủ công');
+          if(slot===null||Number(t.lastRepeatReminder||0)>=slot)return;
+        }else if(active.type==='auto'&&Number(active.minute||0)===Number(slot||0)){
+          showReminderNow41(t,reminderReason41(t));
+          return;
+        }
+      }
+      if(slot===null||Number(t.lastRepeatReminder||0)>=slot)return;
+      const interval=Number(remindList(t)[0]||0);
+      const rid='auto_'+t.id+'_'+slot;
+      t.logs=t.logs||[];
+      t.lastRepeatReminder=slot;
+      t.logs.push(new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' tự nhắc mỗi '+interval+'p - '+machineLabel());
+      t.activeReminder={id:rid,type:'auto',at:now,minute:slot,interval,ackBy:null};
+      localStorage.removeItem(reminderDismissKey41(t));
+      dirty.push(t);
+      showReminderNow41(t,'Tự nhắc mỗi '+interval+' phút');
+    });
+    dirty.forEach(saveOneTaskReminder41);
+  };
+  function handleRealtimeReminders41(tasks){
+    const d=todayVN();
+    const activeTasks=tasks.filter(t=>(t.date||d)===d&&t.status!=='Đã xong'&&t.activeReminder&&!t.activeReminder.ackBy);
+    if(attentionTaskId){
+      const live=tasks.find(t=>t.id===attentionTaskId);
+      if(!live||!live.activeReminder||live.activeReminder.ackBy||live.status==='Đã xong')closeAttention();
+    }
+    activeTasks.sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99')));
+    for(const t of activeTasks){
+      if(t.activeReminder.type==='auto'&&isLateTask(t))continue;
+      showReminderNow41(t,reminderReason41(t));
+      break;
+    }
+  }
+  if(window.db&&!window.__reminderFastListener41){
+    window.__reminderFastListener41=true;
+    window.db.ref(ROOT+'/tasks').on('value',snap=>{
+      const tasks=[];
+      const v=snap.val()||{};
+      Object.values(v).forEach(day=>Object.values(day||{}).forEach(t=>tasks.push(t)));
+      handleRealtimeReminders41(tasks);
+    });
+  }
+  setInterval(()=>{try{window.checkAutoReminders()}catch(e){}},3000);
+  try{
+    showAttention=window.showAttention;
+    closeAttention=window.closeAttention;
+    attentionAck=window.attentionAck;
+    manualRemind=window.manualRemind;
+    shouldRepeatReminder=window.shouldRepeatReminder;
+    checkAutoReminders=window.checkAutoReminders;
+  }catch(e){}
+
 })();
 </script>
