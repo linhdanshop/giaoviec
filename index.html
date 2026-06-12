@@ -5100,3 +5100,58 @@ body.headerHidden #headerToggleBtn{right:18px!important;bottom:18px!important;to
   setTimeout(()=>{try{norm();window.refreshEmployeeUI?.();window.renderDaily?.()}catch(e){console.error('UX_FINAL_NO_SEED_NO_LOCAL_GHOST_20260612',e)}},1200);
 })();
 </script>
+<script id="UX_FINAL_CLEAN_EMPTY_FIREBASE_GHOSTS_20260612">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
+  const defaultNames=['An','Nguyệt','Thủy'];
+  const isDefaultEmployees=v=>{const a=arr(v).map(x=>typeof x==='string'?x:(x?.name||x?.id||'')).filter(Boolean);return a.length>0&&a.length<=3&&a.every(x=>defaultNames.includes(x))};
+  const hasRealData=v=>{
+    const tasks=v?.tasks&&Object.values(v.tasks||{}).some(day=>day&&Object.keys(day).length);
+    return !!(tasks||Object.keys(v?.masters||{}).length||Object.keys(v?.dailyTemplates||{}).length||Object.keys(v?.settings?.masters||{}).length);
+  };
+  function clearLocalGhosts(){
+    try{
+      const raw=localStorage.getItem('task_reminder_v27_firebase');
+      if(raw){
+        const s=JSON.parse(raw);
+        if(!hasRealData(s)&&isDefaultEmployees(s.employees)){
+          s.employees=[];s.system={};s.masters=[];s.dailyTemplates=[];s.tasks=[];
+          localStorage.setItem('task_reminder_v27_firebase',JSON.stringify(s));
+          if(window.state){state.employees=[];state.system={};state.masters=[];state.dailyTemplates=[];state.tasks=[]}
+        }
+      }
+      const info=JSON.parse(localStorage.getItem('task_device_info_v23')||'{}');
+      if(defaultNames.includes(info.name)){info.name='';localStorage.setItem('task_device_info_v23',JSON.stringify(info))}
+    }catch(e){}
+  }
+  const oldWrite=window.writeDevicePresence;
+  window.writeDevicePresence=function(){
+    try{
+      const info=JSON.parse(localStorage.getItem('task_device_info_v23')||'{}');
+      if(defaultNames.includes(info.name)){info.name='';localStorage.setItem('task_device_info_v23',JSON.stringify(info))}
+    }catch(e){}
+    return oldWrite?.();
+  };
+  function cleanFirebaseGhosts(){
+    if(!window.db)return;
+    window.db.ref('taskReminder').once('value').then(s=>{
+      const v=s.val()||{};
+      const noReal=!hasRealData(v);
+      const updates={};
+      if(noReal&&isDefaultEmployees(v.employees))updates['taskReminder/employees']=null;
+      if(noReal&&v.system)updates['taskReminder/system']=null;
+      Object.values(v.devices||{}).forEach(d=>{
+        if(d&&defaultNames.includes(d.name))updates['taskReminder/devices/'+d.id+'/name']='Máy đang mở';
+      });
+      if(Object.keys(updates).length)window.db.ref().update(updates).then(()=>{
+        clearLocalGhosts();
+        try{window.refreshEmployeeUI?.();window.render?.();window.renderDevices?.()}catch(e){}
+      });
+    }).catch(()=>{});
+  }
+  clearLocalGhosts();
+  setTimeout(cleanFirebaseGhosts,500);
+  setInterval(cleanFirebaseGhosts,30000);
+})();
+</script>
