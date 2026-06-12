@@ -5155,3 +5155,111 @@ body.headerHidden #headerToggleBtn{right:18px!important;bottom:18px!important;to
   setInterval(cleanFirebaseGhosts,30000);
 })();
 </script>
+<style id="UX_ABSOLUTE_FINAL_EMP_DEVICE_DAILY_20260612">
+#dailyTab .tablebox{min-height:0!important;max-height:none!important;background:#fff!important}
+#dailyTab .miniTable{table-layout:fixed!important;width:100%!important;border-collapse:separate!important;border-spacing:0!important}
+#dailyTab .miniTable th{height:38px!important;padding:8px 10px!important;background:#f3f6fb!important;border-bottom:1px solid #dbe3ef!important}
+#dailyTab .miniTable td{height:76px!important;padding:10px!important;vertical-align:middle!important;border-bottom:1px solid #e7edf5!important}
+#dailyTab .miniTable th:nth-child(1),#dailyTab .miniTable td:nth-child(1){width:68px!important}
+#dailyTab .miniTable th:nth-child(2),#dailyTab .miniTable td:nth-child(2){width:180px!important}
+#dailyTab .miniTable th:nth-child(3),#dailyTab .miniTable td:nth-child(3){width:110px!important}
+#dailyTab .miniTable th:nth-child(4),#dailyTab .miniTable td:nth-child(4){width:36%!important}
+#dailyTab .miniTable th:nth-child(5),#dailyTab .miniTable td:nth-child(5){width:32%!important}
+#dailyTab .miniTable th:nth-child(6),#dailyTab .miniTable td:nth-child(6){width:110px!important;text-align:center!important}
+#dailyTab .miniTable th:nth-child(7),#dailyTab .miniTable td:nth-child(7){width:104px!important;text-align:center!important}
+.dailyClipFinal{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.35;word-break:break-word;max-height:2.7em}
+.dailyNameFinal{font-weight:900;line-height:1.2}
+.dailyActFinal{display:grid;gap:6px}.dailyActFinal .btn{height:32px!important;padding:0 8px!important;border-radius:8px!important}
+.deviceEditGrid{display:grid;grid-template-columns:160px 1fr 1fr 120px;gap:10px;align-items:end;margin:10px 0 14px}
+.deviceEditGrid label{font-size:12px;font-weight:900;color:#64748b;display:block;margin-bottom:5px}
+.deviceEditGrid input{width:100%;height:38px;border:1px solid #d9e3f0;border-radius:9px;padding:0 10px;font-weight:700}
+@media(max-width:700px){.deviceEditGrid{grid-template-columns:1fr}.dailyActFinal .btn{height:36px!important}}
+</style>
+<script id="UX_ABSOLUTE_FINAL_EMP_DEVICE_DAILY_20260612">
+(function(){
+  const $=id=>document.getElementById(id);
+  const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const defaults=new Set(['An','Nguyệt','Thủy']);
+  const cleanEmp=a=>arr(a).map(x=>typeof x==='string'?x:(x?.name||x?.id||'')).map(x=>String(x).trim()).filter(Boolean);
+  const onlyDefaults=a=>{a=cleanEmp(a);return a.length>0&&a.every(x=>defaults.has(x))};
+  const norm=()=>{if(!window.state)window.state={};state.employees=cleanEmp(state.employees);state.tasks=arr(state.tasks);state.dailyTemplates=arr(state.dailyTemplates);state.masters=arr(state.masters);state.system=state.system||{}};
+  const currentEmps=()=>cleanEmp(state?.employees);
+  const todayVN=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const saveMeta=()=>{try{localStorage.setItem('task_reminder_v27_firebase',JSON.stringify({employees:state.employees,masters:state.masters,dailyTemplates:state.dailyTemplates,tasks:state.tasks,system:state.system}))}catch(e){};return window.db?window.db.ref().update({'taskReminder/employees':state.employees,'taskReminder/masters':objById(state.masters),'taskReminder/dailyTemplates':objById(state.dailyTemplates),'taskReminder/system':state.system}).catch(()=>{}):Promise.resolve()};
+  const objById=a=>{const o={};arr(a).forEach(x=>{if(x&&x.id)o[x.id]=x});return o};
+  function purgeDefaultGhosts(){
+    norm();
+    if(onlyDefaults(state.employees)){state.employees=[];try{localStorage.removeItem('task_user_emp_v23')}catch(e){}}
+    try{const info=JSON.parse(localStorage.getItem('task_device_info_v23')||'{}');if(defaults.has(info.name)){info.name='';localStorage.setItem('task_device_info_v23',JSON.stringify(info))}}catch(e){}
+    if(window.db){
+      window.db.ref('taskReminder').once('value').then(s=>{
+        const v=s.val()||{},up={};
+        if(onlyDefaults(v.employees))up['taskReminder/employees']=null;
+        if(v.system&&v.system.dailyGenerated)up['taskReminder/system/dailyGenerated']=null;
+        Object.values(v.devices||{}).forEach(d=>{if(d&&defaults.has(d.name))up['taskReminder/devices/'+d.id+'/name']='Máy đang mở'});
+        if(Object.keys(up).length)window.db.ref().update(up).catch(()=>{});
+      }).catch(()=>{});
+    }
+  }
+  window.refreshEmployeeUI=function(){
+    purgeDefaultGhosts(); norm();
+    const emps=currentEmps();
+    const cur=$('currentEmp'); if(cur){const old=cur.value||localStorage.getItem('task_user_emp_v23')||'Tất cả';cur.innerHTML='<option>Tất cả</option>'+emps.map(e=>`<option>${esc(e)}</option>`).join('');cur.value=(old==='Tất cả'||emps.includes(old))?old:'Tất cả'}
+    const chips=$('empChips'); if(chips)chips.innerHTML=`<span class="filterChip emp active" data-emp="Tất cả" onclick="setEmpFilter('Tất cả')">Tất cả</span>`+emps.map(e=>`<span class="filterChip emp" data-emp="${esc(e)}" onclick="setEmpFilter('${esc(e)}')">${esc(e)}</span>`).join('');
+    const group=$('mEmpGroup'); if(group)group.innerHTML=emps.map(e=>`<label><input type="checkbox" value="${esc(e)}"> ${esc(e)}</label>`).join('');
+    const ms=$('msEmp'); if(ms){const old=ms.value;ms.innerHTML='<option value="">-- Chưa chọn --</option>'+emps.map(e=>`<option>${esc(e)}</option>`).join('');ms.value=emps.includes(old)?old:''}
+    window.renderLoginChoices?.();
+  };
+  window.renderLoginChoices=function(){
+    norm(); const box=$('loginChoices'); if(!box)return; const emps=currentEmps();
+    if(!emps.length){box.innerHTML=`<button type="button" class="loginChoice admin active" onclick="pickLogin('Admin','Tất cả')">Admin</button><div style="grid-column:1/-1;color:#dc2626;font-weight:900">Chưa có nhân viên. Đăng nhập Admin rồi tạo nhân viên trước.</div>`; return}
+    const role=window.selectedLoginRole||'Admin', emp=window.selectedLoginEmp||'';
+    box.innerHTML=`<button type="button" class="loginChoice admin ${role==='Admin'?'active':''}" onclick="pickLogin('Admin','Tất cả')">Admin</button>`+emps.map(e=>`<button type="button" class="loginChoice ${role==='Nhân viên'&&emp===e?'active':''}" onclick="pickLogin('Nhân viên','${esc(e)}')">${esc(e)}</button>`).join('');
+  };
+  window.loginAsEmployee=function(empName){
+    norm(); const emps=currentEmps(); const e=empName||window.selectedLoginEmp||'';
+    if(!emps.length){alert('Chưa có nhân viên. Admin cần tạo nhân viên trước.');return}
+    if(!emps.includes(e)){alert('Tên nhân viên không tồn tại. Admin cần tạo/chọn nhân viên trước.');return}
+    $('role').value='Nhân viên'; $('currentEmp').value=e; localStorage.setItem('task_user_role_v23','Nhân viên'); localStorage.setItem('task_user_emp_v23',e); closeModal?.('loginModal'); setEmpFilter?.('Tất cả'); applyRole?.(); render?.();
+  };
+  window.setModalEmps=function(emp){const selected=cleanEmp(String(emp||'').split(','));document.querySelectorAll('#mEmpGroup input').forEach(cb=>cb.checked=selected.includes(cb.value))};
+  window.getModalEmps=function(){return [...document.querySelectorAll('#mEmpGroup input:checked')].map(cb=>cb.value).join(', ')};
+
+  const imgList=d=>[...new Set(arr(d?.contentImgs||d?.contentImages||d?.imgs).concat(d?.img?[d.img]:[]).filter(Boolean))];
+  const noteImgs=d=>[...new Set(arr(d?.adminImgs||d?.noteImgs||d?.adminImages).filter(Boolean))];
+  window.renderDaily=function(){
+    norm(); const body=$('dailyBody'); if(!body)return;
+    const list=state.dailyTemplates.slice().sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99'))||String(a.title||'').localeCompare(String(b.title||'')));
+    body.innerHTML=list.map(d=>{const id=esc(d.id||''),ci=imgList(d),ai=noteImgs(d),active=d.active!==false;return `<tr><td><b>${esc(d.time||'')}</b></td><td><div class="dailyNameFinal">${esc(d.title||'')}</div></td><td>${esc(d.emp||'')}</td><td><div class="dailyClipFinal">${esc(d.content||'')}</div>${ci.length?`<button class="imgbadge" onclick="openDailyGallery('${id}',0)">📷 ${ci.length} ảnh</button>`:''}</td><td><div class="dailyClipFinal">${esc(d.note||d.adminNote||'')}</div>${ai.length?`<button class="noteImgsLink" onclick="openDailyAdminGallery('${id}',0)">📷 ${ai.length} ảnh</button>`:''}</td><td><button class="statusToggle ${active?'on':'off'}" onclick="toggleDailyActive('${id}')">${active?'Đang bật':'Tắt'}</button></td><td class="adminOnly"><div class="dailyActFinal"><button class="btn green" onclick="applyDailyToday('${id}')">Áp dụng</button><button class="btn gray" onclick="openTaskForm('${id}','Hằng ngày')">Sửa</button><button class="btn red" onclick="deleteDailyTemplate('${id}')">Xóa</button></div></td></tr>`}).join('')||'<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px">Chưa có việc hằng ngày</td></tr>';
+    applyRole?.();
+  };
+
+  window.writeDevicePresence=function(){
+    let info={}; try{info=JSON.parse(localStorage.getItem('task_device_info_v23')||'{}')}catch(e){}
+    if(defaults.has(info.name))info.name='';
+    const data={id:window.device||localStorage.getItem('task_device_id_v23')||'',name:info.name||'Máy đang mở',ip:info.ip||'',user:typeof currentUserLabel==='function'?currentUserLabel():'',lastSeen:Date.now(),online:true};
+    localStorage.setItem('task_device_info_v23',JSON.stringify({name:info.name||'',ip:info.ip||''}));
+    localStorage.setItem('task_device_last_presence',JSON.stringify(data));
+    if(window.db&&data.id)window.db.ref('taskReminder/devices/'+data.id).set(data).catch(()=>{});
+  };
+  window.saveDeviceInfo=function(){if(($('role')?.value||'')!=='Admin')return;const info={name:$('devName')?.value||'',ip:$('devIp')?.value||''};localStorage.setItem('task_device_info_v23',JSON.stringify(info));writeDevicePresence()};
+  window.renderDevices=function(){
+    const box=$('devicesTab'); if(!box)return; let info={}; try{info=JSON.parse(localStorage.getItem('task_device_info_v23')||'{}')}catch(e){}
+    const canEdit=($('role')?.value||'')==='Admin';
+    box.innerHTML=`<div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Admin sửa tên máy tại đây</span></div><div class="card masterbox"><div class="deviceEditGrid"><div><label>ID máy</label><b>${esc(window.device||localStorage.getItem('task_device_id_v23')||'')}</b></div><div><label>Tên máy</label><input id="devName" class="deviceInput" ${canEdit?'':'readonly'} value="${esc(info.name||'')}" placeholder="VD: Máy gói đơn" oninput="saveDeviceInfo()"></div><div><label>Ghi chú/IP</label><input id="devIp" class="deviceInput" ${canEdit?'':'readonly'} value="${esc(info.ip||'')}" placeholder="VD: Quầy 1 / 4G" oninput="saveDeviceInfo()"></div><div><label>Quyền</label><b>${esc(($('role')?.value||''))}</b></div></div><div id="deviceListFinal" class="miniTable"></div></div>`;
+    const draw=devices=>{const el=$('deviceListFinal');if(!el)return;const rows=Object.values(devices||{}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d=>`<div style="display:grid;grid-template-columns:150px 1fr 130px 95px 160px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid #e5edf6"><b>${esc(d.id||'')}</b><span>${esc(d.name||'Máy đang mở')}${d.ip?' - '+esc(d.ip):''}</span><span>${esc(d.user||'')}</span><b style="color:${Date.now()-(d.lastSeen||0)<90000?'#16a34a':'#64748b'}">${Date.now()-(d.lastSeen||0)<90000?'Online':'Vắng'}</b><span>${d.lastSeen?new Date(d.lastSeen).toLocaleString('vi-VN'):'-'}</span></div>`).join('');el.innerHTML=rows||'<div style="padding:10px;color:#64748b">Chưa có thiết bị online</div>'};
+    if(window.db)window.db.ref('taskReminder/devices').once('value').then(s=>draw(s.val()||{})).catch(()=>draw({}));
+    else{try{draw({local:JSON.parse(localStorage.getItem('task_device_last_presence')||'{}')})}catch(e){draw({})}}
+  };
+
+  const oldSaveTask=window.saveTask;
+  window.saveTask=function(){
+    if(($('mType')?.value||'')==='Hằng ngày'&&!currentEmps().length){alert('Chưa có nhân viên. Tạo nhân viên trước khi tạo việc hằng ngày.');return}
+    oldSaveTask?.();
+  };
+  purgeDefaultGhosts();
+  setTimeout(()=>{purgeDefaultGhosts();refreshEmployeeUI();renderDaily();renderDevices();},700);
+  setInterval(()=>{purgeDefaultGhosts();},15000);
+})();
+</script>
