@@ -1060,7 +1060,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     }).join('');
     const allowed=selected.allowed===true;
     box.innerHTML=`<div class="section-title"><h2>Thiết bị online</h2><span class="hint">Admin bấm một máy để sửa tên hoặc cho phép/chặn truy cập nhân viên</span></div><div class="card masterbox"><div class="deviceEditor"><div><label>Máy đang sửa</label><b>${esc(selectedDeviceId||device)}</b></div><div><label>Tên máy</label><input id="devName" ${roleAdmin()?'':'readonly'} value="${esc(editName)}" placeholder="VD: Máy gói đơn" oninput="saveDeviceInfo()"></div><div><label>Ghi chú/IP</label><input id="devIp" ${roleAdmin()?'':'readonly'} value="${esc(editIp)}" placeholder="VD: Quầy 1" oninput="saveDeviceInfo()"></div><div><label>Truy cập nhân viên</label><b>${allowed?'Được phép':'Chưa duyệt'}</b></div></div><div class="deviceRows">${rows||'<div style="padding:10px;color:#64748b">Chưa có thiết bị online</div>'}</div></div>`;
-    applyRole();
+    document.querySelectorAll('#devicesTab .adminOnly').forEach(e=>e.classList.toggle('hidden',!roleAdmin()));
   };
   const oldStartFirebaseClean38=startFirebaseClean;
   startFirebaseClean=function(){
@@ -1107,6 +1107,58 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     });
   };
 
+
+  /* FINAL 39 - boot today and generate daily safely */
+  function generateDailyForDateSafe(date){
+    norm();
+    date=date||todayVN();
+    let changed=false;
+    state.dailyTemplates.filter(d=>d&&d.active!==false).forEach(d=>{
+      const sid=d.id||'';
+      const exists=state.tasks.some(t=>(t.date||date)===date&&((sid&&t.sourceTemplateId===sid)||(t.type==='Hằng ngày'&&t.title===(d.title||'')&&String(t.time||'')===String(d.time||'08:00'))));
+      if(exists)return;
+      state.tasks.push({
+        id:'t'+Date.now()+Math.random().toString(36).slice(2,5),
+        date,
+        time:d.time||'08:00',
+        title:d.title||'',
+        emp:d.emp||'',
+        type:'Hằng ngày',
+        content:d.content||'',
+        adminNote:d.note||d.adminNote||'',
+        note:d.note||d.adminNote||'',
+        img:d.img||'',
+        imgs:contentImgs(d),
+        remindPlan:d.remindPlan||'',
+        sourceTemplateId:sid,
+        status:'Chưa làm',
+        report:'',
+        reportImgs:[],
+        adminImgs:[],
+        logs:[logLine('tự sinh việc hằng ngày 00:00','Hệ thống')]
+      });
+      changed=true;
+    });
+    if(changed){
+      saveLocal();
+      saveRemote(date).then(()=>render());
+    }
+    return changed;
+  }
+  function bootTodayAndDaily(){
+    const d=todayVN();
+    if($('fDate')&&$('fDate').value!==d)$('fDate').value=d;
+    generateDailyForDateSafe(d);
+    render();
+  }
+  if(window.db){
+    window.db.ref(ROOT+'/dailyTemplates').on('value',snap=>{
+      state.dailyTemplates=toArr(snap.val());
+      saveLocal();
+      bootTodayAndDaily();
+    });
+  }
+  setTimeout(bootTodayAndDaily,1200);
 
 })();
 </script>
