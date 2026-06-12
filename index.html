@@ -970,5 +970,35 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function generateDailyForDate(date){norm();let changed=false;state.dailyTemplates.filter(d=>d&&d.active!==false).forEach(d=>{let exists=state.tasks.some(t=>(t.date||date)===date&&t.sourceTemplateId===d.id);if(exists)return;state.tasks.push({id:'t'+Date.now()+Math.random().toString(36).slice(2,5),date,time:d.time||'08:00',title:d.title||'',emp:d.emp||'',type:'Hằng ngày',content:d.content||'',adminNote:d.note||d.adminNote||'',note:d.note||d.adminNote||'',img:d.img||'',imgs:contentImgs(d),remindPlan:d.remindPlan||'',sourceTemplateId:d.id,status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[logLine('tự sinh việc hằng ngày 00:00','Hệ thống')]});changed=true});if(changed)saveRemote(date).then(()=>{if($('fDate')&&$('fDate').value!==date)$('fDate').value=date;render()})}
   setInterval(()=>{const d=todayVN();if(d!==dailyBootDate){dailyBootDate=d;generateDailyForDate(d)}},30000);
   document.body.classList.add('authLocked');cleanupGhosts();refreshEmployeeUI();renderDaily();renderDevices();startFirebaseClean();loadEmployeesOnce().then(()=>askLoginIfNeeded());setTimeout(()=>{loadEmployeesOnce().then(()=>askLoginIfNeeded());refreshEmployeeUI();render();renderDevices();writeDevicePresence();updateOperatorBar()},700);setInterval(writeDevicePresence,30000);
+  /* FINAL 37 - reminder popup does not require selected actor */
+  window.showAttention=function(t,reason='Nhắc việc'){
+    if(roleAdmin()&&!window.__notifyTest)return;
+    if(!t||!t.id)return;
+    if(t.status==='Đã xong')return;
+    if(t.activeReminder&&t.activeReminder.ackBy)return;
+    attentionTaskId=t.id;
+    const deadline=taskDeadlineDate(t);
+    attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(empList(t.emp).join(', ')||'-')}</span><span>${esc(reason||'Nhắc việc')}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
+    openModal('attentionModal');
+    playAttentionSound();
+  };
+  window.closeAttention=function(){closeModal('attentionModal');attentionTaskId=null};
+  window.attentionDone=window.closeAttention;
+  window.attentionAck=function(){
+    const id=attentionTaskId;
+    if(!id)return closeAttention();
+    const t=state.tasks.find(x=>x.id===id);
+    if(!t)return closeAttention();
+    withActor(actor=>{
+      t.logs=t.logs||[];
+      t.logs.push(logLine('đã nhận thông báo nhắc việc',actor));
+      t.activeReminder=null;
+      t.lastAckReminderAt=Date.now();
+      save();
+      render();
+      closeAttention();
+    });
+  };
+
 })();
 </script>
