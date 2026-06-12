@@ -214,7 +214,7 @@
 
 
 <div id="actorModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Bạn là ai đang thao tác?</h3></div><div class="form"><div class="full"><label>Chọn người thao tác</label><select id="actorSelect"></select></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('actorModal')">Đóng</button><button class="btn blue" onclick="confirmActor()">Xác nhận</button></div></div></div>
-<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Tích chọn Admin hoặc tên nhân viên. Nhân viên vẫn xem được tất cả việc; chỉ khác quyền thao tác. Admin demo mật khẩu: 123456</small></div></div></div></div>
+<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Tích chọn Admin hoặc tên nhân viên. Nhân viên vẫn xem được tất cả việc; chỉ khác quyền thao tác.</small></div></div></div></div>
 <div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div style="padding:14px"><img id="bigImage" src=""></div></div></div>
 
 
@@ -326,7 +326,7 @@ function loginConfirm(){
 }
 function askLoginIfNeeded(){let savedRole=localStorage.getItem('task_user_role_v23');let savedEmp=localStorage.getItem('task_user_emp_v23');if(savedRole){role.value=savedRole; if(savedEmp && [...currentEmp.options].some(o=>o.value===savedEmp)) currentEmp.value=savedEmp; applyRole(); render(); return;}renderLoginChoices();openModal('loginModal')}
 function loginAsEmployee(empName){let e=empName||selectedLoginEmp||'';role.value='Nhân viên';currentEmp.value=e;localStorage.setItem('task_user_role_v23','Nhân viên');localStorage.setItem('task_user_emp_v23',e);closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()}
-function loginAsAdmin(){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='123456'){alert('Sai mật khẩu');return;}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()}
+function loginAsAdmin(){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='@An12345678'){alert('Sai mật khẩu');return;}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()}
 
 
 function machineLabel(){
@@ -360,7 +360,7 @@ function logLine(action, actor){
   return new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})+' '+action+' — '+(actor||actorValid()||'Không rõ')+' — '+machineLabel();
 }
 
-function roleAdmin(){return document.getElementById('role').value==='Admin'}document.getElementById('role').onchange=()=>{if(role.value==='Admin'){let p=prompt('Nhập mật khẩu Admin');if(p!=='123456'){role.value='Nhân viên';alert('Sai mật khẩu')}}localStorage.setItem('task_user_role_v23',role.value);setEmpFilter('Tất cả');applyRole();render()};document.getElementById('currentEmp').onchange=()=>{localStorage.setItem('task_user_emp_v23',currentEmp.value);renderDevices();applyRole();render()};
+function roleAdmin(){return document.getElementById('role').value==='Admin'}document.getElementById('role').onchange=()=>{if(role.value==='Admin'){let p=prompt('Nhập mật khẩu Admin');if(p!=='@An12345678'){role.value='Nhân viên';alert('Sai mật khẩu')}}localStorage.setItem('task_user_role_v23',role.value);setEmpFilter('Tất cả');applyRole();render()};document.getElementById('currentEmp').onchange=()=>{localStorage.setItem('task_user_emp_v23',currentEmp.value);renderDevices();applyRole();render()};
 function applyRole(){let is=roleAdmin();document.querySelectorAll('.adminOnly').forEach(e=>e.classList.toggle('hidden',!is));syncFilterChips();renderDevices()}
 function switchTab(t){['today','daily','master','devices'].forEach(x=>{document.getElementById(x+'Tab').classList.toggle('hidden',x!==t);document.querySelector(`[data-tab="${x}"]`).classList.toggle('active',x===t)});renderDaily();renderMaster();renderDevices();applyRole()}
 function today(){switchTab('today');document.getElementById('fDate').value=todayStr();render()}
@@ -781,7 +781,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   window.refreshEmployeeUI=function(){norm();const emps=state.employees;const cur=$('currentEmp');if(cur){const old=cur.value||localStorage.getItem('task_user_emp_v23')||'Tất cả';cur.innerHTML='<option>Tất cả</option>'+emps.map(e=>`<option>${esc(e)}</option>`).join('');cur.value=(old==='Tất cả'||emps.includes(old))?old:'Tất cả'}const f=$('fEmp');if(f){const old=f.value||'Tất cả';f.innerHTML='<option>Tất cả</option>'+emps.map(e=>`<option>${esc(e)}</option>`).join('');f.value=(old==='Tất cả'||emps.includes(old))?old:'Tất cả'}const chips=$('empChips');if(chips)chips.innerHTML=`<span class="filterChip emp active" data-emp="Tất cả" onclick="setEmpFilter('Tất cả')">Tất cả</span>`+emps.map(e=>`<span class="filterChip emp" data-emp="${esc(e)}" onclick="setEmpFilter('${esc(e)}')">${esc(e)}</span>`).join('');const g=$('mEmpGroup');if(g)g.innerHTML=emps.map(e=>`<label><input type="checkbox" value="${esc(e)}"> ${esc(e)}</label>`).join('');const ms=$('msEmp');if(ms){const old=ms.value;ms.innerHTML='<option value="">-- Chưa chọn --</option>'+emps.map(e=>`<option>${esc(e)}</option>`).join('');ms.value=emps.includes(old)?old:''}try{syncFilterChips()}catch(e){};renderLoginChoices();};
   window.renderLoginChoices=function(){norm();const box=$('loginChoices');if(!box)return;const emps=state.employees;if(!emps.length){box.innerHTML=`<button type="button" class="loginChoice admin active" onclick="pickLogin('Admin','Tất cả')">Admin</button><div style="grid-column:1/-1;color:#dc2626;font-weight:900">Chưa có nhân viên. Đăng nhập Admin rồi tạo nhân viên trước.</div>`;selectedLoginRole='Admin';selectedLoginEmp='Tất cả';return}const role=window.selectedLoginRole||'Admin',emp=window.selectedLoginEmp||'';box.innerHTML=`<button type="button" class="loginChoice admin ${role==='Admin'?'active':''}" onclick="pickLogin('Admin','Tất cả')">Admin</button>`+emps.map(e=>`<button type="button" class="loginChoice ${role==='Nhân viên'&&emp===e?'active':''}" onclick="pickLogin('Nhân viên','${esc(e)}')">${esc(e)}</button>`).join('')};
   window.loginAsEmployee=function(empName){norm();const e=empName||window.selectedLoginEmp||'';if(!state.employees.length){alert('Chưa có nhân viên. Admin cần tạo nhân viên trước.');return}if(!state.employees.includes(e)){alert('Tên nhân viên không tồn tại. Chọn lại hoặc tạo nhân viên trước.');return}$('role').value='Nhân viên';$('currentEmp').value=e;localStorage.setItem('task_user_role_v23','Nhân viên');localStorage.setItem('task_user_emp_v23',e);document.body.classList.remove('authLocked');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()};
-  window.loginAsAdmin=function(){const ok=Number(localStorage.getItem('task_admin_auth_until_v27')||0)>Date.now();if(!ok){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='123456'){alert('Sai mật khẩu');return}localStorage.setItem('task_admin_auth_until_v27',String(Date.now()+3*60*60*1000))}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');document.body.classList.remove('authLocked');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()};
+  window.loginAsAdmin=function(){const ok=Number(localStorage.getItem('task_admin_auth_until_v27')||0)>Date.now();if(!ok){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='@An12345678'){alert('Sai mật khẩu');return}localStorage.setItem('task_admin_auth_until_v27',String(Date.now()+3*60*60*1000))}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');document.body.classList.remove('authLocked');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()};
   window.loginConfirm=function(){if((window.selectedLoginRole||'Admin')==='Admin')return loginAsAdmin();return loginAsEmployee(window.selectedLoginEmp)};
   window.logoutUser=function(){localStorage.removeItem('task_user_role_v23');localStorage.removeItem('task_user_emp_v23');localStorage.removeItem('task_actor_session_v25');role.value='Nhân viên';currentEmp.value='Tất cả';document.body.classList.add('authLocked');refreshEmployeeUI();renderLoginChoices();openModal('loginModal');applyRole();render()};
   window.askLoginIfNeeded=function(){refreshEmployeeUI();const savedRole=localStorage.getItem('task_user_role_v23'),savedEmp=localStorage.getItem('task_user_emp_v23');if(savedRole==='Admin'&&Number(localStorage.getItem('task_admin_auth_until_v27')||0)>Date.now()){document.body.classList.remove('authLocked');role.value='Admin';currentEmp.value='Tất cả';applyRole();render();return}if(savedRole==='Nhân viên'&&state.employees.includes(savedEmp)){document.body.classList.remove('authLocked');role.value='Nhân viên';currentEmp.value=savedEmp;applyRole();render();return}localStorage.removeItem('task_user_role_v23');localStorage.removeItem('task_user_emp_v23');document.body.classList.add('authLocked');renderLoginChoices();openModal('loginModal')};
@@ -861,7 +861,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function ensureHeaderToggle(){let b=$('headerToggleBtn');if(!b){document.body.insertAdjacentHTML('beforeend','<button id="headerToggleBtn" type="button" onclick="toggleHeaderCompact()">Ẩn header</button>');b=$('headerToggleBtn')}return b}
   window.toggleHeaderCompact=function(){document.body.classList.toggle('headerHidden');const b=ensureHeaderToggle();b.textContent=document.body.classList.contains('headerHidden')?'Hiện header':'Ẩn header'};
   ensureHeaderToggle();
-  window.loginAsAdmin=function(){const ok=Number(localStorage.getItem('task_admin_auth_until_v27')||0)>Date.now();if(!ok){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='123456'){alert('Sai mật khẩu');return}localStorage.setItem('task_admin_auth_until_v27',String(Date.now()+4*60*60*1000))}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');document.body.classList.remove('authLocked');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()};
+  window.loginAsAdmin=function(){const ok=Number(localStorage.getItem('task_admin_auth_until_v27')||0)>Date.now();if(!ok){let pass=prompt('Nhập mật khẩu Admin');if(pass!=='@An12345678'){alert('Sai mật khẩu');return}localStorage.setItem('task_admin_auth_until_v27',String(Date.now()+4*60*60*1000))}role.value='Admin';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Admin');localStorage.setItem('task_user_emp_v23','Tất cả');document.body.classList.remove('authLocked');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render()};
   window.durationText=function(t){const start=taskStartDate(t).getTime();const end=t.status==='Đã xong'&&t.doneAt?Number(t.doneAt):Date.now();const total=Math.max(0,(end-start)/60000);const deadline=taskDeadlineDate(t);let late='';if(deadline){const lateMin=Math.max(0,(end-deadline.getTime())/60000);if(lateMin>0)late=`<br><span class="lateLine">Quá giờ ${fmtMinutes(lateMin)}</span>`}return `<span>${t.status==='Đã xong'?'Xong':'Đang'} ${fmtMinutes(total)}</span>${late}`};
   window.showAttention=function(t,reason='Nhắc việc'){if(roleAdmin()&&!window.__notifyTest)return;if(!t||!t.id)return;if(t.activeReminder&&t.activeReminder.ackBy)return;if(t.activeReminder?.type==='manual'&&localStorage.getItem(seenReminderKey(t)))return;attentionTaskId=t.id;const deadline=taskDeadlineDate(t);attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(empList(t.emp).join(', ')||currentUserLabel())}</span><span>${esc(reason)}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;openModal('attentionModal');playAttentionSound()};
   window.renderDaily=function(){norm();const table=dailyBody?.closest('table');const head=table?.querySelector('thead tr');if(head)head.innerHTML='<th>Giờ</th><th>Tên CV</th><th>Nhân viên</th><th>Nội dung</th><th>Ghi chú admin</th><th>Trạng thái</th><th class="adminOnly">Áp dụng</th><th class="adminOnly">Thao tác</th>';const arr=state.dailyTemplates.slice().sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99')));dailyBody.innerHTML=arr.map(d=>{const id=esc(d.id),ci=contentImgs(d),ai=adminImgs(d),active=d.active!==false;return `<tr style="--empColor:${empColor(d.emp)}"><td><b>${esc(d.time||'')}</b></td><td><span class="dailyTitlePill">${esc(d.title||'')}</span></td><td>${empChips(d.emp)}</td><td><div class="dailyTextClip contentText">${esc(d.content||'')}</div>${ci.length?`<button class="imgbadge" onclick='openGallery(${finalEscJson(ci)},0,"Ảnh nội dung")'>📷 ${ci.length} ảnh</button>`:''}</td><td><div class="dailyTextClip">${esc(d.note||d.adminNote||'')}</div>${ai.length?`<button class="noteImgsLink" onclick='openGallery(${finalEscJson(ai)},0,"Ảnh ghi chú")'>📷 ${ai.length} ảnh</button>`:''}</td><td><button class="statusToggle ${active?'on':'off'}" onclick="toggleDailyActive('${id}')">${active?'Đang bật':'Tắt'}</button></td><td class="adminOnly"><button class="btn green dailyApplyBtn" onclick="applyDailyToday('${id}')">Áp dụng</button></td><td class="adminOnly"><div class="dailyTinyActions"><button class="btn gray" onclick="openTaskForm('${id}','Hằng ngày')">Sửa</button><button class="btn red" onclick="deleteDailyTemplate('${id}')">Xóa</button></div></td></tr>`}).join('')||'<tr><td colspan="8" style="text-align:center;color:#64748b;padding:20px">Chưa có việc hằng ngày</td></tr>';applyRole()};
@@ -969,6 +969,113 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   window.loginAsEmployeeMode=function(){if(!state.employees.length){alert('Chưa có nhân viên. Admin cần tạo nhân viên trước.');return}role.value='Nhân viên';currentEmp.value='Tất cả';localStorage.setItem('task_user_role_v23','Nhân viên');localStorage.setItem('task_user_emp_v23','Tất cả');localStorage.removeItem('task_actor_session_v25');document.body.classList.remove('authLocked');closeModal('loginModal');setEmpFilter('Tất cả');applyRole();render();updateOperatorBarFinal();setTimeout(updateOperatorBarFinal,0);setTimeout(updateOperatorBarFinal,300);setTimeout(updateOperatorBarFinal,1000)};  let dailyBootDate=todayVN();
   function generateDailyForDate(date){norm();let changed=false;state.dailyTemplates.filter(d=>d&&d.active!==false).forEach(d=>{let exists=state.tasks.some(t=>(t.date||date)===date&&t.sourceTemplateId===d.id);if(exists)return;state.tasks.push({id:'t'+Date.now()+Math.random().toString(36).slice(2,5),date,time:d.time||'08:00',title:d.title||'',emp:d.emp||'',type:'Hằng ngày',content:d.content||'',adminNote:d.note||d.adminNote||'',note:d.note||d.adminNote||'',img:d.img||'',imgs:contentImgs(d),remindPlan:d.remindPlan||'',sourceTemplateId:d.id,status:'Chưa làm',report:'',reportImgs:[],adminImgs:[],logs:[logLine('tự sinh việc hằng ngày 00:00','Hệ thống')]});changed=true});if(changed)saveRemote(date).then(()=>{if($('fDate')&&$('fDate').value!==date)$('fDate').value=date;render()})}
   setInterval(()=>{const d=todayVN();if(d!==dailyBootDate){dailyBootDate=d;generateDailyForDate(d)}},30000);
+
+  /* FINAL 38 - admin password and approved devices */
+  const ADMIN_PASS_FINAL='@An12345678';
+  let deviceApprovalLoaded=false;
+  function currentDeviceRecord(){return (window.__lastDevices||{})[device]||{}}
+  function currentDeviceAllowed(){if(roleAdmin())return true;if(!window.db)return true;return currentDeviceRecord().allowed===true}
+  function lockUnapprovedDevice(){
+    if(roleAdmin())return;
+    if(localStorage.getItem('task_user_role_v23')==='Nhân viên'){
+      localStorage.removeItem('task_user_role_v23');
+      localStorage.removeItem('task_user_emp_v23');
+      localStorage.removeItem('task_actor_session_v25');
+    }
+    if($('role'))role.value='Nhân viên';
+    if($('currentEmp'))currentEmp.value='Tất cả';
+    document.body.classList.add('authLocked');
+    renderLoginChoices();
+    openModal('loginModal');
+    updateOperatorBarFinal();
+  }
+  function requireDeviceAllowed(next){
+    if(!window.db||currentDeviceAllowed()){next();return}
+    window.db.ref(ROOT+'/devices/'+device).once('value').then(snap=>{
+      const d=snap.val()||{};
+      if(d.allowed===true){next();return}
+      alert('Thiết bị này chưa được Admin duyệt. Vào tab Thiết bị online bằng Admin để cho phép.');
+      lockUnapprovedDevice();
+    }).catch(()=>next());
+  }
+  window.writeDevicePresence=function(){
+    const info=getDevInfo();
+    const data={id:device,name:info.name||'Máy đang mở',ip:info.ip||'',user:currentUserLabel(),lastSeen:Date.now(),online:true};
+    localStorage.setItem('task_device_last_presence',JSON.stringify(data));
+    if(window.db)window.db.ref(ROOT+'/devices/'+device).update(data).catch(()=>{});
+  };
+  window.loginAsAdmin=function(){
+    const ok=Number(localStorage.getItem('task_admin_auth_until_v27')||0)>Date.now();
+    if(!ok){
+      const pass=prompt('Nhập mật khẩu Admin');
+      if(pass!==ADMIN_PASS_FINAL){alert('Sai mật khẩu');return}
+      localStorage.setItem('task_admin_auth_until_v27',String(Date.now()+4*60*60*1000));
+    }
+    role.value='Admin';
+    currentEmp.value='Tất cả';
+    localStorage.setItem('task_user_role_v23','Admin');
+    localStorage.setItem('task_user_emp_v23','Tất cả');
+    document.body.classList.remove('authLocked');
+    closeModal('loginModal');
+    setEmpFilter('Tất cả');
+    writeDevicePresence();
+    applyRole();
+    render();
+  };
+  window.loginAsEmployeeMode=function(){
+    requireDeviceAllowed(()=>{
+      if(!state.employees.length){alert('Chưa có nhân viên. Admin cần tạo nhân viên trước.');return}
+      role.value='Nhân viên';
+      currentEmp.value='Tất cả';
+      localStorage.setItem('task_user_role_v23','Nhân viên');
+      localStorage.setItem('task_user_emp_v23','Tất cả');
+      localStorage.removeItem('task_actor_session_v25');
+      document.body.classList.remove('authLocked');
+      closeModal('loginModal');
+      setEmpFilter('Tất cả');
+      writeDevicePresence();
+      applyRole();
+      render();
+      updateOperatorBarFinal();
+    });
+  };
+  window.loginAsEmployee=function(empName){return loginAsEmployeeMode()};
+  window.setDeviceAllowed=function(id,allowed){
+    if(!roleAdmin()||!window.db||!id)return;
+    window.db.ref(ROOT+'/devices/'+id).update({allowed:!!allowed,approvedAt:Date.now(),approvedBy:'Admin'}).then(()=>{
+      if(id===device&&allowed)showToast('Đã cho phép thiết bị này');
+    });
+  };
+  window.renderDevices=function(devices){
+    devices=devices||window.__lastDevices||{};
+    const box=$('devicesTab');if(!box)return;
+    const info=getDevInfo();
+    const selected=devices[selectedDeviceId]||{};
+    const editName=selectedDeviceId===device?(info.name||''):(selected.name||'');
+    const editIp=selectedDeviceId===device?(info.ip||''):(selected.ip||'');
+    const rows=Object.values(devices||{}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d=>{
+      const online=Date.now()-(d.lastSeen||0)<90000;
+      const allowed=d.allowed===true;
+      return `<div class="row ${d.id===selectedDeviceId?'active':''}" onclick="selectDevice('${esc(d.id||'')}','${esc(d.name||'')}','${esc(d.ip||'')}')"><b>${esc(d.id||'')}</b><span>${esc(d.name||'Máy đang mở')}${d.ip?' - '+esc(d.ip):''}</span><span>${esc(d.user||'')}</span><b>${online?'Online':'Vắng'}</b><span>${allowed?'Được phép':'Chưa duyệt'}</span><span class="adminOnly"><button class="btn ${allowed?'gray':'green'}" onclick="event.stopPropagation();setDeviceAllowed('${esc(d.id||'')}',${!allowed})">${allowed?'Chặn':'Cho phép'}</button></span></div>`;
+    }).join('');
+    const allowed=selected.allowed===true;
+    box.innerHTML=`<div class="section-title"><h2>Thiết bị online</h2><span class="hint">Admin bấm một máy để sửa tên hoặc cho phép/chặn truy cập nhân viên</span></div><div class="card masterbox"><div class="deviceEditor"><div><label>Máy đang sửa</label><b>${esc(selectedDeviceId||device)}</b></div><div><label>Tên máy</label><input id="devName" ${roleAdmin()?'':'readonly'} value="${esc(editName)}" placeholder="VD: Máy gói đơn" oninput="saveDeviceInfo()"></div><div><label>Ghi chú/IP</label><input id="devIp" ${roleAdmin()?'':'readonly'} value="${esc(editIp)}" placeholder="VD: Quầy 1" oninput="saveDeviceInfo()"></div><div><label>Truy cập nhân viên</label><b>${allowed?'Được phép':'Chưa duyệt'}</b></div></div><div class="deviceRows">${rows||'<div style="padding:10px;color:#64748b">Chưa có thiết bị online</div>'}</div></div>`;
+    applyRole();
+  };
+  const oldStartFirebaseClean38=startFirebaseClean;
+  startFirebaseClean=function(){
+    if(typeof oldStartFirebaseClean38==='function')oldStartFirebaseClean38();
+    if(!window.db)return;
+    window.db.ref(ROOT+'/devices').on('value',snap=>{
+      window.__lastDevices=snap.val()||{};
+      deviceApprovalLoaded=true;
+      renderDevices(window.__lastDevices);
+      if(localStorage.getItem('task_user_role_v23')==='Nhân viên'&&!currentDeviceAllowed()){
+        showToast('Thiết bị chưa được Admin duyệt');
+        lockUnapprovedDevice();
+      }
+    });
+  };
   document.body.classList.add('authLocked');cleanupGhosts();refreshEmployeeUI();renderDaily();renderDevices();startFirebaseClean();loadEmployeesOnce().then(()=>askLoginIfNeeded());setTimeout(()=>{loadEmployeesOnce().then(()=>askLoginIfNeeded());refreshEmployeeUI();render();renderDevices();writeDevicePresence();updateOperatorBar()},700);setInterval(writeDevicePresence,30000);
   /* FINAL 37 - reminder popup does not require selected actor */
   window.showAttention=function(t,reason='Nhắc việc'){
@@ -999,6 +1106,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       closeAttention();
     });
   };
+
 
 })();
 </script>
