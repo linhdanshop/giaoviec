@@ -2664,15 +2664,21 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const localKey='tonKhoMonths_v1';
 
   function addHeaderLinks(){
-    if($('quickHeaderLinks'))return;
+    let box=$('quickHeaderLinks');
+    if(box){
+      const quet=$('quickQuetLink');
+      if(quet)quet.style.display=isAdmin()?'flex':'none';
+      return;
+    }
     const topRight=document.querySelector('.topright');
     if(!topRight)return;
     topRight.insertAdjacentHTML('afterbegin',
       '<div id="quickHeaderLinks" class="quickHeaderLinks">'+
       '<a href="https://linhdanshop.github.io/xulydon/" target="_blank" rel="noopener">Gọi</a>'+
-      '<a href="https://linhdanshop.github.io/quetbill/" target="_blank" rel="noopener">Quét</a>'+
+      '<a id="quickQuetLink" href="https://linhdanshop.github.io/quetbill/" target="_blank" rel="noopener">Quét</a>'+
       '<a href="https://linhdanshop.github.io/vandon/" target="_blank" rel="noopener">XLD</a>'+
       '</div>');
+    addHeaderLinks();
   }
 
   function ensureHeaderToggleFinal(){
@@ -2849,7 +2855,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(admin)html+='<button class="danger" onclick="tkDeleteRow(\''+secId+'\',\''+id+'\')">Xóa</button>';
     if(admin)html+='<button onclick="tkMarkCut(\''+secId+'\',\''+id+'\')">Đã cắt tồn</button>';
     if(secId!=='diff')html+='<button onclick="tkMarkPaid(\''+secId+'\',\''+id+'\')">Đã thanh toán</button><button onclick="tkPayAll(\''+secId+'\')">Thanh toán toàn bộ</button>';
-    menu.innerHTML=html;
+    if(menu.innerHTML!==html)menu.innerHTML=html;
   }
   let friendSummaryTimer=null;
   function scheduleFriendSummary(){
@@ -2882,7 +2888,8 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       const chips=Object.entries(map).sort((a,b)=>b[1].total-a[1].total).map(([n,v])=>
         '<button class="'+(active===n?'active':'')+'" onclick="tkFilterFriend(\''+esc(n).replace(/'/g,'&#39;')+'\')">'+esc(n)+' ('+v.count+') TT '+money(v.total)+'</button>'
       ).join('');
-      box.innerHTML='<button class="'+(!active?'active':'')+'" onclick="tkFilterFriend(\'\')">Tất cả</button>'+chips;
+      const nextHtml='<button class="'+(!active?'active':'')+'" onclick="tkFilterFriend(\'\')">Tất cả</button>'+chips;
+      if(box.innerHTML!==nextHtml)box.innerHTML=nextHtml;
       applyFriendFilter();
     });
   }
@@ -2937,15 +2944,12 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     scheduleFriendSummary();
   }
 
-  const obs=new MutationObserver(()=>enhanceStockUi());
   function start(){
     addHeaderLinks();
     ensureHeaderToggleFinal();
     moveTonKhoTab();
     hardenMasterForEmployee();
     enhanceStockUi();
-    const tk=$('tonKhoSections');
-    if(tk)obs.observe(tk,{childList:true,subtree:true});
   }
   const oldSwitchFinal=window.switchTab;
   window.switchTab=function(t){
@@ -2955,7 +2959,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   };
   setTimeout(start,100);
   setTimeout(start,800);
-  setInterval(()=>{ensureHeaderToggleFinal();moveTonKhoTab()},2000);
+  setInterval(()=>{ensureHeaderToggleFinal();addHeaderLinks();moveTonKhoTab();if(!$('tonKhoTab')?.classList.contains('hidden'))enhanceStockUi()},1800);
 
   if(!$('final50Style')){
     document.head.insertAdjacentHTML('beforeend','<style id="final50Style">'+
