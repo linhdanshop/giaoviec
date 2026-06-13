@@ -318,7 +318,7 @@
     <div class="tablebox"><table class="tasktable" id="taskTable"><colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="img"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time" class="w-time">Giờ</th><th data-col="title" class="w-title">Tên CV</th><th data-col="content">Nội dung</th><th data-col="emp" class="w-emp">Nhân viên</th><th data-col="img" class="w-img">Ảnh</th><th data-col="admin">Admin ghi chú</th><th data-col="report">Báo cáo NV</th><th data-col="status" class="w-status">Trạng thái</th><th data-col="duration">TG xử lý</th><th data-col="remind">Nhắc việc</th><th data-col="log" class="w-log">Lịch sử</th><th data-col="act" class="w-act">Thao tác</th></tr></thead><tbody id="taskBody"></tbody></table></div>
   </div>
 
-  <div id="dailyTab" class="hidden"><div class="section-title"><h2>🔁 Việc hằng ngày</h2><button class="btn blue adminOnly" onclick="openTaskForm(null,'Hằng ngày')">+ Tạo việc hằng ngày</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th>Giờ</th><th>Tên CV</th><th>Nhân viên</th><th>Nội dung</th><th>Ghi chú admin</th><th>Trạng thái</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="dailyBody"></tbody></table></div></div>
+  <div id="dailyTab" class="hidden"><div class="section-title"><h2>🔁 Việc hằng ngày</h2><button class="btn blue adminOnly" onclick="openDailyTemplateForm()">+ Tạo việc hằng ngày</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th>Giờ</th><th>Tên CV</th><th>Nhân viên</th><th>Nội dung</th><th>Ghi chú admin</th><th>Trạng thái</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="dailyBody"></tbody></table></div></div>
   <div id="masterTab" class="hidden"><div class="section-title"><h2>🧾 CV mẫu</h2><span class="hint">Lưu sẵn các việc hay dùng để tạo nhanh, không phải gõ lại mỗi ngày</span><button class="btn blue adminOnly" onclick="openMasterForm()">+ Thêm mẫu CV</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th style="width:90px">Mặc định</th><th>Tên CV</th><th>Nội dung mẫu</th><th>NV mặc định</th><th>Ghi chú mẫu</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="masterBody"></tbody></table></div><div class="section-title"><h2>👥 Nhân viên</h2><span class="hint">Admin thêm/xóa nhân viên, bộ lọc và form tự cập nhật</span></div><div class="card masterbox"><div class="empManage adminOnly"><input id="newEmpName" placeholder="Tên nhân viên mới"><button class="btn blue" onclick="addEmployee()">+ Thêm nhân viên</button></div><table class="miniTable"><thead><tr><th>Tên nhân viên</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="empManageBody"></tbody></table></div></div>
   <div id="devicesTab" class="hidden">
   <div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Mỗi trình duyệt có 1 mã thiết bị cố định. IP chỉ để ghi chú vì đổi mạng sẽ đổi IP.</span></div>
@@ -2244,9 +2244,9 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const localKey='tonKhoMonths_v1';
   const friendKey='tonKhoFriends_v1';
   const sections=[
-    {id:'diff',title:'Thống kê thiếu/dư và DS thiếu dư',listTitle:'DS thiếu dư',tone:'diff',personLabel:'Tồn kho',personField:'stockType',personOptions:['Thiếu','Dư'],qtySign:'both'},
-    {id:'friend',title:'Thống kê Bán người quen và DS bán người quen',listTitle:'DS bán người quen',tone:'friend',personLabel:'Người quen',personField:'friend',qtySign:'positive'},
-    {id:'customer',title:'Thống kê Bán Khách mua và DS bán khách mua',listTitle:'DS bán khách mua',tone:'customer',personLabel:'Khách mua',personField:'customer',phone:true,qtySign:'positive'}
+    {id:'diff',title:'Thống kê thiếu/dư',listTitle:'Thống kê thiếu/dư',tone:'diff',personLabel:'Tồn kho',personField:'stockType',personOptions:['Thiếu','Dư'],qtySign:'both'},
+    {id:'friend',title:'Thống kê Bán người quen',listTitle:'Thống kê Bán người quen',tone:'friend',personLabel:'Người quen',personField:'friend',qtySign:'positive'},
+    {id:'customer',title:'Thống kê Bán Khách mua',listTitle:'Thống kê Bán Khách mua',tone:'customer',personLabel:'Khách mua',personField:'customer',phone:true,qtySign:'positive'}
   ];
   let currentMonth=monthNow(), monthData=blankMonth(), friendList=[], expanded={}, filters={}, editCtx=null, noteCtx=null;
 
@@ -2915,13 +2915,14 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     moveTonKhoTab();
     const root=$('tonKhoSections');
     if(!root)return;
-    const titleMap=[
-      ['Thống kê thiếu/dư và DS thiếu dư','Thống kê thiếu/dư'],
-      ['Thống kê Bán người quen và DS bán người quen','Thống kê Bán người quen'],
-      ['Thống kê Bán Khách mua và DS bán khách mua','Thống kê Bán Khách mua']
-    ];
-    root.querySelectorAll('.tkHead h3').forEach(h=>{
-      titleMap.forEach(([a,b])=>{if(h.textContent.trim()===a)h.textContent=b});
+    const stockTitleByClass={diff:'Thống kê thiếu/dư',friend:'Thống kê Bán người quen',customer:'Thống kê Bán Khách mua'};
+    root.querySelectorAll('.tkSection').forEach(sec=>{
+      const key=sec.classList.contains('diff')?'diff':sec.classList.contains('friend')?'friend':'customer';
+      const label=stockTitleByClass[key];
+      const h3=sec.querySelector('.tkHead h3');
+      const h4=sec.querySelector('h4');
+      if(h3)h3.textContent=label;
+      if(h4)h4.textContent=label;
     });
     const diff=root.querySelector('.tkSection.diff');
     if(diff){
@@ -3208,3 +3209,144 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 })();
 </script>
 
+
+<script id="FINAL_53_DAILY_TEMPLATE_HARDSTOP_STOCK_STABLE_20260613">
+(function(){
+  const $=id=>document.getElementById(id);
+  const root=()=>window.taskReminderRoot||'taskReminder';
+  const arr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
+  const byId=list=>{const o={};arr(list).forEach(x=>{if(x&&x.id)o[x.id]=x});return o};
+  const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
+
+  function dailyBaseFromModal(){
+    const imgs=Array.isArray(window.tempTaskImgs)?window.tempTaskImgs:(typeof tempTaskImgs!=='undefined'&&Array.isArray(tempTaskImgs)?tempTaskImgs:[]);
+    return {
+      time:$('mTime')?.value||'08:00',
+      title:($('mTitle')?.value||'').trim(),
+      emp:typeof getModalEmps==='function'?getModalEmps():'',
+      content:$('mContent')?.value||'',
+      adminNote:$('mAdminNote')?.value||'',
+      note:$('mAdminNote')?.value||'',
+      img:$('mImg')?.value||'',
+      imgs:imgs.slice(),
+      remindPlan:$('mRemind')?.value||'',
+      type:'Hằng ngày'
+    };
+  }
+
+  function isDailyTemplateSave(){
+    const id=$('editId')?.value||'';
+    const task=id&&window.state?.tasks?state.tasks.find(x=>String(x.id)===String(id)):null;
+    if(task)return false;
+    const daily=id&&window.state?.dailyTemplates?state.dailyTemplates.find(x=>String(x.id)===String(id)):null;
+    const title=String($('taskModalTitle')?.textContent||'').toLowerCase();
+    const type=String($('mType')?.value||'').toLowerCase();
+    return !!(
+      window.__forceDailyTemplateSave53 ||
+      window.__forceDailyTemplateSave51 ||
+      window.__taskFormMode43==='dailyTemplate' ||
+      window.__taskFormMode43==='dailyTemplateNew' ||
+      daily ||
+      title.includes('việc hằng ngày') ||
+      (type.includes('hằng') && !id)
+    );
+  }
+
+  function saveDailyTemplateOnly53(){
+    if(!window.state)window.state={};
+    state.dailyTemplates=arr(state.dailyTemplates);
+    const id=$('editId')?.value||'';
+    const base=dailyBaseFromModal();
+    if(!base.title){alert('Nhập tên công việc');return}
+    if(!state.employees||!state.employees.length){alert('Chưa có nhân viên. Tạo nhân viên trước.');return}
+    if(!base.emp){alert('Chọn nhân viên trước khi lưu việc hằng ngày.');return}
+    let d=id?state.dailyTemplates.find(x=>String(x.id)===String(id)):null;
+    if(d)Object.assign(d,{...base,id:d.id,active:d.active!==false});
+    else state.dailyTemplates.push({id:'daily_'+Date.now(),...base,active:true});
+
+    try{
+      if(!window.db)localStorage.setItem('task_reminder_v27_firebase',JSON.stringify(state));
+    }catch(e){}
+
+    const p=window.db?window.db.ref(root()+'/dailyTemplates').set(byId(state.dailyTemplates)):Promise.resolve();
+    Promise.resolve(p).then(()=>{
+      window.__forceDailyTemplateSave53=false;
+      window.__forceDailyTemplateSave51=false;
+      window.__taskFormMode43='';
+      if(typeof closeModal==='function')closeModal('taskModal');
+      if(typeof renderDaily==='function')renderDaily();
+      if(typeof render==='function')render();
+      toast('Đã lưu việc hằng ngày');
+    }).catch(e=>alert('Firebase lỗi ghi việc hằng ngày: '+e.message));
+  }
+
+  const prevOpenTaskForm53=window.openTaskForm;
+  window.openDailyTemplateForm=function(id=null){
+    window.__forceDailyTemplateSave53=true;
+    window.__forceDailyTemplateSave51=true;
+    window.__taskFormMode43=id?'dailyTemplate':'dailyTemplateNew';
+    if(typeof prevOpenTaskForm53==='function')prevOpenTaskForm53(id,'Hằng ngày');
+    window.__forceDailyTemplateSave53=true;
+    window.__forceDailyTemplateSave51=true;
+    window.__taskFormMode43=id?'dailyTemplate':'dailyTemplateNew';
+    if($('mType'))$('mType').value='Hằng ngày';
+    if($('taskModalTitle'))$('taskModalTitle').textContent=id?'Sửa việc hằng ngày':'Tạo việc hằng ngày';
+  };
+
+  const prevSaveTask53=window.saveTask;
+  window.saveTask=function(){
+    if(isDailyTemplateSave())return saveDailyTemplateOnly53();
+    return typeof prevSaveTask53==='function'?prevSaveTask53():undefined;
+  };
+  try{saveTask=window.saveTask}catch(e){}
+
+  function patchDailyButtons53(){
+    const btn=document.querySelector('#dailyTab .section-title .btn.blue');
+    if(btn)btn.setAttribute('onclick','openDailyTemplateForm()');
+    document.querySelectorAll('#dailyTab button[onclick*="openTaskForm"]').forEach(b=>{
+      const raw=b.getAttribute('onclick')||'';
+      const m=raw.match(/openTaskForm\('([^']+)'/);
+      if(m)b.setAttribute('onclick',"event.stopPropagation();openDailyTemplateForm('"+m[1]+"')");
+    });
+  }
+
+  const stockTitleByClass={diff:'Thống kê thiếu/dư',friend:'Thống kê Bán người quen',customer:'Thống kê Bán Khách mua'};
+  function patchStock53(){
+    document.querySelectorAll('#tonKhoSections .tkSection').forEach(sec=>{
+      const key=sec.classList.contains('diff')?'diff':sec.classList.contains('friend')?'friend':'customer';
+      const label=stockTitleByClass[key];
+      const h3=sec.querySelector('.tkHead h3');
+      const h4=sec.querySelector('h4');
+      if(h3)h3.textContent=label;
+      if(h4)h4.textContent=label;
+      sec.querySelectorAll('button').forEach(b=>{b.type='button'});
+    });
+  }
+
+  const prevFilter53=window.tkSetFilter;
+  window.tkSetFilter=function(secId,type,value){
+    const sec=document.querySelector('#tonKhoSections .tkSection.'+secId);
+    const top=sec?sec.getBoundingClientRect().top:null;
+    const x=window.scrollX;
+    const out=typeof prevFilter53==='function'?prevFilter53(secId,type,value):undefined;
+    requestAnimationFrame(()=>{
+      patchStock53();
+      const next=document.querySelector('#tonKhoSections .tkSection.'+secId);
+      if(next&&top!==null)window.scrollTo(x,window.scrollY+next.getBoundingClientRect().top-top);
+    });
+    return out;
+  };
+
+  const prevRenderStock53=window.renderStock;
+  if(typeof prevRenderStock53==='function'){
+    window.renderStock=function(){
+      const out=prevRenderStock53.apply(this,arguments);
+      patchStock53();
+      return out;
+    };
+  }
+
+  setTimeout(()=>{patchDailyButtons53();patchStock53()},100);
+  setInterval(()=>{patchDailyButtons53();if(!$('tonKhoTab')?.classList.contains('hidden'))patchStock53()},1000);
+})();
+</script>
