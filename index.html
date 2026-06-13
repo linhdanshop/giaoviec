@@ -1320,7 +1320,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function bootTodayAndDaily(){
     const d=todayVN();
     if($('fDate')&&$('fDate').value!==d)$('fDate').value=d;
-    generateDailyForDateSafe(d);
+    // Không tự sinh việc hằng ngày khi tải lại web/F5. Chỉ interval đổi ngày mới được sinh.
     render();
   }
   if(window.db){
@@ -2644,6 +2644,325 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 
   if(!document.getElementById('dkDeviceFixStyle')){
     document.head.insertAdjacentHTML('beforeend','<style id="dkDeviceFixStyle">.dkNoteBtnPopup{width:100%;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:8px;text-align:left;font-weight:800;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dkNoteBtnPopup:hover{background:#eff6ff}.deviceEditor{grid-template-columns:160px 1fr 1fr 120px 110px!important}@media(max-width:700px){.deviceEditor{grid-template-columns:1fr!important}}</style>');
+  }
+})();
+</script>
+
+
+<script id="FINAL_50_INVENTORY_RULES_20260613">
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const isAdmin=()=>typeof roleAdmin==='function'&&roleAdmin();
+  const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
+  const nowText=()=>new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});
+  const monthNow=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit'}).format(new Date());
+  const month=()=>$('stockMonth')?.value||monthNow();
+  const money=v=>new Intl.NumberFormat('vi-VN').format(Number(v)||0);
+  const ref=(...p)=>typeof rootRef==='function'?rootRef('tonKho',...p):null;
+  const ask=cb=>typeof withActor==='function'?withActor(cb):cb(isAdmin()?'Admin':'Nhân viên');
+  const localKey='tonKhoMonths_v1';
+
+  function addHeaderLinks(){
+    if($('quickHeaderLinks'))return;
+    const topRight=document.querySelector('.topright');
+    if(!topRight)return;
+    topRight.insertAdjacentHTML('afterbegin',
+      '<div id="quickHeaderLinks" class="quickHeaderLinks">'+
+      '<a href="https://linhdanshop.github.io/xulydon/" target="_blank" rel="noopener">Gọi</a>'+
+      '<a href="https://linhdanshop.github.io/quetbill/" target="_blank" rel="noopener">Quét</a>'+
+      '<a href="https://linhdanshop.github.io/vandon/" target="_blank" rel="noopener">XLD</a>'+
+      '</div>');
+  }
+
+  function ensureHeaderToggleFinal(){
+    let b=$('headerToggleBtn');
+    if(!b){
+      document.body.insertAdjacentHTML('beforeend','<button id="headerToggleBtn" type="button">Ẩn</button>');
+      b=$('headerToggleBtn');
+    }
+    b.onclick=toggleHeaderCompactFinal;
+    b.textContent=document.body.classList.contains('headerHidden')?'Hiện':'Ẩn';
+    return b;
+  }
+  function toggleHeaderCompactFinal(){
+    document.body.classList.toggle('headerHidden');
+    ensureHeaderToggleFinal();
+  }
+  window.toggleHeaderCompact=toggleHeaderCompactFinal;
+
+  function moveTonKhoTab(){
+    const ton=$('tonKhoTabBtn')||document.querySelector('.tab[data-tab="tonKho"]');
+    const dk=document.querySelector('.tab[data-tab="dongKiem"]');
+    if(ton&&dk&&dk.nextElementSibling!==ton)dk.insertAdjacentElement('afterend',ton);
+  }
+
+  function loadLocalMonth(){
+    try{return JSON.parse(localStorage.getItem(localKey)||'{}')[month()]||{}}catch(e){return {}}
+  }
+  function saveLocalMonth(data){
+    const all=JSON.parse(localStorage.getItem(localKey)||'{}');
+    all[month()]=data;
+    localStorage.setItem(localKey,JSON.stringify(all));
+  }
+  function normalizeSection(data,secId){
+    data.sections=data.sections||{};
+    let raw=data.sections[secId];
+    let arr=Array.isArray(raw)?raw:Object.values(raw||{});
+    data.sections[secId]=arr;
+    data.logs=Array.isArray(data.logs)?data.logs:[];
+    return arr;
+  }
+  function pushLog(arr,text,actor){
+    arr.push(nowText()+' - '+(actor||'Hệ thống')+' - '+text);
+    while(arr.length>500)arr.shift();
+  }
+  function updateMonth(mutator){
+    const r=ref('months',month());
+    if(r){
+      return r.once('value').then(snap=>{
+        const data=snap.val()||{};
+        mutator(data);
+        data.updatedAt=Date.now();
+        return r.set(data);
+      });
+    }
+    const data=loadLocalMonth();
+    mutator(data);
+    data.updatedAt=Date.now();
+    saveLocalMonth(data);
+    if(typeof tkChangeMonth==='function')tkChangeMonth();
+    return Promise.resolve();
+  }
+  function updateItem(secId,id,mutator,logText,adminOnly){
+    if(adminOnly&&!isAdmin()){toast('Chỉ Admin được thao tác mục này');return}
+    ask(actor=>{
+      updateMonth(data=>{
+        const arr=normalizeSection(data,secId);
+        const item=arr.find(x=>String(x.id)===String(id));
+        if(!item)return;
+        mutator(item);
+        item.logs=Array.isArray(item.logs)?item.logs:[];
+        pushLog(item.logs,logText,actor);
+        pushLog(data.logs,logText,actor);
+      }).then(()=>toast('Đã cập nhật'));
+    });
+  }
+  window.tkMarkPaid=function(secId,id){
+    if(secId==='diff'){toast('DS thiếu/dư không dùng thanh toán');return}
+    updateItem(secId,id,item=>{item.payment='Đã thanh toán'},'đánh dấu đã thanh toán',false);
+  };
+  window.tkMarkCut=function(secId,id){
+    updateItem(secId,id,item=>{item.status='Đã cắt tồn'},'đánh dấu đã cắt tồn',true);
+  };
+  window.tkPayAll=function(secId){
+    if(secId==='diff'){toast('DS thiếu/dư không dùng thanh toán');return}
+    if(!confirm('Đánh dấu đã thanh toán toàn bộ danh sách này?'))return;
+    ask(actor=>{
+      updateMonth(data=>{
+        const arr=normalizeSection(data,secId);
+        arr.forEach(item=>{
+          if(item.payment!=='Đã thanh toán'){
+            item.payment='Đã thanh toán';
+            item.logs=Array.isArray(item.logs)?item.logs:[];
+            pushLog(item.logs,'thanh toán toàn bộ',actor);
+          }
+        });
+        pushLog(data.logs,'thanh toán toàn bộ '+secId,actor);
+      }).then(()=>toast('Đã thanh toán toàn bộ'));
+    });
+  };
+  window.tkToggleField=function(secId,id,field){
+    toast('Dùng nút Thao tác để cập nhật thanh toán/trạng thái');
+  };
+
+  function enhanceStockForm(secId,id){
+    const pay=$('tkPayment'), st=$('tkStatus');
+    if(pay){
+      if(secId==='diff')pay.closest('div')?.classList.add('hidden');
+      if(!id)pay.value='Chưa thanh toán';
+      pay.disabled=true;
+      pay.title='Đổi thanh toán trong nút Thao tác';
+    }
+    if(st){
+      if(!id)st.value='Chưa cắt tồn';
+      st.disabled=true;
+      st.title='Đổi trạng thái trong nút Thao tác';
+    }
+  }
+  const oldTkOpenForm=window.tkOpenForm;
+  window.tkOpenForm=function(secId,id=''){
+    if(typeof oldTkOpenForm==='function')oldTkOpenForm(secId,id);
+    setTimeout(()=>enhanceStockForm(secId,id),30);
+  };
+
+  const oldTkOpenFriends=window.tkOpenFriends;
+  window.tkOpenFriends=function(){
+    if(typeof oldTkOpenFriends==='function')oldTkOpenFriends();
+    setTimeout(lockFriendModalForEmployee,30);
+  };
+  function lockFriendModalForEmployee(){
+    const modal=$('tkFriendModal');
+    if(!modal)return;
+    const admin=isAdmin();
+    modal.querySelector('.empManage')?.classList.toggle('hidden',!admin);
+    modal.querySelectorAll('.tkFriendItem input').forEach(i=>{i.readOnly=!admin});
+    modal.querySelectorAll('.tkFriendItem .btn.red').forEach(b=>b.classList.toggle('hidden',!admin));
+  }
+  ['tkAddFriend','tkRenameFriend','tkDeleteFriend'].forEach(name=>{
+    const old=window[name];
+    window[name]=function(...args){
+      if(!isAdmin()){toast('Nhân viên chỉ được xem danh sách người quen');return}
+      return typeof old==='function'?old.apply(this,args):undefined;
+    };
+  });
+
+  function hardenMasterForEmployee(){
+    if(isAdmin())return;
+    document.querySelectorAll('#masterTab input, #masterTab select, #masterTab textarea, #masterTab button').forEach(el=>{
+      if(el.closest('.tabs'))return;
+      el.disabled=true;
+    });
+  }
+  ['openMasterForm','saveMaster','createFromMaster','setDefaultMaster'].forEach(name=>{
+    const old=window[name];
+    window[name]=function(...args){
+      if(!isAdmin()){toast('Nhân viên chỉ được xem CV mẫu');return}
+      return typeof old==='function'?old.apply(this,args):undefined;
+    };
+  });
+  const oldRenderMasterFinal=window.renderMaster;
+  window.renderMaster=function(){
+    if(typeof oldRenderMasterFinal==='function')oldRenderMasterFinal();
+    hardenMasterForEmployee();
+  };
+
+  function setCellLabels(table){
+    const heads=[...table.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    table.querySelectorAll('tbody tr').forEach(tr=>{
+      [...tr.children].forEach((td,i)=>td.setAttribute('data-label',heads[i]||''));
+    });
+  }
+  function rebuildMenu(menu,secId,id){
+    const admin=isAdmin();
+    let html='<button onclick="tkOpenForm(\''+secId+'\',\''+id+'\')">Sửa</button>';
+    if(admin)html+='<button class="danger" onclick="tkDeleteRow(\''+secId+'\',\''+id+'\')">Xóa</button>';
+    if(admin)html+='<button onclick="tkMarkCut(\''+secId+'\',\''+id+'\')">Đã cắt tồn</button>';
+    if(secId!=='diff')html+='<button onclick="tkMarkPaid(\''+secId+'\',\''+id+'\')">Đã thanh toán</button><button onclick="tkPayAll(\''+secId+'\')">Thanh toán toàn bộ</button>';
+    menu.innerHTML=html;
+  }
+  let friendSummaryTimer=null;
+  function scheduleFriendSummary(){
+    clearTimeout(friendSummaryTimer);
+    friendSummaryTimer=setTimeout(renderFriendSummary,180);
+  }
+  function readFriendList(cb){
+    const r=ref('months',month(),'sections','friend');
+    if(r)return r.once('value').then(s=>cb(Array.isArray(s.val())?s.val():Object.values(s.val()||{}))).catch(()=>cb([]));
+    cb(normalizeSection(loadLocalMonth(),'friend'));
+  }
+  function renderFriendSummary(){
+    const sec=document.querySelector('#tonKhoSections .tkSection.friend');
+    if(!sec)return;
+    readFriendList(rows=>{
+      const map={};
+      rows.forEach(x=>{
+        const n=String(x.friend||'Chưa chọn').trim()||'Chưa chọn';
+        map[n]=map[n]||{count:0,total:0};
+        map[n].count++;
+        map[n].total+=Number(x.amount)||0;
+      });
+      let box=sec.querySelector('.tkFriendSummary');
+      if(!box){
+        const stats=sec.querySelector('.tkStats');
+        stats?.insertAdjacentHTML('afterend','<div class="tkFriendSummary"></div>');
+        box=sec.querySelector('.tkFriendSummary');
+      }
+      const active=window.__tkFriendFilter||'';
+      const chips=Object.entries(map).sort((a,b)=>b[1].total-a[1].total).map(([n,v])=>
+        '<button class="'+(active===n?'active':'')+'" onclick="tkFilterFriend(\''+esc(n).replace(/'/g,'&#39;')+'\')">'+esc(n)+' ('+v.count+') TT '+money(v.total)+'</button>'
+      ).join('');
+      box.innerHTML='<button class="'+(!active?'active':'')+'" onclick="tkFilterFriend(\'\')">Tất cả</button>'+chips;
+      applyFriendFilter();
+    });
+  }
+  window.tkFilterFriend=function(name){
+    window.__tkFriendFilter=name||'';
+    const more=document.querySelector('#tonKhoSections .tkSection.friend .dkMore');
+    if(more&&/Xem/i.test(more.textContent||''))more.click();
+    setTimeout(()=>{applyFriendFilter();renderFriendSummary()},80);
+  };
+  function applyFriendFilter(){
+    const name=window.__tkFriendFilter||'';
+    const sec=document.querySelector('#tonKhoSections .tkSection.friend');
+    if(!sec)return;
+    sec.querySelectorAll('.tkTable tbody tr').forEach(tr=>{
+      const person=(tr.children[5]?.textContent||'').trim();
+      tr.style.display=(!name||person===name)?'':'none';
+    });
+  }
+
+  function enhanceStockUi(){
+    addHeaderLinks();
+    ensureHeaderToggleFinal();
+    moveTonKhoTab();
+    const root=$('tonKhoSections');
+    if(!root)return;
+    const titleMap=[
+      ['Thống kê thiếu/dư và DS thiếu dư','Thống kê thiếu/dư'],
+      ['Thống kê Bán người quen và DS bán người quen','Thống kê Bán người quen'],
+      ['Thống kê Bán Khách mua và DS bán khách mua','Thống kê Bán Khách mua']
+    ];
+    root.querySelectorAll('.tkHead h3').forEach(h=>{
+      titleMap.forEach(([a,b])=>{if(h.textContent.trim()===a)h.textContent=b});
+    });
+    const diff=root.querySelector('.tkSection.diff');
+    if(diff){
+      diff.querySelectorAll('.tkStats button[onclick*="payment"]').forEach(x=>x.remove());
+    }
+    root.querySelectorAll('.tkTable').forEach(table=>{
+      setCellLabels(table);
+      table.querySelectorAll('button.tkPill').forEach(b=>{
+        b.removeAttribute('onclick');
+        b.disabled=true;
+        b.classList.add('readonly');
+      });
+    });
+    root.querySelectorAll('.tkSection').forEach(sec=>{
+      const secId=sec.classList.contains('diff')?'diff':sec.classList.contains('friend')?'friend':'customer';
+      sec.querySelectorAll('.menu[id^="menu-tk_"]').forEach(menu=>{
+        rebuildMenu(menu,secId,menu.id.replace('menu-tk_',''));
+      });
+    });
+    scheduleFriendSummary();
+  }
+
+  const obs=new MutationObserver(()=>enhanceStockUi());
+  function start(){
+    addHeaderLinks();
+    ensureHeaderToggleFinal();
+    moveTonKhoTab();
+    hardenMasterForEmployee();
+    enhanceStockUi();
+    const tk=$('tonKhoSections');
+    if(tk)obs.observe(tk,{childList:true,subtree:true});
+  }
+  const oldSwitchFinal=window.switchTab;
+  window.switchTab=function(t){
+    const out=typeof oldSwitchFinal==='function'?oldSwitchFinal(t):undefined;
+    setTimeout(()=>{moveTonKhoTab();enhanceStockUi();hardenMasterForEmployee()},60);
+    return out;
+  };
+  setTimeout(start,100);
+  setTimeout(start,800);
+  setInterval(()=>{ensureHeaderToggleFinal();moveTonKhoTab()},2000);
+
+  if(!$('final50Style')){
+    document.head.insertAdjacentHTML('beforeend','<style id="final50Style">'+
+      '.quickHeaderLinks{display:flex;gap:6px;align-items:center}.quickHeaderLinks a{height:34px;min-width:48px;padding:0 10px;border-radius:9px;background:#e9eef6;color:#0f172a;text-decoration:none;font-weight:900;display:flex;align-items:center;justify-content:center}.quickHeaderLinks a:hover{background:#dbeafe;color:#1d4ed8}'+
+      '#headerToggleBtn{min-width:58px!important}.tkTableWrap{overflow-x:auto!important;overflow-y:visible!important;padding-bottom:70px}.tkSection{overflow:visible!important}.tkTable .action .menu{z-index:8000}.tkPill.readonly{cursor:default!important;opacity:1!important}.tkSection.diff .tkTable th:nth-child(8),.tkSection.diff .tkTable td:nth-child(8){display:none!important}.tkFriendSummary{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.tkFriendSummary button{border:1px solid #dbe5f2;background:#fff;border-radius:999px;padding:7px 10px;font-weight:900;cursor:pointer}.tkFriendSummary button.active{background:#2563eb;color:#fff;border-color:#2563eb}.tkHead h3{font-size:19px!important}.tkSection h4{color:#64748b;font-size:14px!important}'+
+      '@media(max-width:760px){.quickHeaderLinks{order:3;width:100%;display:grid;grid-template-columns:repeat(3,1fr)}.quickHeaderLinks a{height:36px}.tkTableWrap{overflow:visible!important;padding-bottom:10px}.tkTable{min-width:0!important;width:100%!important}.tkTable thead{display:none!important}.tkTable,.tkTable tbody,.tkTable tr,.tkTable td{display:block!important;width:100%!important}.tkTable tr{border:1px solid #dbe3ef;border-radius:14px;background:#fffaf3;margin:9px 0;padding:8px;box-shadow:0 8px 18px #0f172a0d}.tkTable td{border:0!important;padding:7px 4px!important;display:grid!important;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:start}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;text-transform:uppercase;font-size:11px}.tkTable td.action{display:block!important}.tkTable td.action:before{display:none}.tkTable .menu{position:static!important;width:100%!important;margin-top:6px}.tkTable .menu.open{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;border:0;box-shadow:none;background:transparent}.tkTable .menu button{border-radius:9px;background:#eef2f7;text-align:center}.tkFriendSummary{display:grid;grid-template-columns:1fr 1fr}.tkFriendSummary button{font-size:12px}.tkSection.diff .tkTable td:nth-child(8){display:none!important}}'+
+      '</style>');
   }
 })();
 </script>
