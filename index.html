@@ -160,6 +160,120 @@
   .dailyMobileCard .statusToggle{height:30px!important;min-width:72px!important;border-radius:8px!important}
   .dailyMobileEmpty{background:#fff;border:1px solid #dbe3ef;border-radius:14px;padding:16px;text-align:center;color:#64748b;font-weight:800}
 }
+
+
+/* Đồng Kiểm - dữ liệu riêng /dongKiem */
+.dkToolbar{display:grid;grid-template-columns:170px minmax(260px,1fr) 120px 120px 120px;gap:10px;align-items:end;margin-bottom:12px}
+.dkToolbar input{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:15px;background:#fff}
+.dkGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dkSection{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+.dkSectionHead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+.dkSectionHead h3{font-size:18px;margin:0;color:#0f172a}
+.dkSection.cancel .dkSectionHead{background:#fff8cf}
+.dkSection.carrier .dkSectionHead{background:#fff0d6}
+.dkSection.ab .dkSectionHead{background:#f3e8ff}
+.dkStats{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:#f8fafc}
+.dkStat{border:1px solid #dbe5f2;border-radius:999px;background:#fff;padding:5px 10px;font-weight:800;font-size:13px;color:#334155}
+.dkColumns{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.dkCol{border:1px solid #dbe5f2;border-radius:10px;background:#fbfdff;min-width:0;overflow:hidden}
+.dkColHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-bottom:1px solid #e5edf7;background:#eef4fb;font-weight:900}
+.dkAddBtn{border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:900;padding:6px 10px;cursor:pointer}
+.dkCodes{display:flex;flex-direction:column;gap:6px;padding:10px;min-height:112px}
+.dkCode{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #d8e4f3;border-radius:9px;background:#fff;padding:7px 8px;font-weight:800;min-width:0}
+.dkCode span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dkCode button{border:0;border-radius:50%;width:24px;height:24px;background:#fee2e2;color:#dc2626;font-weight:900;cursor:pointer;flex:0 0 auto}
+.dkEmpty{color:#94a3b8;font-weight:700;font-size:13px;padding:8px}
+.dkMore{border:0;background:#edf4ff;color:#2563eb;border-radius:999px;font-weight:900;padding:7px 10px;cursor:pointer;align-self:flex-start}
+.dkSearchResult{margin:0 0 12px 0}
+.dkSearchBox{border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:10px;padding:10px 12px;font-weight:800;line-height:1.5}
+.dkSearchBox .muted{color:#64748b;font-weight:700}
+.dkModalHint{font-size:13px;color:#667085;margin-top:8px;line-height:1.45}
+.dkHistoryList{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#f8fafc;padding:8px}
+.dkHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:700}
+.dkHistoryItem:last-child{border-bottom:0}
+@media(max-width:1100px){.dkGrid{grid-template-columns:1fr}.dkToolbar{grid-template-columns:1fr 1fr}.dkToolbar .btn{height:42px}}
+@media(max-width:760px){
+  .dkToolbar{grid-template-columns:1fr 1fr;gap:8px}
+  .dkToolbar input,.dkToolbar .btn{height:40px;font-size:14px}
+  .dkGrid{gap:10px}
+  .dkSectionHead h3{font-size:16px}
+  .dkStats{padding:8px 10px}
+  .dkColumns{grid-template-columns:1fr;padding:10px}
+  .dkCodes{min-height:auto}
+  }
+
+
+/* Đồng Kiểm - bảng đối soát từng đơn */
+.dkColBtns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.dkClearBtn{border:0;border-radius:8px;background:#fee2e2;color:#dc2626;font-weight:900;padding:6px 9px;cursor:pointer}
+.dkRecon{padding:0 12px 12px;overflow:auto}
+.dkReconTable{width:100%;border-collapse:collapse;background:#fff;font-size:14px;min-width:420px}
+.dkReconTable th,.dkReconTable td{border:1px solid #cbd5e1;padding:6px 8px;vertical-align:middle}
+.dkReconTitle th{text-align:center;background:#fff7d6;font-size:16px}
+.dkReconGroup td{background:#f8fafc;font-weight:900;color:#0f172a}
+.dkReconHead th{background:#eef4fb;text-align:left}
+.dkStt{width:44px;text-align:center;color:#475569;font-weight:800}
+.dkCodeCell{font-weight:900;color:#0f172a;white-space:nowrap}
+.dkNoteInput{width:100%;border:0;outline:0;background:transparent;font-size:14px;padding:4px 2px}
+.dkNoteInput:focus{background:#fff;border-radius:6px;box-shadow:0 0 0 2px rgba(37,99,235,.16)}
+.dkNoRows{color:#94a3b8;font-weight:800;text-align:center}
+@media(max-width:760px){
+  .dkColHead{align-items:flex-start}
+  .dkColBtns{justify-content:flex-start}
+  .dkRecon{padding:0 10px 10px}
+  .dkReconTable{font-size:13px;min-width:380px}
+}
+
+
+/* Đồng Kiểm - màu nhóm đối soát và trạng thái thiết bị */
+.dkSection.cancel .dkReconTitle th{background:#fff7d6}
+.dkSection.carrier .dkReconTitle th{background:#ffedd5}
+.dkSection.ab .dkReconTitle th{background:#f3e8ff}
+.dkGroupMatch td{background:#ecfdf3!important;color:#166534}
+.dkGroupLeft td{background:#fff7ed!important;color:#9a3412}
+.dkGroupRight td{background:#fef2f2!important;color:#991b1b}
+.dkTodayActive{background:#2563eb!important;color:#fff!important;box-shadow:0 0 0 3px #dbeafe}
+.devOnline{color:#16a34a!important;font-weight:900}
+.devAway{color:#dc2626!important;font-weight:900}
+
+
+/* Đồng Kiểm - mobile thẻ gọn cho danh sách dài */
+.dkMobileRecon{display:none}
+.dkMobileGroup{border:1px solid #dbe5f2;border-radius:10px;background:#fff;margin:10px 0;overflow:hidden}
+.dkMobileGroupHead{padding:9px 10px;font-weight:900}
+.dkMobileGroup.dkGroupMatch .dkMobileGroupHead{background:#ecfdf3;color:#166534}
+.dkMobileGroup.dkGroupLeft .dkMobileGroupHead{background:#fff7ed;color:#9a3412}
+.dkMobileGroup.dkGroupRight .dkMobileGroupHead{background:#fef2f2;color:#991b1b}
+.dkMobileList{display:flex;flex-direction:column;gap:8px;padding:10px}
+.dkMobileItem{border:1px solid #d8e4f3;border-radius:10px;background:#fbfdff;padding:8px}
+.dkMobileItemTop{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.dkMobileIndex{width:24px;height:24px;border-radius:999px;background:#eaf2ff;color:#2563eb;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:0 0 auto}
+.dkMobileCode{font-weight:900;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dkMobileItem .dkNoteInput{border:1px solid #dbe5f2;border-radius:8px;background:#fff;padding:8px;width:100%}
+@media(max-width:760px){
+  .dkReconTable{display:none}
+  .dkMobileRecon{display:block;padding:0 10px 10px}
+  .dkMobileList{max-height:none}
+}
+
+
+/* Đồng Kiểm - đơn thiếu 7 ngày trước */
+.dkGroupOld td{background:#eef2ff!important;color:#3730a3}
+.dkOldMeta{display:block;font-size:12px;color:#64748b;margin-top:2px;font-weight:800}
+.dkOldNote{color:#334155}
+.dkOldEmpty{color:#94a3b8;font-weight:900;text-align:center}
+.dkMobileGroup.dkGroupOld .dkMobileGroupHead{background:#eef2ff;color:#3730a3}
+
+
+/* Camera scan + reminder emphasis */
+.attentionEmpBig{margin:12px 0;padding:14px 16px;border-radius:14px;background:#fff7ed;border:2px solid #fb923c;color:#9a3412;font-size:28px;font-weight:1000;line-height:1.18}
+.attentionEmpBig small{display:block;font-size:13px;color:#9a3412;margin-bottom:4px}
+.attentionAdminNote{margin:10px 0;padding:12px 14px;border-radius:12px;background:#f8fafc;border:1px solid #dbe5f2;color:#172033;font-weight:800;line-height:1.45}
+.attentionAdminNote b{display:block;margin-bottom:5px;color:#0f172a}
+.dkScannerBox{background:#0f172a;border-radius:14px;overflow:hidden;min-height:260px;display:flex;align-items:center;justify-content:center}
+.dkScannerBox video{width:100%;max-height:62vh;background:#000}
+.dkScanStatus{margin-top:10px;color:#64748b;font-weight:800;line-height:1.45}
+@media(max-width:760px){.attentionEmpBig{font-size:24px}.dkScannerBox{min-height:220px}}
 </style>
 </head>
 <body>
@@ -179,6 +293,7 @@
     <button class="tab" data-tab="daily" onclick="switchTab('daily')">Việc hằng ngày</button>
     <button class="tab" data-tab="master" onclick="switchTab('master')">CV mẫu</button>
     <button class="tab" data-tab="devices" onclick="switchTab('devices')">Thiết bị online</button>
+    <button class="tab" data-tab="dongKiem" onclick="switchTab('dongKiem')">Đồng Kiểm</button>
     <div class="topFilters" id="empChips"></div>
   </div>
 
@@ -222,6 +337,22 @@
     <div class="hint" style="padding:12px 16px">Web không lấy được MAC thật của máy. Muốn nhận diện máy ổn định thì dùng <b>Thiết bị ID</b> tự tạo + đặt <b>Tên máy</b>. ID này lưu trên trình duyệt, F5 không đổi; chỉ đổi khi xóa dữ liệu trình duyệt hoặc mở trình duyệt khác.</div>
   </div>
 </div>
+
+  <div id="dongKiemTab" class="hidden">
+    <div class="section-title">
+      <h2>📦 Đồng Kiểm</h2>
+      <span class="hint">Dữ liệu lưu riêng theo ngày trong /dongKiem</span>
+    </div>
+    <div class="card dkToolbar">
+      <input id="dkDate" type="date" onchange="dkChangeDate()">
+      <input id="dkSearch" placeholder="Tìm mã vận đơn..." onkeydown="if(event.key==='Enter')dkSearchCode()">
+      <button class="btn blue" onclick="dkSearchCode()">Tìm</button>
+      <button id="dkTodayBtn" class="btn gray" onclick="dkSetToday()">Hôm nay</button>
+      <button class="btn gray" onclick="dkOpenHistory()">Lịch sử</button>
+    </div>
+    <div id="dkSearchResult" class="dkSearchResult"></div>
+    <div id="dkSections" class="dkGrid"></div>
+  </div>
 </div>
 
 <div id="taskModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="taskModalTitle">Thêm việc</h3><button class="x" onclick="closeModal('taskModal')">×</button></div><div class="form"><input type="hidden" id="editId"><div><label>Chọn từ CV mẫu</label><select id="mMaster" onchange="fillFromMaster()"></select></div><div><label>Ngày</label><input id="mDate" type="date"></div><div><label>Thời gian</label><input id="mTime" type="time"></div><div><label>Nhân viên <small style="color:#667085">(chọn được nhiều)</small></label><div id="mEmpGroup" class="checkrow"></div></div><div><label>Loại việc</label><select id="mType"><option>Phát sinh</option><option>Hằng ngày</option></select></div><div><label>Nhắc sau phút <small style="color:#667085">VD: 10,20,30</small></label><input id="mRemind" placeholder="10,20,30"></div><div><label>Ảnh URL</label><input id="mImg" placeholder="Dán link ảnh hoặc bỏ trống"></div><div><label>Dán ảnh</label><div class="pastebox">Mở popup này rồi Ctrl+V ảnh vào đâu cũng được</div><div id="taskPreview" class="previewImgs"></div></div><div class="full"><label>Tên CV</label><input id="mTitle"></div><div class="full"><label>Nội dung cần làm</label><textarea id="mContent"></textarea></div><div class="full"><label>Admin ghi chú</label><textarea id="mAdminNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('taskModal')">Đóng</button><button class="btn blue" onclick="saveTask()">Lưu việc</button></div></div></div>
@@ -1084,7 +1215,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const rows=Object.values(devices||{}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d=>{
       const online=Date.now()-(d.lastSeen||0)<90000;
       const allowed=d.allowed===true;
-      return `<div class="row ${d.id===selectedDeviceId?'active':''}" onclick="selectDevice('${esc(d.id||'')}','${esc(d.name||'')}','${esc(d.ip||'')}')"><b>${esc(d.id||'')}</b><span>${esc(d.name||'Máy đang mở')}${d.ip?' - '+esc(d.ip):''}</span><span>${esc(d.user||'')}</span><b>${online?'Online':'Vắng'}</b><span>${allowed?'Được phép':'Chưa duyệt'}</span><span class="adminOnly"><button class="btn ${allowed?'gray':'green'}" onclick="event.stopPropagation();setDeviceAllowed('${esc(d.id||'')}',${!allowed})">${allowed?'Chặn':'Cho phép'}</button></span></div>`;
+      return `<div class="row ${d.id===selectedDeviceId?'active':''}" onclick="selectDevice('${esc(d.id||'')}','${esc(d.name||'')}','${esc(d.ip||'')}')"><b>${esc(d.id||'')}</b><span>${esc(d.name||'Máy đang mở')}${d.ip?' - '+esc(d.ip):''}</span><span>${esc(d.user||'')}</span><b class="${online?'devOnline':'devAway'}">${online?'Online':'Vắng'}</b><span>${allowed?'Được phép':'Chưa duyệt'}</span><span class="adminOnly"><button class="btn ${allowed?'gray':'green'}" onclick="event.stopPropagation();setDeviceAllowed('${esc(d.id||'')}',${!allowed})">${allowed?'Chặn':'Cho phép'}</button></span></div>`;
     }).join('');
     const allowed=selected.allowed===true;
     box.innerHTML=`<div class="section-title"><h2>Thiết bị online</h2><span class="hint">Admin bấm một máy để sửa tên hoặc cho phép/chặn truy cập nhân viên</span></div><div class="card masterbox"><div class="deviceEditor"><div><label>Máy đang sửa</label><b>${esc(selectedDeviceId||device)}</b></div><div><label>Tên máy</label><input id="devName" ${roleAdmin()?'':'readonly'} value="${esc(editName)}" placeholder="VD: Máy gói đơn" oninput="saveDeviceInfo()"></div><div><label>Ghi chú/IP</label><input id="devIp" ${roleAdmin()?'':'readonly'} value="${esc(editIp)}" placeholder="VD: Quầy 1" oninput="saveDeviceInfo()"></div><div><label>Truy cập nhân viên</label><b>${allowed?'Được phép':'Chưa duyệt'}</b></div></div><div class="deviceRows">${rows||'<div style="padding:10px;color:#64748b">Chưa có thiết bị online</div>'}</div></div>`;
@@ -1111,13 +1242,16 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(!t||!t.id)return;
     if(t.status==='Đã xong')return;
     if(t.activeReminder&&t.activeReminder.ackBy)return;
+    const reminderKey=t.id+'_'+(t.activeReminder&&t.activeReminder.id?t.activeReminder.id:(reason||'manual'));
+    const alreadyShowing=attentionTaskId===t.id&&window.__attentionReminderKey===reminderKey&&document.getElementById('attentionModal')?.classList.contains('show');
     attentionTaskId=t.id;
+    window.__attentionReminderKey=reminderKey;
     const deadline=taskDeadlineDate(t);
     attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(empList(t.emp).join(', ')||'-')}</span><span>${esc(reason||'Nhắc việc')}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
     openModal('attentionModal');
-    playAttentionSound();
+    if(!alreadyShowing)playAttentionSound();
   };
-  window.closeAttention=function(){closeModal('attentionModal');attentionTaskId=null};
+  window.closeAttention=function(){window.__attentionReminderKey='';closeModal('attentionModal');attentionTaskId=null};
   window.attentionDone=window.closeAttention;
   window.attentionAck=function(){
     const id=attentionTaskId;
@@ -1258,14 +1392,20 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const k=reminderDismissKey41(t);
     if(k&&localStorage.getItem(k))return;
     syncTaskIntoState41(t);
+    const reminderKey=t.id+'_'+(t.activeReminder&&t.activeReminder.id?t.activeReminder.id:(reason||'manual'));
+    const alreadyShowing=attentionTaskId===t.id&&window.__attentionReminderKey===reminderKey&&document.getElementById('attentionModal')?.classList.contains('show');
     attentionTaskId=t.id;
+    window.__attentionReminderKey=reminderKey;
     const deadline=taskDeadlineDate(t);
-    attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div><div class="attentionMeta"><span>Nhân viên: ${esc(empList(t.emp).join(', ')||'-')}</span><span>${esc(reason||reminderReason41(t))}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
+    const empText=empList(t.emp).join(', ')||'-';
+    const adminNote=String(t.adminNote||'').trim();
+    attentionBody.innerHTML=`<div class="attentionTime">${esc(t.time||'')}</div><div class="attentionTitle">${esc(t.title||'')}</div><div class="attentionEmpBig"><small>Nhân viên bàn giao</small>${esc(empText)}</div><div class="attentionContent">${esc(t.content||'').replace(/\n/g,'<br>')}</div>${adminNote?`<div class="attentionAdminNote"><b>Ghi chú admin</b><div>${esc(adminNote).replace(/\n/g,'<br>')}</div></div>`:''}<div class="attentionMeta"><span>${esc(reason||reminderReason41(t))}</span>${deadline?`<span>Hạn trước: ${deadline.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div>`;
     openModal('attentionModal');
-    playAttentionSound();
+    if(!alreadyShowing)playAttentionSound();
   }
   window.showAttention=showReminderNow41;
   window.closeAttention=function(){
+    window.__attentionReminderKey='';
     const t=state.tasks.find(x=>x.id===attentionTaskId);
     const k=reminderDismissKey41(t);
     if(k)localStorage.setItem(k,'1');
@@ -1364,3 +1504,457 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 
 })();
 </script>
+
+<script id="DONG_KIEM_MODULE_20260613">
+(function(){
+  const ROOT='dongKiem';
+  window.APP_ROOTS=window.APP_ROOTS||{};
+  window.APP_ROOTS.dongKiem=window.APP_ROOTS.dongKiem||ROOT;
+  const SECTIONS=[
+    {id:'cancel',title:'DS Đơn hủy lấy',reconcileTitle:'Đối soát Đơn hủy lấy',tone:'cancel',cols:[{id:'shop',label:'Đơn ở Shop'},{id:'cancelled',label:'Đơn đã Hủy',protectedDelete:true}]},
+    {id:'carrier',title:'DS DVVC báo chưa lấy',reconcileTitle:'Đối soát DVVC báo chưa lấy',tone:'carrier',cols:[{id:'shop',label:'Đơn ở Shop'},{id:'system',label:'Hệ Thống',protectedDelete:true}]},
+    {id:'ab',title:'DS Kiểm tra A & B',reconcileTitle:'Đối soát A & B',tone:'ab',cols:[{id:'a',label:'Cột A'},{id:'b',label:'Cột B'}]}
+  ];
+  let dayData=blankDay(), currentDate='', currentRef=null, currentCb=null, allDaysRef=null, allDaysCb=null, allDaysCache={}, expanded={}, inputTarget=null, noteTimers={}, started=false;
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
+  const isAdmin=()=>typeof roleAdmin==='function'&&roleAdmin();
+  const askActor=cb=>typeof withActor==='function'?withActor(cb):cb(isAdmin()?'Admin':'Nhân viên');
+  const today=()=>{const d=new Date();const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())};
+  const nowText=()=>new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+  function refFor(date){return typeof rootRef==='function'?rootRef(ROOT,'days',date):null}
+  function daysRef(){return typeof rootRef==='function'?rootRef(ROOT,'days'):null}
+  function dateAdd(date,offset){const d=new Date(date+'T00:00:00');d.setDate(d.getDate()+offset);const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
+  function shortDate(date){const p=String(date||'').split('-');return p.length===3?p[2]+'/'+p[1]:date}
+  function previousDates(date,count){const arr=[];for(let i=1;i<=count;i++)arr.push(dateAdd(date,-i));return arr}
+  function blankDay(){return {sections:{cancel:{shop:[],cancelled:[]},carrier:{shop:[],system:[]},ab:{a:[],b:[]}},notes:{cancel:{},carrier:{},ab:{}},logs:[]}}
+  function unique(arr){return Array.from(new Set(arr.filter(Boolean)))}
+  function normalize(v){
+    const out=blankDay();
+    if(!v||typeof v!=='object')return out;
+    SECTIONS.forEach(sec=>sec.cols.forEach(colDef=>{
+      const arr=v.sections&&v.sections[sec.id]&&Array.isArray(v.sections[sec.id][colDef.id])?v.sections[sec.id][colDef.id]:[];
+      out.sections[sec.id][colDef.id]=unique(arr.map(x=>String(x||'').trim()).filter(Boolean));
+    }));
+    if(v.notes&&typeof v.notes==='object'){
+      SECTIONS.forEach(sec=>{
+        const notes=v.notes[sec.id]||{};
+        Object.keys(notes).forEach(code=>{if(notes[code])out.notes[sec.id][code]=String(notes[code])});
+      });
+    }
+    out.logs=Array.isArray(v.logs)?v.logs.slice(-300):[];
+    return out;
+  }
+  function col(secId,colId){return (((dayData.sections||{})[secId]||{})[colId]||[])}
+  function notes(secId){dayData.notes=dayData.notes||{};dayData.notes[secId]=dayData.notes[secId]||{};return dayData.notes[secId]}
+  function parseCodes(text){
+    const matches=String(text||'').match(/[A-Za-z0-9][A-Za-z0-9-]{4,}/g)||[];
+    return unique(matches.map(x=>x.trim()));
+  }
+  function saveDay(){
+    dayData.updatedAt=Date.now();
+    const ref=refFor(currentDate);
+    if(ref)return ref.set(dayData);
+    const all=JSON.parse(localStorage.getItem('dongKiemDays')||'{}');
+    all[currentDate]=dayData;
+    allDaysCache=all;
+    localStorage.setItem('dongKiemDays',JSON.stringify(all));
+    renderDongKiem();
+    return Promise.resolve();
+  }
+  function log(action,actor){
+    dayData.logs=dayData.logs||[];
+    dayData.logs.push(nowText()+' - '+(actor||'Hệ thống')+' - '+action);
+    if(dayData.logs.length>300)dayData.logs=dayData.logs.slice(-300);
+  }
+  function shortText(v){v=String(v||'').trim();return v?(v.length>80?v.slice(0,80)+'...':v):'(trống)'}
+  function stat(sec){return statFromDay(sec,dayData)}
+  function statFromDay(sec,d){
+    const left=colIn(d,sec.id,sec.cols[0].id), right=colIn(d,sec.id,sec.cols[1].id);
+    const leftSet=new Set(left), rightSet=new Set(right);
+    const match=left.filter(x=>rightSet.has(x));
+    const onlyLeft=left.filter(x=>!rightSet.has(x));
+    const onlyRight=right.filter(x=>!leftSet.has(x));
+    const total=unique(left.concat(right)).length;
+    return {left,right,match,onlyLeft,onlyRight,total};
+  }
+  function canDeleteColumn(c){return !c.protectedDelete||isAdmin()}
+  function codeHtml(sec,c,code){
+    return '<div class="dkCode" title="'+esc(code)+'"><span>'+esc(code)+'</span><button type="button" onclick="dkDeleteCode(\''+sec.id+'\',\''+c.id+'\',\''+esc(code)+'\')">×</button></div>';
+  }
+  function rowsHtml(sec,title,rows,kind){
+    const ns=notes(sec.id);
+    let html='<tr class="dkReconGroup dkGroup'+esc(kind||'')+'"><td colspan="3">'+esc(title)+'('+rows.length+')</td></tr><tr class="dkReconHead"><th>STT</th><th>Mã đơn</th><th>Ghi chú</th></tr>';
+    if(!rows.length)return html+'<tr><td colspan="3" class="dkNoRows">Không có</td></tr>';
+    return html+rows.map((code,i)=>'<tr><td class="dkStt">'+(i+1)+'</td><td class="dkCodeCell">'+esc(code)+'</td><td><input class="dkNoteInput" value="'+esc(ns[code]||'')+'" placeholder="Nhập ghi chú..." oninput="dkSaveCodeNoteDebounced(\''+sec.id+'\',\''+esc(code)+'\',this.value)"></td></tr>').join('');
+  }
+  function oldMissingRows(sec){
+    const leftLabel=sec.cols[0].label, rightLabel=sec.cols[1].label;
+    const out=[];
+    previousDates(currentDate,7).forEach(date=>{
+      const d=normalize((allDaysCache||{})[date]);
+      const st=statFromDay(sec,d);
+      const ns=(d.notes&&d.notes[sec.id])||{};
+      st.onlyRight.forEach(code=>out.push({date,code,type:'Thiếu '+leftLabel,note:ns[code]||''}));
+      st.onlyLeft.forEach(code=>out.push({date,code,type:'Thiếu '+rightLabel,note:ns[code]||''}));
+    });
+    return out;
+  }
+  function oldMissingHtml(sec,rows){
+    const key='old_'+sec.id;
+    const showAll=!!expanded[key];
+    const shown=showAll?rows:rows.slice(0,10);
+    let html='<tr class="dkReconGroup dkGroupOld"><td colspan="3">Đơn thiếu 7 ngày trước chưa làm('+rows.length+')</td></tr><tr class="dkReconHead"><th>STT</th><th>Mã đơn</th><th>Ghi chú</th></tr>';
+    if(!rows.length)return html+'<tr><td colspan="3" class="dkOldEmpty">Không có</td></tr>';
+    html+=shown.map((r,i)=>'<tr><td class="dkStt">'+(i+1)+'</td><td class="dkCodeCell">'+esc(r.code)+'<span class="dkOldMeta">'+shortDate(r.date)+' - '+esc(r.type)+'</span></td><td class="dkOldNote">'+esc(r.note||'')+'</td></tr>').join('');
+    if(rows.length>10)html+='<tr><td colspan="3"><button class="dkMore" onclick="dkToggleMore(\''+key+'\')">'+(showAll?'Thu gọn':'Xem thêm '+(rows.length-10))+'</button></td></tr>';
+    return html;
+  }
+  function mobileRowsHtml(sec,title,rows,kind){
+    const key='mobile_'+sec.id+'_'+kind;
+    const ns=notes(sec.id);
+    const showAll=!!expanded[key];
+    const shown=showAll?rows:rows.slice(0,6);
+    const body=shown.length?shown.map((code,i)=>'<div class="dkMobileItem"><div class="dkMobileItemTop"><span class="dkMobileIndex">'+(i+1)+'</span><span class="dkMobileCode">'+esc(code)+'</span></div><input class="dkNoteInput" value="'+esc(ns[code]||'')+'" placeholder="Ghi chú mã này..." oninput="dkSaveCodeNoteDebounced(\''+sec.id+'\',\''+esc(code)+'\',this.value)"></div>').join(''):'<div class="dkNoRows" style="padding:10px">Không có</div>';
+    return '<div class="dkMobileGroup dkGroup'+esc(kind||'')+'"><div class="dkMobileGroupHead">'+esc(title)+'('+rows.length+')</div><div class="dkMobileList">'+body+(rows.length>6?'<button class="dkMore" onclick="dkToggleMore(\''+key+'\')">'+(showAll?'Thu gọn':'Xem thêm '+(rows.length-6))+'</button>':'')+'</div></div>';
+  }
+  function reconcileHtml(sec){
+    const st=stat(sec);
+    const oldRows=oldMissingRows(sec);
+    const leftLabel=sec.cols[0].label, rightLabel=sec.cols[1].label;
+    return '<div class="dkRecon"><table class="dkReconTable"><tbody>'+
+      '<tr class="dkReconTitle"><th colspan="3">'+esc(sec.reconcileTitle)+' Tổng ('+st.total+')</th></tr>'+
+      rowsHtml(sec,'Khớp',st.match,'Match')+
+      rowsHtml(sec,'Thiếu '+leftLabel,st.onlyRight,'Left')+
+      rowsHtml(sec,'Thiếu '+rightLabel,st.onlyLeft,'Right')+
+      oldMissingHtml(sec,oldRows)+
+      '</tbody></table><div class="dkMobileRecon">'+
+      mobileRowsHtml(sec,'Khớp',st.match,'Match')+
+      mobileRowsHtml(sec,'Thiếu '+leftLabel,st.onlyRight,'Left')+
+      mobileRowsHtml(sec,'Thiếu '+rightLabel,st.onlyLeft,'Right')+
+      mobileOldMissingHtml(sec,oldRows)+
+      '</div></div>';
+  }
+  function renderDongKiem(){
+    const box=$('dkSections'); if(!box)return;
+    box.innerHTML=SECTIONS.map(sec=>{
+      const cols=sec.cols.map(c=>{
+        const key=sec.id+'_'+c.id;
+        const list=col(sec.id,c.id);
+        const shown=expanded[key]?list:list.slice(0,10);
+        return '<div class="dkCol"><div class="dkColHead"><span>'+esc(c.label)+' ('+list.length+')</span><div class="dkColBtns"><button class="dkAddBtn" onclick="dkOpenInput(\''+sec.id+'\',\''+c.id+'\')">+ Thêm</button><button class="dkClearBtn" onclick="dkClearColumn(\''+sec.id+'\',\''+c.id+'\')">Xóa hết</button></div></div><div class="dkCodes">'+
+          (shown.length?shown.map(code=>codeHtml(sec,c,code)).join(''):'<div class="dkEmpty">Chưa có mã</div>')+
+          (list.length>10?'<button class="dkMore" onclick="dkToggleMore(\''+key+'\')">'+(expanded[key]?'Thu gọn':'Xem thêm '+(list.length-10))+'</button>':'')+
+        '</div></div>';
+      }).join('');
+      return '<section class="dkSection '+sec.tone+'"><div class="dkSectionHead"><h3>'+esc(sec.title)+'</h3><span class="hint">'+esc(currentDate)+'</span></div><div class="dkColumns">'+cols+'</div>'+reconcileHtml(sec)+'</section>';
+    }).join('');
+  }
+  function syncDkTodayActive(){const btn=$('dkTodayBtn');if(btn)btn.classList.toggle('dkTodayActive',currentDate===today())}
+  function mobileOldMissingHtml(sec,rows){
+    const key='old_mobile_'+sec.id;
+    const showAll=!!expanded[key];
+    const shown=showAll?rows:rows.slice(0,6);
+    const body=shown.length?shown.map((r,i)=>'<div class="dkMobileItem"><div class="dkMobileItemTop"><span class="dkMobileIndex">'+(i+1)+'</span><span class="dkMobileCode">'+esc(r.code)+'</span></div><div class="dkOldMeta">'+shortDate(r.date)+' - '+esc(r.type)+'</div><div class="dkOldNote">'+esc(r.note||'')+'</div></div>').join(''):'<div class="dkNoRows" style="padding:10px">Không có</div>';
+    return '<div class="dkMobileGroup dkGroupOld"><div class="dkMobileGroupHead">Đơn thiếu 7 ngày trước chưa làm('+rows.length+')</div><div class="dkMobileList">'+body+(rows.length>6?'<button class="dkMore" onclick="dkToggleMore(\''+key+'\')">'+(showAll?'Thu gọn':'Xem thêm '+(rows.length-6))+'</button>':'')+'</div></div>';
+  }
+  function ensureAllDaysListener(){
+    const ref=daysRef();
+    if(ref){
+      if(allDaysRef)return;
+      allDaysRef=ref;
+      allDaysCb=snap=>{allDaysCache=snap.val()||{};renderDongKiem()};
+      allDaysRef.on('value',allDaysCb);
+    }else{
+      allDaysCache=JSON.parse(localStorage.getItem('dongKiemDays')||'{}');
+    }
+  }
+  function listenDate(date){
+    currentDate=date||today();
+    const inp=$('dkDate'); if(inp)inp.value=currentDate; syncDkTodayActive();
+    if(currentRef&&currentCb)currentRef.off('value',currentCb);
+    currentRef=refFor(currentDate);
+    if(currentRef){
+      currentCb=snap=>{dayData=normalize(snap.val());renderDongKiem()};
+      currentRef.on('value',currentCb);
+    }else{
+      const all=JSON.parse(localStorage.getItem('dongKiemDays')||'{}');
+      dayData=normalize(all[currentDate]);
+      renderDongKiem();
+    }
+  }
+  function ensureStarted(){if(started)return;started=true;ensureModals();ensureAllDaysListener();listenDate(($('dkDate')&&$('dkDate').value)||today())}
+  function ensureModals(){
+    if($('dkInputModal'))return;
+    document.body.insertAdjacentHTML('beforeend',
+      '<div id="dkInputModal" class="modal"><div class="panel" style="width:min(620px,94vw)"><div class="panelhead"><h3 id="dkInputTitle">Thêm mã vận đơn</h3><button class="x" onclick="closeModal(\'dkInputModal\')">×</button></div><div class="form"><div class="full"><label>Dán mã vận đơn</label><textarea id="dkBulkInput" style="min-height:180px" placeholder="Dán nhiều mã, mỗi mã cách nhau bằng khoảng trắng hoặc xuống dòng"></textarea><div class="dkModalHint">Hệ thống tự tách mã theo khoảng trắng, xuống dòng, dấu phẩy. Mã trùng sẽ tự bỏ qua.</div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'dkInputModal\')">Đóng</button><button class="btn blue" onclick="dkSaveInput()">Lưu mã</button></div></div></div>'+
+      '<div id="dkHistoryModal" class="modal"><div class="panel" style="width:min(720px,94vw)"><div class="panelhead"><h3>Lịch sử Đồng Kiểm</h3><button class="x" onclick="closeModal(\'dkHistoryModal\')">×</button></div><div id="dkHistoryBody" style="padding:14px"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'dkHistoryModal\')">Đóng</button></div></div></div>'
+    );
+  }
+  function sectionBy(id){return SECTIONS.find(s=>s.id===id)}
+  function colBy(sec,id){return sec&&sec.cols.find(c=>c.id===id)}
+  function cleanupNote(secId,code){
+    const sec=sectionBy(secId); if(!sec)return;
+    const still=sec.cols.some(c=>col(secId,c.id).includes(code));
+    if(!still)delete notes(secId)[code];
+  }
+  window.dkChangeDate=function(){ensureStarted();listenDate($('dkDate').value||today());$('dkSearchResult').innerHTML=''};
+  window.dkSetToday=function(){ensureStarted();listenDate(today());$('dkSearchResult').innerHTML=''};
+  window.dkToggleMore=function(key){expanded[key]=!expanded[key];renderDongKiem()};
+  window.dkOpenInput=function(secId,colId){
+    ensureStarted();
+    const sec=sectionBy(secId), c=colBy(sec,colId); if(!sec||!c)return;
+    inputTarget={secId,colId};
+    $('dkInputTitle').textContent='Thêm mã - '+sec.title+' / '+c.label;
+    $('dkBulkInput').value='';
+    openModal('dkInputModal');
+    setTimeout(()=>$('dkBulkInput')&&$('dkBulkInput').focus(),80);
+  };
+  window.dkSaveInput=function(){
+    ensureStarted();
+    const codes=parseCodes($('dkBulkInput').value);
+    if(!codes.length){toast('Chưa nhận diện được mã vận đơn');return}
+    const sec=sectionBy(inputTarget&&inputTarget.secId), c=colBy(sec,inputTarget&&inputTarget.colId); if(!sec||!c)return;
+    askActor(actor=>{
+      const list=col(sec.id,c.id), before=list.length;
+      dayData.sections[sec.id][c.id]=unique(list.concat(codes));
+      const added=dayData.sections[sec.id][c.id].length-before;
+      log('thêm '+added+' mã vào '+sec.title+' / '+c.label+': '+codes.slice(0,8).join(', ')+(codes.length>8?'...':''),actor);
+      saveDay().then(()=>{closeModal('dkInputModal');toast('Đã thêm '+added+' mã')});
+    });
+  };
+  window.dkDeleteCode=function(secId,colId,code){
+    ensureStarted();
+    const sec=sectionBy(secId), c=colBy(sec,colId); if(!sec||!c)return;
+    if(!canDeleteColumn(c)){toast('Cột '+c.label+' chỉ Admin được xóa mã');return}
+    if(!confirm('Xóa mã '+code+' khỏi '+c.label+'?'))return;
+    askActor(actor=>{
+      dayData.sections[sec.id][c.id]=col(sec.id,c.id).filter(x=>x!==code);
+      cleanupNote(sec.id,code);
+      log('xóa mã '+code+' khỏi '+sec.title+' / '+c.label,actor);
+      saveDay().then(()=>toast('Đã xóa mã'));
+    });
+  };
+  window.dkClearColumn=function(secId,colId){
+    ensureStarted();
+    const sec=sectionBy(secId), c=colBy(sec,colId); if(!sec||!c)return;
+    const list=col(sec.id,c.id);
+    if(!list.length){toast('Cột này đang trống');return}
+    if(!canDeleteColumn(c)){toast('Cột '+c.label+' chỉ Admin được xóa hết danh sách');return}
+    if(!confirm('Xóa hết '+list.length+' mã trong cột '+c.label+'?'))return;
+    askActor(actor=>{
+      const old=list.slice();
+      dayData.sections[sec.id][c.id]=[];
+      old.forEach(code=>cleanupNote(sec.id,code));
+      log('xóa hết '+old.length+' mã khỏi '+sec.title+' / '+c.label,actor);
+      saveDay().then(()=>toast('Đã xóa hết cột '+c.label));
+    });
+  };
+  window.dkSaveCodeNoteDebounced=function(secId,code,value){
+    ensureStarted();
+    const key=secId+'_'+code;
+    clearTimeout(noteTimers[key]);
+    noteTimers[key]=setTimeout(()=>{
+      const ns=notes(secId);
+      const old=String(ns[code]||'');
+      const next=String(value||'');
+      if(old===next)return;
+      if(next)ns[code]=next;else delete ns[code];
+      log('cập nhật ghi chú mã '+code+': '+shortText(old)+' -> '+shortText(next),isAdmin()?'Admin':'Nhân viên');
+      saveDay();
+    },650);
+  };
+  function colIn(d,secId,colId){return (((d.sections||{})[secId]||{})[colId]||[])}
+  function scanDays(days,query){
+    const q=String(query||'').trim(); const found=[];
+    Object.keys(days||{}).forEach(date=>{
+      const d=normalize(days[date]);
+      SECTIONS.forEach(sec=>sec.cols.forEach(c=>{
+        if(colIn(d,sec.id,c.id).includes(q))found.push(date+' - '+sec.title+' / '+c.label);
+      }));
+    });
+    return found;
+  }
+  window.dkSearchCode=function(){
+    ensureStarted();
+    const q=($('dkSearch').value||'').trim();
+    if(!q){toast('Nhập mã vận đơn cần tìm');return}
+    const out=$('dkSearchResult');
+    const render=found=>{out.innerHTML='<div class="dkSearchBox">'+(found.length?'<b>'+esc(q)+'</b> có ở:<br>'+found.map(esc).join('<br>'):'<b>'+esc(q)+'</b>: <span class="muted">Không tìm thấy</span>')+'</div>'};
+    const ref=typeof rootRef==='function'?rootRef(ROOT,'days'):null;
+    if(ref)ref.once('value').then(snap=>render(scanDays(snap.val()||{},q)));
+    else render(scanDays(JSON.parse(localStorage.getItem('dongKiemDays')||'{}'),q));
+  };
+  window.dkOpenHistory=function(){
+    ensureStarted();
+    const logs=(dayData.logs||[]).slice().reverse();
+    $('dkHistoryBody').innerHTML=logs.length?'<div class="dkHistoryList">'+logs.map(x=>'<div class="dkHistoryItem">'+esc(x)+'</div>').join('')+'</div>':'<div class="dkSearchBox">Chưa có lịch sử thao tác ngày này.</div>';
+    openModal('dkHistoryModal');
+  };
+  const oldSwitch=window.switchTab;
+  window.switchTab=function(t){
+    if(t==='dongKiem'){
+      ['today','daily','master','devices'].forEach(x=>{const el=$(x+'Tab');if(el)el.classList.add('hidden')});
+      const dk=$('dongKiemTab'); if(dk)dk.classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+      ensureStarted(); renderDongKiem(); return;
+    }
+    if(typeof oldSwitch==='function')oldSwitch(t);
+    const dk=$('dongKiemTab'); if(dk)dk.classList.add('hidden');
+    const btn=document.querySelector('.tab[data-tab="dongKiem"]'); if(btn)btn.classList.remove('active');
+  };
+  setTimeout(()=>{if($('dkDate'))$('dkDate').value=today()},0);
+})();
+</script>
+
+<script id="CAMERA_DEADLINE_REMINDER_20260613">
+(function(){
+  const oldDeadline = window.taskDeadlineDate || (typeof taskDeadlineDate==='function'?taskDeadlineDate:null);
+  window.taskDeadlineDate=function(t){
+    const existing=oldDeadline?oldDeadline(t):null;
+    if(existing)return existing;
+    const start=typeof taskStartDate==='function'?taskStartDate(t):null;
+    if(!start||isNaN(start))return null;
+    return new Date(start.getTime()+60*60000);
+  };
+  try{taskDeadlineDate=window.taskDeadlineDate}catch(e){}
+
+  window.playAttentionSound=function(){
+    try{
+      if(window.__attentionSoundStop)window.__attentionSoundStop();
+      const AudioCtx=window.AudioContext||window.webkitAudioContext;
+      if(!AudioCtx)return;
+      const ctx=new AudioCtx();
+      let stopped=false;
+      const stop=()=>{if(stopped)return;stopped=true;try{ctx.close()}catch(e){} window.__attentionSoundStop=null};
+      window.__attentionSoundStop=stop;
+      const endAt=Date.now()+10000;
+      let count=0;
+      const beep=()=>{
+        if(stopped||Date.now()>=endAt)return stop();
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.frequency.value=count%2?880:660;
+        gain.gain.value=0.13;
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start();
+        setTimeout(()=>{try{osc.stop()}catch(e){}},180);
+        count++;
+        setTimeout(beep,520);
+      };
+      beep();
+      setTimeout(stop,10000);
+    }catch(e){}
+  };
+  try{playAttentionSound=window.playAttentionSound}catch(e){}
+
+  let dkScanStream=null, dkScanFrame=null, dkZxingControls=null, dkDetector=null;
+  const $=id=>document.getElementById(id);
+  const scanFormats=['code_128','code_39','code_93','codabar','ean_13','ean_8','itf','qr_code','data_matrix','pdf417','upc_a','upc_e'];
+  function setScanStatus(msg){const el=$('dkScanStatus');if(el)el.textContent=msg}
+  function parseScanCodes(text){
+    const matches=String(text||'').match(/[A-Za-z0-9][A-Za-z0-9-]{4,}/g)||[];
+    return Array.from(new Set(matches.map(x=>x.trim()).filter(Boolean)));
+  }
+  function appendScannedCodes(codes){
+    const input=$('dkBulkInput');
+    if(!input)return;
+    const existing=parseScanCodes(input.value);
+    const set=new Set(existing);
+    let added=0;
+    codes.forEach(code=>{code=String(code||'').trim();if(code&&!set.has(code)){set.add(code);added++}});
+    input.value=Array.from(set).join('\n');
+    if(added){
+      setScanStatus('Đã quét thêm '+added+' mã. Có thể tiếp tục quét hoặc đóng để lưu.');
+      try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}
+    }
+  }
+  function ensureScannerModal(){
+    if($('dkScannerModal'))return;
+    document.body.insertAdjacentHTML('beforeend','<div id="dkScannerModal" class="modal"><div class="panel" style="width:min(680px,96vw)"><div class="panelhead"><h3>Quét mã vận đơn bằng camera</h3><button class="x" onclick="dkCloseScanner()">×</button></div><div style="padding:14px"><div class="dkScannerBox"><video id="dkScannerVideo" muted playsinline></video></div><div id="dkScanStatus" class="dkScanStatus">Đưa mã vạch/QR vào giữa khung camera.</div></div><div class="panelfoot"><button class="btn gray" onclick="dkCloseScanner()">Đóng</button></div></div></div>');
+  }
+  function addScanButton(){
+    const foot=document.querySelector('#dkInputModal .panelfoot');
+    if(!foot||$('dkScanBtn'))return;
+    foot.insertAdjacentHTML('afterbegin','<button id="dkScanBtn" class="btn green" onclick="dkOpenScanner()">📷 Quét camera</button>');
+  }
+  const oldDkOpenInput=window.dkOpenInput;
+  window.dkOpenInput=function(secId,colId){
+    if(typeof oldDkOpenInput==='function')oldDkOpenInput(secId,colId);
+    setTimeout(()=>{ensureScannerModal();addScanButton()},0);
+  };
+  window.dkCloseScanner=function(){
+    try{if(dkScanFrame)cancelAnimationFrame(dkScanFrame)}catch(e){}
+    dkScanFrame=null;
+    try{dkZxingControls&&dkZxingControls.stop&&dkZxingControls.stop()}catch(e){}
+    dkZxingControls=null;
+    try{dkScanStream&&dkScanStream.getTracks().forEach(t=>t.stop())}catch(e){}
+    dkScanStream=null;
+    const video=$('dkScannerVideo');if(video)video.srcObject=null;
+    closeModal('dkScannerModal');
+  };
+  async function loadZxing(){
+    if(window.ZXingBrowser)return true;
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js';
+      s.onload=resolve;
+      s.onerror=reject;
+      document.head.appendChild(s);
+    });
+    return !!window.ZXingBrowser;
+  }
+  async function startNativeScanner(video){
+    let formats=scanFormats;
+    try{
+      if(window.BarcodeDetector.getSupportedFormats){
+        const supported=await window.BarcodeDetector.getSupportedFormats();
+        formats=scanFormats.filter(f=>supported.includes(f));
+      }
+    }catch(e){}
+    dkDetector=new BarcodeDetector(formats.length?{formats}:{});
+    dkScanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+    video.srcObject=dkScanStream;
+    await video.play();
+    setScanStatus('Đang quét tự động. Quét xong mã sẽ tự thêm vào ô nhập.');
+    const loop=async()=>{
+      if(!dkDetector||!video.srcObject)return;
+      try{
+        const found=await dkDetector.detect(video);
+        if(found&&found.length)appendScannedCodes(found.map(x=>x.rawValue));
+      }catch(e){}
+      dkScanFrame=requestAnimationFrame(loop);
+    };
+    loop();
+  }
+  async function startZxingScanner(video){
+    const ok=await loadZxing();
+    if(!ok)throw new Error('Không tải được bộ quét camera');
+    const reader=new ZXingBrowser.BrowserMultiFormatReader();
+    setScanStatus('Đang mở camera. Quét xong mã sẽ tự thêm vào ô nhập.');
+    dkZxingControls=await reader.decodeFromVideoDevice(null,video,(result)=>{
+      if(result){
+        const text=typeof result.getText==='function'?result.getText():result.text;
+        appendScannedCodes([text]);
+      }
+    });
+  }
+  window.dkOpenScanner=async function(){
+    ensureScannerModal();
+    openModal('dkScannerModal');
+    const video=$('dkScannerVideo');
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      setScanStatus('Trình duyệt chưa cho mở camera. Có thể dán mã thủ công vào ô nhập.');
+      return;
+    }
+    try{
+      if('BarcodeDetector' in window)await startNativeScanner(video);
+      else await startZxingScanner(video);
+    }catch(e){
+      setScanStatus('Không mở được camera hoặc trình duyệt chưa hỗ trợ quét. Hãy cấp quyền camera rồi thử lại.');
+    }
+  };
+})();
+</script>
+
