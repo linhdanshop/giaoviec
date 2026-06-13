@@ -2225,3 +2225,425 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 })();
 </script>
 
+<script id="TON_KHO_MODULE_20260613">
+(function(){
+  const ROOT='tonKho';
+  window.APP_ROOTS=window.APP_ROOTS||{};
+  window.APP_ROOTS.tonKho=window.APP_ROOTS.tonKho||ROOT;
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const num=v=>Number(String(v??'').replace(/[^\d.-]/g,''))||0;
+  const money=v=>new Intl.NumberFormat('vi-VN').format(num(v));
+  const now=()=>Date.now();
+  const monthNow=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit'}).format(new Date());
+  const timeText=ts=>new Date(Number(ts)||Date.now()).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});
+  const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
+  const isAdmin=()=>typeof roleAdmin==='function'&&roleAdmin();
+  const askActor=cb=>typeof withActor==='function'?withActor(cb):cb(isAdmin()?'Admin':'Nhân viên');
+  const ref=(...p)=>typeof rootRef==='function'?rootRef(ROOT,...p):null;
+  const localKey='tonKhoMonths_v1';
+  const friendKey='tonKhoFriends_v1';
+  const sections=[
+    {id:'diff',title:'Thống kê thiếu/dư và DS thiếu dư',listTitle:'DS thiếu dư',tone:'diff',personLabel:'Tồn kho',personField:'stockType',personOptions:['Thiếu','Dư'],qtySign:'both'},
+    {id:'friend',title:'Thống kê Bán người quen và DS bán người quen',listTitle:'DS bán người quen',tone:'friend',personLabel:'Người quen',personField:'friend',qtySign:'positive'},
+    {id:'customer',title:'Thống kê Bán Khách mua và DS bán khách mua',listTitle:'DS bán khách mua',tone:'customer',personLabel:'Khách mua',personField:'customer',phone:true,qtySign:'positive'}
+  ];
+  let currentMonth=monthNow(), monthData=blankMonth(), friendList=[], expanded={}, filters={}, editCtx=null, noteCtx=null;
+
+  function blankMonth(){return {sections:{diff:[],friend:[],customer:[]},logs:[],updatedAt:0}}
+  function normalizeMonth(v){
+    const out=blankMonth();
+    if(v&&typeof v==='object'){
+      sections.forEach(sec=>out.sections[sec.id]=Array.isArray(v.sections?.[sec.id])?v.sections[sec.id].map(normItem):[]);
+      out.logs=Array.isArray(v.logs)?v.logs.slice(-500):[];
+      out.updatedAt=v.updatedAt||0;
+    }
+    return out;
+  }
+  function normItem(x){
+    x=x||{};
+    return {id:x.id||('tk_'+Date.now()+Math.random().toString(36).slice(2,5)),createdAt:Number(x.createdAt)||Date.now(),product:String(x.product||'').toUpperCase(),qty:num(x.qty),price:num(x.price),amount:num(x.amount),stockType:x.stockType||'Thiếu',friend:x.friend||'',customer:x.customer||'',phone:x.phone||'',payment:x.payment||'Chưa thanh toán',note:x.note||'',status:x.status||'Chưa cắt tồn',logs:Array.isArray(x.logs)?x.logs.slice(-200):[]};
+  }
+  function monthRef(){return ref('months',currentMonth)}
+  function friendsRef(){return ref('friends')}
+  function saveLocal(){
+    const all=JSON.parse(localStorage.getItem(localKey)||'{}');
+    all[currentMonth]=monthData;
+    localStorage.setItem(localKey,JSON.stringify(all));
+  }
+  function logMonth(text,actor){
+    monthData.logs=monthData.logs||[];
+    monthData.logs.push(timeText(Date.now())+' - '+(actor||'Hệ thống')+' - '+text);
+    monthData.logs=monthData.logs.slice(-500);
+  }
+  function logItem(item,text,actor){
+    item.logs=item.logs||[];
+    item.logs.push(timeText(Date.now())+' - '+(actor||'Hệ thống')+' - '+text);
+    item.logs=item.logs.slice(-200);
+    logMonth(text,actor);
+  }
+  function saveMonth(){
+    monthData.updatedAt=Date.now();
+    const r=monthRef();
+    if(r)return r.set(monthData);
+    saveLocal();
+    renderStock();
+    return Promise.resolve();
+  }
+  function loadMonth(m){
+    currentMonth=m||monthNow();
+    if($('stockMonth'))$('stockMonth').value=currentMonth;
+    const r=monthRef();
+    if(r)r.on('value',snap=>{monthData=normalizeMonth(snap.val());renderStock()});
+    else{
+      const all=JSON.parse(localStorage.getItem(localKey)||'{}');
+      monthData=normalizeMonth(all[currentMonth]);
+      renderStock();
+    }
+  }
+  function loadFriends(){
+    const r=friendsRef();
+    if(r)r.on('value',snap=>{friendList=Array.isArray(snap.val())?snap.val():[];renderStock()});
+    else friendList=JSON.parse(localStorage.getItem(friendKey)||'[]');
+  }
+  function saveFriends(){
+    friendList=[...new Set(friendList.map(x=>String(x||'').trim()).filter(Boolean))];
+    const r=friendsRef();
+    if(r)return r.set(friendList);
+    localStorage.setItem(friendKey,JSON.stringify(friendList));
+    return Promise.resolve();
+  }
+  function calcAmount(sec,item){
+    let q=num(item.qty), p=num(item.price), a=Math.abs(q*p);
+    if(sec.id==='diff')return (item.stockType==='Thiếu'?-a:a);
+    return Math.abs(q)*p;
+  }
+  function list(sec){return monthData.sections[sec.id]||[]}
+  function stat(sec){
+    const a=list(sec);
+    const total=a.length,totalMoney=a.reduce((s,x)=>s+num(x.amount),0);
+    return {
+      total,totalMoney,
+      thieu:a.filter(x=>x.stockType==='Thiếu').length,
+      du:a.filter(x=>x.stockType==='Dư').length,
+      unpaid:a.filter(x=>x.payment==='Chưa thanh toán').length,
+      unpaidMoney:a.filter(x=>x.payment==='Chưa thanh toán').reduce((s,x)=>s+num(x.amount),0),
+      paid:a.filter(x=>x.payment==='Đã thanh toán').length,
+      paidMoney:a.filter(x=>x.payment==='Đã thanh toán').reduce((s,x)=>s+num(x.amount),0),
+      uncut:a.filter(x=>x.status==='Chưa cắt tồn').length,
+      cut:a.filter(x=>x.status==='Đã cắt tồn').length
+    };
+  }
+  function filtered(sec){
+    let a=list(sec).slice().sort((x,y)=>Number(y.createdAt)-Number(x.createdAt));
+    const f=filters[sec.id];
+    if(!f||f.type==='all')return a;
+    if(f.type==='stockType')a=a.filter(x=>x.stockType===f.value);
+    if(f.type==='payment')a=a.filter(x=>x.payment===f.value);
+    if(f.type==='status')a=a.filter(x=>x.status===f.value);
+    return a;
+  }
+  function setFilter(secId,type,value){
+    const cur=filters[secId];
+    filters[secId]=(type==='all'||(cur&&cur.type===type&&cur.value===value))?null:{type,value};
+    renderStock();
+  }
+  window.tkSetFilter=setFilter;
+
+  function statsHtml(sec){
+    const s=stat(sec), f=filters[sec.id]||{};
+    const card=(label,val,type,value,cls='')=>'<button class="tkStat '+cls+' '+(f.type===type&&f.value===value?'active':'')+'" onclick="tkSetFilter(\''+sec.id+'\',\''+type+'\',\''+esc(value)+'\')"><b>'+val+'</b><span>'+label+'</span></button>';
+    let html='<div class="tkStats">';
+    html+='<button class="tkStat total '+(!f?'active':'')+'" onclick="tkSetFilter(\''+sec.id+'\',\'all\',\'all\')"><b>'+s.total+'</b><span>Tổng dòng</span></button>';
+    if(sec.id==='diff'){
+      html+=card('Thiếu',s.thieu,'stockType','Thiếu','warn')+card('Dư',s.du,'stockType','Dư','ok');
+      html+='<div class="tkStat money"><b>'+money(s.totalMoney)+'</b><span>Chênh lệch</span></div>';
+    }else html+='<div class="tkStat money"><b>'+money(s.totalMoney)+'</b><span>Tổng tiền</span></div>';
+    html+=card('Chưa TT',s.unpaid,'payment','Chưa thanh toán','warn')+card('Đã TT',s.paid,'payment','Đã thanh toán','ok')+card('Chưa cắt',s.uncut,'status','Chưa cắt tồn','warn')+card('Đã cắt',s.cut,'status','Đã cắt tồn','ok');
+    return html+'</div>';
+  }
+  function noteBtn(sec,item){return '<button class="tkNoteBtn" onclick="tkOpenNote(\''+sec.id+'\',\''+item.id+'\')">'+(item.note?esc(item.note):'Ghi chú')+'</button>'}
+  function rowsHtml(sec){
+    const rows=filtered(sec), key='tk_'+sec.id, showAll=!!expanded[key], shown=showAll?rows:rows.slice(0,10);
+    const phoneHead=sec.phone?'<th>SĐT</th>':'';
+    const personHead='<th>'+esc(sec.personLabel)+'</th>';
+    const body=shown.map((x,i)=>{
+      const person=sec.id==='diff'?x.stockType:(sec.id==='friend'?x.friend:x.customer);
+      return '<tr><td>'+(i+1)+'</td><td>'+esc(timeText(x.createdAt))+'</td><td class="tkCode">'+esc(x.product)+'</td><td>'+esc(x.qty)+'</td><td>'+money(x.price)+'</td><td>'+esc(person)+'</td>'+(sec.phone?'<td>'+esc(x.phone||'')+'</td>':'')+'<td class="'+(num(x.amount)<0?'tkNeg':'tkPos')+'">'+money(x.amount)+'</td><td><button class="tkPill" onclick="tkToggleField(\''+sec.id+'\',\''+x.id+'\',\'payment\')">'+esc(x.payment)+'</button></td><td>'+noteBtn(sec,x)+'</td><td><button class="tkPill" onclick="tkToggleField(\''+sec.id+'\',\''+x.id+'\',\'status\')">'+esc(x.status)+'</button></td><td><button class="more" onclick="tkOpenItemHistory(\''+sec.id+'\',\''+x.id+'\')">'+(x.logs||[]).length+' dòng</button></td><td class="action"><button class="dotbtn" onclick="toggleMenu(event,\'tk_'+x.id+'\')">⋮</button><div class="menu" id="menu-tk_'+x.id+'"><button onclick="tkOpenForm(\''+sec.id+'\',\''+x.id+'\')">Sửa</button><button class="danger" onclick="tkDeleteRow(\''+sec.id+'\',\''+x.id+'\')">Xóa</button></div></td></tr>';
+    }).join('');
+    return '<div class="tkTableWrap"><table class="tkTable"><thead><tr><th>STT</th><th>Ngày lập</th><th>Mã sản phẩm</th><th>SL</th><th>Giá bán</th>'+personHead+phoneHead+'<th>Thành tiền</th><th>Thanh toán</th><th>Ghi chú</th><th>Trạng thái</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>'+(body||'<tr><td colspan="13" class="dkNoRows">Chưa có dữ liệu</td></tr>')+'</tbody></table>'+(rows.length>10?'<button class="dkMore" onclick="tkToggleMore(\''+key+'\')">'+(showAll?'Thu gọn':'Xem thêm '+(rows.length-10))+'</button>':'')+'</div>';
+  }
+  window.tkToggleMore=function(key){expanded[key]=!expanded[key];renderStock()};
+
+  function renderStock(){
+    const box=$('tonKhoSections'); if(!box)return;
+    box.innerHTML=sections.map(sec=>'<section class="tkSection '+sec.tone+'"><div class="tkHead"><h3>'+esc(sec.title)+'</h3><div><button class="btn blue" onclick="tkOpenForm(\''+sec.id+'\')">+ Thêm mới</button>'+(sec.id==='friend'?'<button class="btn gray" onclick="tkOpenFriends()">Danh sách người quen</button>':'')+'</div></div>'+statsHtml(sec)+'<h4>'+esc(sec.listTitle)+'</h4>'+rowsHtml(sec)+'</section>').join('');
+    document.querySelectorAll('.menu.open').forEach(m=>m.classList.remove('open'));
+  }
+
+  function ensureUi(){
+    if($('tonKhoTabBtn'))return;
+    const tabs=document.querySelector('.tabs');
+    if(tabs)tabs.insertAdjacentHTML('beforeend','<button id="tonKhoTabBtn" class="tab" data-tab="tonKho" onclick="switchTab(\'tonKho\')">Tồn Kho</button>');
+    const wrap=document.querySelector('.wrap');
+    wrap?.insertAdjacentHTML('beforeend','<div id="tonKhoTab" class="hidden"><div class="section-title"><h2>📊 Tồn Kho</h2><span class="hint">Dữ liệu lưu riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><input id="stockMonth" type="month" onchange="tkChangeMonth()"><button class="btn blue" onclick="tkThisMonth()">Tháng này</button><button class="btn gray" onclick="tkOpenMonthHistory()">Lịch sử tháng</button></div><div id="tonKhoSections" class="tkGrid"></div></div>');
+    ensureModals();
+  }
+  function ensureModals(){
+    if($('tkFormModal'))return;
+    document.body.insertAdjacentHTML('beforeend',
+      '<div id="tkFormModal" class="modal"><div class="panel" style="width:min(820px,96vw)"><div class="panelhead"><h3 id="tkFormTitle">Thêm mới</h3><button class="x" onclick="closeModal(\'tkFormModal\')">×</button></div><div id="tkFormBody" class="form"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'tkFormModal\')">Đóng</button><button class="btn blue" onclick="tkSaveForm()">Lưu</button></div></div></div>'+
+      '<div id="tkNoteModal" class="modal"><div class="panel" style="width:min(620px,94vw)"><div class="panelhead"><h3>Ghi chú</h3><button class="x" onclick="closeModal(\'tkNoteModal\')">×</button></div><div class="form"><div class="full"><textarea id="tkNoteText" style="min-height:170px" placeholder="Nhập ghi chú..."></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'tkNoteModal\')">Đóng</button><button class="btn blue" onclick="tkSaveNote()">Lưu ghi chú</button></div></div></div>'+
+      '<div id="tkHistoryModal" class="modal"><div class="panel" style="width:min(760px,94vw)"><div class="panelhead"><h3 id="tkHistoryTitle">Lịch sử</h3><button class="x" onclick="closeModal(\'tkHistoryModal\')">×</button></div><div id="tkHistoryBody" style="padding:14px"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'tkHistoryModal\')">Đóng</button></div></div></div>'+
+      '<div id="tkFriendModal" class="modal"><div class="panel" style="width:min(620px,94vw)"><div class="panelhead"><h3>Danh sách người quen</h3><button class="x" onclick="closeModal(\'tkFriendModal\')">×</button></div><div style="padding:14px"><div class="empManage"><input id="tkFriendName" placeholder="Tên người quen"><button class="btn blue" onclick="tkAddFriend()">+ Thêm</button></div><div id="tkFriendList" class="tkFriendList"></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'tkFriendModal\')">Đóng</button></div></div></div>'
+    );
+  }
+  function sectionBy(id){return sections.find(x=>x.id===id)}
+  function itemBy(secId,id){return list(sectionBy(secId)).find(x=>x.id===id)}
+  function product(v){return String(v||'').toUpperCase().replace(/\s+/g,' ').trim()}
+  function formHtml(sec,item){
+    const isEdit=!!item, x=item||{createdAt:Date.now(),qty:sec.id==='diff'?0:1,price:0,payment:'Chưa thanh toán',status:'Chưa cắt tồn',stockType:'Thiếu'};
+    const person=sec.id==='diff'?'<select id="tkPerson"><option '+(x.stockType==='Thiếu'?'selected':'')+'>Thiếu</option><option '+(x.stockType==='Dư'?'selected':'')+'>Dư</option></select>':sec.id==='friend'?'<select id="tkPerson">'+friendList.map(n=>'<option '+(x.friend===n?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select>':'<input id="tkPerson" value="'+esc(x.customer||'')+'" placeholder="Tên khách mua">';
+    return '<div><label>STT</label><input readonly value="'+(isEdit?'Dòng đang sửa':'Tạo mới ở trên cùng')+'"></div><div><label>Ngày lập</label><input id="tkCreated" readonly value="'+esc(timeText(x.createdAt))+'" data-ts="'+x.createdAt+'"></div><div><label>Mã sản phẩm</label><input id="tkProduct" value="'+esc(x.product||'')+'" oninput="this.value=this.value.toUpperCase()"></div><div><label>Số lượng</label><input id="tkQty" type="number" value="'+esc(x.qty||'')+'" oninput="tkCalcAmount()"></div><div><label>Giá bán</label><input id="tkPrice" type="number" value="'+esc(x.price||'')+'" oninput="tkCalcAmount()"></div><div><label>'+esc(sec.personLabel)+'</label>'+person+'</div>'+(sec.phone?'<div><label>SĐT</label><input id="tkPhone" value="'+esc(x.phone||'')+'"></div>':'')+'<div><label>Thành tiền</label><input id="tkAmount" readonly value="'+money(x.amount||0)+'"></div><div><label>Thanh toán</label><select id="tkPayment"><option '+(x.payment==='Chưa thanh toán'?'selected':'')+'>Chưa thanh toán</option><option '+(x.payment==='Đã thanh toán'?'selected':'')+'>Đã thanh toán</option></select></div><div><label>Trạng thái</label><select id="tkStatus"><option '+(x.status==='Chưa cắt tồn'?'selected':'')+'>Chưa cắt tồn</option><option '+(x.status==='Đã cắt tồn'?'selected':'')+'>Đã cắt tồn</option></select></div><div class="full"><label>Ghi chú</label><textarea id="tkNoteForm" placeholder="Nhập ghi chú...">'+esc(x.note||'')+'</textarea></div>';
+  }
+  window.tkCalcAmount=function(){
+    const sec=sectionBy(editCtx?.secId); if(!sec)return;
+    const stock=sec.id==='diff'?$('tkPerson')?.value:'';
+    const item={qty:num($('tkQty')?.value),price:num($('tkPrice')?.value),stockType:stock};
+    const a=calcAmount(sec,item);
+    if($('tkAmount'))$('tkAmount').value=money(a);
+  };
+  window.tkOpenForm=function(secId,id=''){
+    ensureUi();
+    const sec=sectionBy(secId), item=id?itemBy(secId,id):null; if(!sec)return;
+    if(sec.id==='friend'&&!friendList.length){toast('Chưa có người quen. Tạo trong Danh sách người quen trước.');return}
+    editCtx={secId,id};
+    $('tkFormTitle').textContent=(id?'Sửa ':'Thêm mới ')+sec.listTitle;
+    $('tkFormBody').innerHTML=formHtml(sec,item);
+    openModal('tkFormModal');
+    setTimeout(()=>{$('tkProduct')?.focus();tkCalcAmount()},80);
+  };
+  window.tkSaveForm=function(){
+    const sec=sectionBy(editCtx?.secId); if(!sec)return;
+    const p=product($('tkProduct')?.value);
+    if(!p){toast('Nhập mã sản phẩm');return}
+    const person=$('tkPerson')?.value||'';
+    if(!person){toast('Nhập/chọn '+sec.personLabel);return}
+    askActor(actor=>{
+      let item=editCtx.id?itemBy(sec.id,editCtx.id):null;
+      const isNew=!item;
+      if(!item){item={id:'tk_'+Date.now()+Math.random().toString(36).slice(2,5),createdAt:Date.now(),logs:[]};monthData.sections[sec.id].unshift(item)}
+      item.product=p; item.qty=sec.id==='diff'?num($('tkQty')?.value):Math.abs(num($('tkQty')?.value)); item.price=num($('tkPrice')?.value);
+      if(sec.id==='diff')item.stockType=person; else if(sec.id==='friend')item.friend=person; else item.customer=person;
+      if(sec.phone)item.phone=$('tkPhone')?.value||'';
+      item.payment=$('tkPayment')?.value||'Chưa thanh toán';
+      item.status=$('tkStatus')?.value||'Chưa cắt tồn';
+      item.note=$('tkNoteForm')?.value||'';
+      item.amount=calcAmount(sec,item);
+      logItem(item,(isNew?'thêm mới ':'sửa dòng ')+sec.listTitle+' - '+item.product,actor);
+      saveMonth().then(()=>{closeModal('tkFormModal');renderStock();toast('Đã lưu')});
+    });
+  };
+  window.tkOpenNote=function(secId,id){
+    const item=itemBy(secId,id); if(!item)return;
+    noteCtx={secId,id};
+    $('tkNoteText').value=item.note||'';
+    openModal('tkNoteModal');
+    setTimeout(()=>$('tkNoteText')?.focus(),80);
+  };
+  window.tkSaveNote=function(){
+    const item=itemBy(noteCtx?.secId,noteCtx?.id), sec=sectionBy(noteCtx?.secId); if(!item||!sec)return;
+    const old=item.note||'', next=$('tkNoteText')?.value||'';
+    askActor(actor=>{item.note=next;logItem(item,'cập nhật ghi chú '+sec.listTitle+' / '+item.product+': '+(old||'(trống)')+' -> '+(next||'(trống)'),actor);saveMonth().then(()=>{closeModal('tkNoteModal');renderStock()})});
+  };
+  window.tkToggleField=function(secId,id,field){
+    const item=itemBy(secId,id), sec=sectionBy(secId); if(!item)return;
+    askActor(actor=>{
+      const old=item[field];
+      if(field==='payment')item.payment=item.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán';
+      if(field==='status')item.status=item.status==='Đã cắt tồn'?'Chưa cắt tồn':'Đã cắt tồn';
+      logItem(item,'đổi '+field+' '+sec.listTitle+' / '+item.product+': '+old+' -> '+item[field],actor);
+      saveMonth().then(renderStock);
+    });
+  };
+  window.tkDeleteRow=function(secId,id){
+    const sec=sectionBy(secId), item=itemBy(secId,id); if(!sec||!item)return;
+    if(!confirm('Xóa dòng '+item.product+'?'))return;
+    askActor(actor=>{monthData.sections[sec.id]=list(sec).filter(x=>x.id!==id);logMonth('xóa dòng '+sec.listTitle+' - '+item.product,actor);saveMonth().then(renderStock)});
+  };
+  window.tkOpenItemHistory=function(secId,id){
+    const item=itemBy(secId,id); if(!item)return;
+    $('tkHistoryTitle').textContent='Lịch sử '+item.product;
+    const logs=(item.logs||[]).slice().reverse();
+    $('tkHistoryBody').innerHTML=logs.length?'<div class="dkHistoryList">'+logs.map(x=>'<div class="dkHistoryItem">'+esc(x)+'</div>').join('')+'</div>':'<div class="dkSearchBox">Chưa có lịch sử.</div>';
+    openModal('tkHistoryModal');
+  };
+  window.tkOpenMonthHistory=function(){
+    $('tkHistoryTitle').textContent='Lịch sử tháng '+currentMonth;
+    const logs=(monthData.logs||[]).slice().reverse();
+    $('tkHistoryBody').innerHTML=logs.length?'<div class="dkHistoryList">'+logs.map(x=>'<div class="dkHistoryItem">'+esc(x)+'</div>').join('')+'</div>':'<div class="dkSearchBox">Chưa có lịch sử tháng này.</div>';
+    openModal('tkHistoryModal');
+  };
+  window.tkOpenFriends=function(){renderFriends();openModal('tkFriendModal')};
+  function renderFriends(){const box=$('tkFriendList');if(box)box.innerHTML=friendList.length?friendList.map((n,i)=>'<div class="tkFriendItem"><input value="'+esc(n)+'" onchange="tkRenameFriend('+i+',this.value)"><button class="btn red" onclick="tkDeleteFriend('+i+')">Xóa</button></div>').join(''):'<div class="dkNoRows">Chưa có người quen</div>'}
+  window.tkAddFriend=function(){const name=($('tkFriendName')?.value||'').trim();if(!name)return;friendList.push(name);$('tkFriendName').value='';saveFriends().then(()=>{renderFriends();renderStock()})};
+  window.tkRenameFriend=function(i,v){friendList[i]=String(v||'').trim();saveFriends().then(()=>{renderFriends();renderStock()})};
+  window.tkDeleteFriend=function(i){if(!confirm('Xóa người quen này?'))return;friendList.splice(i,1);saveFriends().then(()=>{renderFriends();renderStock()})};
+  window.tkChangeMonth=function(){loadMonth($('stockMonth')?.value||monthNow())};
+  window.tkThisMonth=function(){loadMonth(monthNow())};
+
+  const oldSwitch=window.switchTab;
+  window.switchTab=function(t){
+    ensureUi();
+    if(t==='tonKho'){
+      ['today','daily','master','devices','dongKiem'].forEach(x=>{const el=$(x+'Tab');if(el)el.classList.add('hidden')});
+      $('tonKhoTab')?.classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+      if(!$('stockMonth').value){$('stockMonth').value=currentMonth}
+      renderStock();
+      return;
+    }
+    $('tonKhoTab')?.classList.add('hidden');
+    if(typeof oldSwitch==='function')oldSwitch(t);
+    document.querySelector('.tab[data-tab="tonKho"]')?.classList.remove('active');
+  };
+
+  function addStyle(){
+    if($('tkStyle'))return;
+    document.head.insertAdjacentHTML('beforeend','<style id="tkStyle">.tkToolbar{padding:12px;display:flex;gap:10px;align-items:center;margin-bottom:12px}.tkToolbar input{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 12px}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10}.tkHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.tkHead h3{margin:0;font-size:18px}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection h4{margin:10px 0 8px;font-size:16px}.tkStats{display:grid;grid-template-columns:repeat(8,minmax(100px,1fr));gap:8px;margin:8px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff;cursor:default}.tkTableWrap{overflow:auto}.tkTable{width:100%;min-width:1220px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900;color:#0f172a}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkPill{border:0;border-radius:999px;background:#eef2ff;color:#1d4ed8;font-weight:900;padding:6px 9px;cursor:pointer}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendList{display:grid;gap:8px;margin-top:12px}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px}.tkFriendItem input{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 10px}@media(max-width:760px){.tkToolbar{display:grid;grid-template-columns:1fr 1fr}.tkStats{grid-template-columns:repeat(2,1fr)}.tkHead{align-items:flex-start;flex-direction:column}.tkTable{min-width:1050px}.tkSection{padding:9px}.tkStat b{font-size:18px}}</style>');
+  }
+  addStyle();
+  ensureUi();
+  loadFriends();
+  loadMonth(currentMonth);
+})();
+</script>
+
+<script id="FINAL_DK_DEVICE_STOCK_FIX_20260613">
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const root=(...p)=>typeof rootRef==='function'?rootRef('dongKiem',...p):null;
+  const dkDate=()=>$('dkDate')?.value||new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const actor=cb=>typeof withActor==='function'?withActor(cb):cb(typeof roleAdmin==='function'&&roleAdmin()?'Admin':'Nhân viên');
+  const time=()=>new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+
+  function parseDkNoteAttr(input){
+    const a=input.getAttribute('oninput')||'';
+    const m=a.match(/dkSaveCodeNoteDebounced\('([^']+)','([^']+)'/);
+    return m?{secId:m[1],code:m[2],value:input.value||''}:null;
+  }
+  function noteLabel(v){v=String(v||'').trim();return v?esc(v):'Ghi chú'}
+  function enhanceDkNotes(){
+    document.querySelectorAll('#dongKiemTab .dkNoteInput').forEach(input=>{
+      const meta=parseDkNoteAttr(input);
+      if(!meta)return;
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='dkNoteBtnPopup';
+      btn.textContent=meta.value||'Ghi chú';
+      btn.title=meta.value||'Ghi chú';
+      btn.onclick=()=>dkOpenNotePopup(meta.secId,meta.code,meta.value);
+      input.replaceWith(btn);
+    });
+  }
+  window.dkSaveCodeNoteDebounced=function(){};
+  window.dkOpenNotePopup=function(secId,code,value=''){
+    ensureDkNoteModal();
+    $('dkNoteEditTitle').textContent='Ghi chú mã '+code;
+    $('dkNoteEditText').value=value||'';
+    $('dkNoteEditSec').value=secId;
+    $('dkNoteEditCode').value=code;
+    openModal('dkNoteEditModal');
+    setTimeout(()=>$('dkNoteEditText')?.focus(),80);
+  };
+  window.dkSaveNotePopup=function(){
+    const secId=$('dkNoteEditSec')?.value||'', code=$('dkNoteEditCode')?.value||'', next=$('dkNoteEditText')?.value||'', date=dkDate();
+    if(!secId||!code)return;
+    actor(name=>{
+      const r=root('days',date);
+      const done=old=>{
+        const line=time()+' - '+name+' - cập nhật ghi chú mã '+code+': '+(old||'(trống)')+' -> '+(next||'(trống)');
+        if(r){
+          const up={};
+          up['notes/'+secId+'/'+code]=next||null;
+          r.child('logs').transaction(v=>{const a=Array.isArray(v)?v:[];a.push(line);return a.slice(-300)}).then(()=>r.update(up)).then(()=>{closeModal('dkNoteEditModal');});
+        }else{
+          const all=JSON.parse(localStorage.getItem('dongKiemDays')||'{}');
+          const day=all[date]||{sections:{},notes:{},logs:[]};
+          day.notes=day.notes||{};day.notes[secId]=day.notes[secId]||{};
+          if(next)day.notes[secId][code]=next;else delete day.notes[secId][code];
+          day.logs=Array.isArray(day.logs)?day.logs:[];day.logs.push(line);day.logs=day.logs.slice(-300);
+          all[date]=day;localStorage.setItem('dongKiemDays',JSON.stringify(all));
+          closeModal('dkNoteEditModal');
+          if(typeof dkChangeDate==='function')dkChangeDate();
+        }
+      };
+      if(r)r.child('notes/'+secId+'/'+code).once('value').then(s=>done(String(s.val()||'')));
+      else done('');
+    });
+  };
+  function ensureDkNoteModal(){
+    if($('dkNoteEditModal'))return;
+    document.body.insertAdjacentHTML('beforeend','<div id="dkNoteEditModal" class="modal"><div class="panel" style="width:min(620px,94vw)"><div class="panelhead"><h3 id="dkNoteEditTitle">Ghi chú</h3><button class="x" onclick="closeModal(\'dkNoteEditModal\')">×</button></div><input type="hidden" id="dkNoteEditSec"><input type="hidden" id="dkNoteEditCode"><div class="form"><div class="full"><textarea id="dkNoteEditText" style="min-height:170px" placeholder="Nhập ghi chú..."></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'dkNoteEditModal\')">Đóng</button><button class="btn blue" onclick="dkSaveNotePopup()">Lưu ghi chú</button></div></div></div>');
+  }
+  const dkObserver=new MutationObserver(()=>enhanceDkNotes());
+  setTimeout(()=>{const box=$('dkSections');if(box)dkObserver.observe(box,{childList:true,subtree:true});enhanceDkNotes()},500);
+
+  const oldSelectDeviceFix=window.selectDevice;
+  let selectedDeviceIdFix='';
+  let devSaveTimerFix=null;
+  function getInfo(){try{return JSON.parse(localStorage.getItem('task_device_info_v23')||'{}')}catch(e){return {}}}
+  window.writeDevicePresence=function(){
+    const info=getInfo(), cur=(window.__lastDevices||{})[device]||{};
+    const data={id:device,name:info.name||cur.name||'Máy đang mở',ip:info.ip||cur.ip||'',user:typeof currentUserLabel==='function'?currentUserLabel():'',lastSeen:Date.now(),online:true};
+    if(cur.allowed!==undefined)data.allowed=cur.allowed;
+    localStorage.setItem('task_device_last_presence',JSON.stringify(data));
+    if(window.db)window.db.ref((window.taskReminderRoot||'taskReminder')+'/devices/'+device).update(data).catch(()=>{});
+  };
+  window.selectDevice=function(id,name,ip){
+    selectedDeviceIdFix=id||device;
+    if(typeof oldSelectDeviceFix==='function')oldSelectDeviceFix(id,name,ip);
+    if($('devName'))$('devName').value=name||'';
+    if($('devIp'))$('devIp').value=ip||'';
+  };
+  window.saveDeviceInfo=function(){
+    clearTimeout(devSaveTimerFix);
+    devSaveTimerFix=setTimeout(()=>{},1);
+  };
+  window.saveDeviceInfoNow=function(){
+    if(typeof roleAdmin==='function'&&!roleAdmin())return;
+    const id=selectedDeviceIdFix||device;
+    const name=$('devName')?.value||'', ip=$('devIp')?.value||'';
+    if(id===device)localStorage.setItem('task_device_info_v23',JSON.stringify({name,ip}));
+    const data={id,name:name||'Máy đang mở',ip,lastSeen:Date.now()};
+    if(window.db)window.db.ref((window.taskReminderRoot||'taskReminder')+'/devices/'+id).update(data).then(()=>typeof showToast==='function'&&showToast('Đã lưu tên máy'));
+    else {window.writeDevicePresence();typeof showToast==='function'&&showToast('Đã lưu tên máy')}
+  };
+  const oldRenderDevicesFix=window.renderDevices;
+  window.renderDevices=function(devices){
+    devices=devices||window.__lastDevices||{};
+    const box=$('devicesTab'); if(!box||!oldRenderDevicesFix)return oldRenderDevicesFix&&oldRenderDevicesFix(devices);
+    if(!selectedDeviceIdFix)selectedDeviceIdFix=device;
+    const oldSel=window.selectedDeviceId;
+    try{window.selectedDeviceId=selectedDeviceIdFix}catch(e){}
+    oldRenderDevicesFix(devices);
+    try{window.selectedDeviceId=oldSel}catch(e){}
+    const selected=devices[selectedDeviceIdFix]||{}, info=getInfo();
+    const name=selected.name||(selectedDeviceIdFix===device?info.name:'')||'';
+    const ip=selected.ip||(selectedDeviceIdFix===device?info.ip:'')||'';
+    const dn=$('devName'), di=$('devIp');
+    if(dn){dn.value=name;dn.removeAttribute('oninput');dn.oninput=null;dn.onkeydown=e=>{if(e.key==='Enter')saveDeviceInfoNow()}}
+    if(di){di.value=ip;di.removeAttribute('oninput');di.oninput=null;di.onkeydown=e=>{if(e.key==='Enter')saveDeviceInfoNow()}}
+    const editor=box.querySelector('.deviceEditor');
+    if(editor&&!$('devSaveBtn')){
+      editor.insertAdjacentHTML('beforeend','<div><label>Lưu</label><button id="devSaveBtn" class="btn blue" onclick="saveDeviceInfoNow()">Lưu tên máy</button></div>');
+    }
+  };
+
+  if(!document.getElementById('dkDeviceFixStyle')){
+    document.head.insertAdjacentHTML('beforeend','<style id="dkDeviceFixStyle">.dkNoteBtnPopup{width:100%;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:8px;text-align:left;font-weight:800;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dkNoteBtnPopup:hover{background:#eff6ff}.deviceEditor{grid-template-columns:160px 1fr 1fr 120px 110px!important}@media(max-width:700px){.deviceEditor{grid-template-columns:1fr!important}}</style>');
+  }
+})();
+</script>
+
