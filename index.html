@@ -2971,3 +2971,240 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 })();
 </script>
 
+
+
+
+<script id="FINAL_51_DAILY_TEMPLATE_STOCK_ADMIN_FIX_20260613">
+(function(){
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const isAdmin=()=>typeof roleAdmin==='function'&&roleAdmin();
+  const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
+  const root=()=>window.taskReminderRoot||'taskReminder';
+  const byId=arr=>{const o={};(Array.isArray(arr)?arr:[]).forEach(x=>{if(x&&x.id)o[x.id]=x});return o};
+  const normArr=v=>Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[]);
+  const localKey='task_reminder_v27_firebase';
+  const stockMonth=()=>$('stockMonth')?.value||new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit'}).format(new Date());
+  const stockRef=(...p)=>typeof rootRef==='function'?rootRef('tonKho',...p):null;
+  const ask=cb=>typeof withActor==='function'?withActor(cb):cb(isAdmin()?'Admin':'Nhân viên');
+  const nowText=()=>new Date().toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});
+
+  function isDailyTypeText(v){
+    const t=String(v||'').toLowerCase();
+    return t.includes('hằng')||t.includes('hang')||t.includes('háº')||t.includes('ngày')||t.includes('ngÃ');
+  }
+  function syncLocalState(){
+    try{
+      if(window.db)return;
+      localStorage.setItem(localKey,JSON.stringify(window.state||{}));
+    }catch(e){}
+  }
+  function saveDailyTemplatesOnly(){
+    if(!window.state)window.state={};
+    state.dailyTemplates=normArr(state.dailyTemplates);
+    syncLocalState();
+    if(window.db)return window.db.ref(root()+'/dailyTemplates').set(byId(state.dailyTemplates));
+    return Promise.resolve();
+  }
+  function modalBase(){
+    const img=$('mImg')?.value||'';
+    const imgs=Array.isArray(window.tempTaskImgs)?window.tempTaskImgs:(typeof tempTaskImgs!=='undefined'?tempTaskImgs:[]);
+    return {
+      time:$('mTime')?.value||'08:00',
+      title:($('mTitle')?.value||'').trim(),
+      emp:typeof getModalEmps==='function'?getModalEmps():'',
+      content:$('mContent')?.value||'',
+      adminNote:$('mAdminNote')?.value||'',
+      note:$('mAdminNote')?.value||'',
+      img,
+      imgs:Array.isArray(imgs)?imgs.slice():[],
+      remindPlan:$('mRemind')?.value||'',
+      type:'Hằng ngày'
+    };
+  }
+  function validateDailyBase(base){
+    if(!base.title){alert('Nhập tên công việc');return false}
+    if(!state.employees||!state.employees.length){alert('Chưa có nhân viên. Tạo nhân viên trước.');return false}
+    if(!base.emp){alert('Chọn nhân viên trước khi lưu việc hằng ngày.');return false}
+    return true;
+  }
+  function saveDailyTemplateFromModal(){
+    const id=$('editId')?.value||'';
+    const base=modalBase();
+    if(!validateDailyBase(base))return;
+    let d=id?state.dailyTemplates.find(x=>x.id===id):null;
+    if(d)Object.assign(d,{...base,id:d.id,active:d.active!==false});
+    else state.dailyTemplates.push({id:'daily_'+Date.now(),...base,active:true});
+    saveDailyTemplatesOnly().then(()=>{
+      window.__forceDailyTemplateSave51=false;
+      if(typeof closeModal==='function')closeModal('taskModal');
+      if(typeof renderDaily==='function')renderDaily();
+      toast('Đã lưu việc hằng ngày');
+    }).catch(e=>alert('Firebase lỗi ghi việc hằng ngày: '+e.message));
+  }
+
+  const oldOpenTaskForm51=window.openTaskForm;
+  window.openDailyTemplateForm=function(id=null){
+    window.__forceDailyTemplateSave51=true;
+    if(typeof oldOpenTaskForm51==='function')oldOpenTaskForm51(id,'Hằng ngày');
+    window.__forceDailyTemplateSave51=true;
+    window.__taskFormMode43=id?'dailyTemplate':'dailyTemplateNew';
+    if($('mType'))$('mType').value='Hằng ngày';
+    if($('taskModalTitle'))$('taskModalTitle').textContent=id?'Sửa việc hằng ngày':'Tạo việc hằng ngày';
+  };
+  window.openTaskForm=function(id=null,type=null){
+    const task=id&&state.tasks?state.tasks.find(x=>x.id===id):null;
+    const daily=id&&!task&&state.dailyTemplates?state.dailyTemplates.find(x=>x.id===id):null;
+    const wantsDaily=!task&&(daily||isDailyTypeText(type));
+    window.__forceDailyTemplateSave51=!!wantsDaily;
+    const ret=typeof oldOpenTaskForm51==='function'?oldOpenTaskForm51(id,type):undefined;
+    if(wantsDaily){
+      window.__forceDailyTemplateSave51=true;
+      window.__taskFormMode43=daily?'dailyTemplate':'dailyTemplateNew';
+      if($('mType'))$('mType').value='Hằng ngày';
+      if($('taskModalTitle'))$('taskModalTitle').textContent=daily?'Sửa việc hằng ngày':'Tạo việc hằng ngày';
+    }
+    return ret;
+  };
+  try{openTaskForm=window.openTaskForm}catch(e){}
+
+  const oldSaveTask51=window.saveTask;
+  window.saveTask=function(){
+    const id=$('editId')?.value||'';
+    const task=id&&state.tasks?state.tasks.find(x=>x.id===id):null;
+    const daily=id&&!task&&state.dailyTemplates?state.dailyTemplates.find(x=>x.id===id):null;
+    const isDaily=window.__forceDailyTemplateSave51||window.__taskFormMode43==='dailyTemplate'||window.__taskFormMode43==='dailyTemplateNew'||daily;
+    if(isDaily)return saveDailyTemplateFromModal();
+    return typeof oldSaveTask51==='function'?oldSaveTask51():undefined;
+  };
+  try{saveTask=window.saveTask}catch(e){}
+
+  function patchDailyButtons(){
+    const createBtn=document.querySelector('#dailyTab .section-title .btn.blue');
+    if(createBtn)createBtn.setAttribute('onclick','openDailyTemplateForm()');
+    document.querySelectorAll('#dailyTab button[onclick*="openTaskForm"]').forEach(btn=>{
+      const raw=btn.getAttribute('onclick')||'';
+      const m=raw.match(/openTaskForm\('([^']+)'/);
+      if(m)btn.setAttribute('onclick',"event.stopPropagation();openDailyTemplateForm('"+m[1]+"')");
+    });
+  }
+  const oldRenderDaily51=window.renderDaily;
+  window.renderDaily=function(){
+    const out=typeof oldRenderDaily51==='function'?oldRenderDaily51():undefined;
+    patchDailyButtons();
+    return out;
+  };
+
+  function normalizeSection(data,secId){
+    data.sections=data.sections||{};
+    const raw=data.sections[secId];
+    const arr=Array.isArray(raw)?raw:Object.values(raw||{});
+    data.sections[secId]=arr;
+    data.logs=Array.isArray(data.logs)?data.logs:[];
+    return arr;
+  }
+  function updateStockItem(secId,id,mutator,logText,adminOnly){
+    if(adminOnly&&!isAdmin()){toast('Chỉ Admin được thao tác mục này');return}
+    ask(actor=>{
+      const r=stockRef('months',stockMonth());
+      const work=data=>{
+        const arr=normalizeSection(data,secId);
+        const item=arr.find(x=>String(x.id)===String(id));
+        if(!item)return data;
+        mutator(item);
+        item.logs=Array.isArray(item.logs)?item.logs:[];
+        item.logs.push(nowText()+' - '+actor+' - '+logText);
+        data.logs.push(nowText()+' - '+actor+' - '+logText);
+        data.updatedAt=Date.now();
+        return data;
+      };
+      if(r){
+        r.once('value').then(snap=>work(snap.val()||{})).then(data=>r.set(data)).then(()=>toast('Đã cập nhật'));
+      }else{
+        const key='tonKhoMonths_v1';
+        const all=JSON.parse(localStorage.getItem(key)||'{}');
+        all[stockMonth()]=work(all[stockMonth()]||{});
+        localStorage.setItem(key,JSON.stringify(all));
+        if(typeof tkChangeMonth==='function')tkChangeMonth();
+      }
+    });
+  }
+  window.tkSetPayment=function(secId,id,value){
+    if(secId==='diff'){toast('DS thiếu/dư không dùng thanh toán');return}
+    if(value==='Chưa thanh toán'&&!isAdmin()){toast('Chỉ Admin được chỉnh ngược thanh toán');return}
+    updateStockItem(secId,id,item=>{item.payment=value},'đổi thanh toán: '+value,false);
+  };
+  window.tkSetCut=function(secId,id,value){
+    updateStockItem(secId,id,item=>{item.status=value},'đổi cắt tồn: '+value,true);
+  };
+  window.tkMarkPaid=(secId,id)=>window.tkSetPayment(secId,id,'Đã thanh toán');
+  window.tkMarkUnpaid=(secId,id)=>window.tkSetPayment(secId,id,'Chưa thanh toán');
+  window.tkMarkCut=(secId,id)=>window.tkSetCut(secId,id,'Đã cắt tồn');
+  window.tkMarkUncut=(secId,id)=>window.tkSetCut(secId,id,'Chưa cắt tồn');
+  window.tkPayAll=function(secId){
+    if(secId==='diff'){toast('DS thiếu/dư không dùng thanh toán');return}
+    if(!isAdmin()){toast('Chỉ Admin được thanh toán toàn bộ');return}
+    if(!confirm('Đánh dấu đã thanh toán toàn bộ danh sách này?'))return;
+    ask(actor=>{
+      const r=stockRef('months',stockMonth());
+      const work=data=>{
+        const arr=normalizeSection(data,secId);
+        arr.forEach(item=>{
+          item.payment='Đã thanh toán';
+          item.logs=Array.isArray(item.logs)?item.logs:[];
+          item.logs.push(nowText()+' - '+actor+' - thanh toán toàn bộ');
+        });
+        data.logs.push(nowText()+' - '+actor+' - thanh toán toàn bộ '+secId);
+        data.updatedAt=Date.now();
+        return data;
+      };
+      if(r)r.once('value').then(s=>work(s.val()||{})).then(data=>r.set(data)).then(()=>toast('Đã thanh toán toàn bộ'));
+    });
+  };
+
+  function stockSecFromElement(el){
+    const sec=el.closest('.tkSection');
+    if(!sec)return 'customer';
+    if(sec.classList.contains('diff'))return 'diff';
+    if(sec.classList.contains('friend'))return 'friend';
+    return 'customer';
+  }
+  function rebuildAdminStockMenus(){
+    document.querySelectorAll('#tonKhoSections .menu[id^="menu-tk_"]').forEach(menu=>{
+      const id=menu.id.replace('menu-tk_','');
+      const secId=stockSecFromElement(menu);
+      const admin=isAdmin();
+      let html='<button onclick="tkOpenForm(\''+secId+'\',\''+id+'\')">Sửa</button>';
+      if(admin)html+='<button class="danger" onclick="tkDeleteRow(\''+secId+'\',\''+id+'\')">Xóa</button>';
+      if(admin)html+='<button onclick="tkMarkCut(\''+secId+'\',\''+id+'\')">Đã cắt tồn</button><button onclick="tkMarkUncut(\''+secId+'\',\''+id+'\')">Chưa cắt tồn</button>';
+      if(secId!=='diff'){
+        html+='<button onclick="tkMarkPaid(\''+secId+'\',\''+id+'\')">Đã thanh toán</button>';
+        if(admin)html+='<button onclick="tkMarkUnpaid(\''+secId+'\',\''+id+'\')">Chưa thanh toán</button><button onclick="tkPayAll(\''+secId+'\')">Thanh toán toàn bộ</button>';
+      }
+      if(menu.innerHTML!==html)menu.innerHTML=html;
+    });
+  }
+
+  const oldTkOpenForm51=window.tkOpenForm;
+  window.tkOpenForm=function(secId,id=''){
+    const out=typeof oldTkOpenForm51==='function'?oldTkOpenForm51(secId,id):undefined;
+    setTimeout(()=>{
+      const pay=$('tkPayment'), st=$('tkStatus');
+      if(pay){
+        if(secId==='diff')pay.closest('div')?.classList.add('hidden');
+        if(!id)pay.value='Chưa thanh toán';
+        pay.disabled=!(isAdmin()&&!!id&&secId!=='diff');
+      }
+      if(st){
+        if(!id)st.value='Chưa cắt tồn';
+        st.disabled=!(isAdmin()&&!!id);
+      }
+    },80);
+    return out;
+  };
+
+  setTimeout(()=>{patchDailyButtons();rebuildAdminStockMenus()},200);
+  setInterval(()=>{patchDailyButtons();if(!$('tonKhoTab')?.classList.contains('hidden'))rebuildAdminStockMenus()},800);
+})();
+</script>
+
