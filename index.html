@@ -3209,8 +3209,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 })();
 </script>
 
-
-<script id="FINAL_53_DAILY_TEMPLATE_HARDSTOP_STOCK_STABLE_20260613">
+<script id="FINAL_54_DIRECT_DAILY_FORM_DOM_STOCK_FILTER_20260613">
 (function(){
   const $=id=>document.getElementById(id);
   const root=()=>window.taskReminderRoot||'taskReminder';
@@ -3218,8 +3217,89 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const byId=list=>{const o={};arr(list).forEach(x=>{if(x&&x.id)o[x.id]=x});return o};
   const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
 
-  function dailyBaseFromModal(){
-    const imgs=Array.isArray(window.tempTaskImgs)?window.tempTaskImgs:(typeof tempTaskImgs!=='undefined'&&Array.isArray(tempTaskImgs)?tempTaskImgs:[]);
+  function taskById(id){
+    return id&&window.state?.tasks?state.tasks.find(x=>String(x.id)===String(id)):null;
+  }
+  function dailyById(id){
+    return id&&window.state?.dailyTemplates?state.dailyTemplates.find(x=>String(x.id)===String(id)):null;
+  }
+  function contentImages(obj){
+    if(typeof contentImgs==='function')return contentImgs(obj||{});
+    const out=[];
+    if(obj?.img)out.push(obj.img);
+    arr(obj?.imgs).forEach(x=>{if(x)out.push(x)});
+    return out;
+  }
+  function setTempImages(imgs){
+    try{window.tempTaskImgs=imgs.slice()}catch(e){}
+    try{tempTaskImgs=imgs.slice()}catch(e){}
+  }
+  function getTempImages(){
+    if(Array.isArray(window.tempTaskImgs))return window.tempTaskImgs.slice();
+    try{if(Array.isArray(tempTaskImgs))return tempTaskImgs.slice()}catch(e){}
+    return [];
+  }
+  function currentDateSafe(){
+    if(typeof currentDate==='function')return currentDate();
+    if(typeof todayVN==='function')return todayVN();
+    return new Date().toISOString().slice(0,10);
+  }
+  function currentTimeSafe(){
+    if(typeof currentTimeStr==='function')return currentTimeStr();
+    const d=new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+
+  window.openDailyTemplateForm=function(id=null){
+    if(typeof roleAdmin==='function'&&!roleAdmin())return;
+    if(!window.state)window.state={dailyTemplates:[],tasks:[]};
+    state.dailyTemplates=arr(state.dailyTemplates);
+    const d=dailyById(id)||{};
+    window.__dailyTemplateModal54=true;
+    window.__forceDailyTemplateSave54=true;
+    window.__forceDailyTemplateSave53=true;
+    window.__forceDailyTemplateSave51=true;
+    window.__taskFormMode43=id?'dailyTemplate':'dailyTemplateNew';
+    try{document.querySelectorAll('.menu').forEach(m=>m.classList.remove('open'))}catch(e){}
+    if(typeof closeModal==='function')closeModal('detailModal');
+    if(typeof fillMasterSelect==='function')fillMasterSelect();
+
+    if($('editId'))$('editId').value=id||'';
+    if($('taskModalTitle'))$('taskModalTitle').textContent=id?'Sửa việc hằng ngày':'Tạo việc hằng ngày';
+    if($('mDate'))$('mDate').value=currentDateSafe();
+    if($('mTime'))$('mTime').value=d.time||currentTimeSafe();
+    if(typeof setModalEmps==='function')setModalEmps(d.emp||'');
+    if($('mType'))$('mType').value='Hằng ngày';
+    if($('mImg'))$('mImg').value=d.img||'';
+    if($('mTitle'))$('mTitle').value=d.title||'';
+    if($('mContent'))$('mContent').value=d.content||'';
+    if($('mAdminNote'))$('mAdminNote').value=d.note||d.adminNote||'';
+    if($('mRemind'))$('mRemind').value=d.remindPlan||'';
+    if($('mMaster'))$('mMaster').value='';
+    setTempImages(contentImages(d));
+    if(typeof renderPreview==='function')renderPreview('taskPreview',getTempImages());
+    if(typeof openModal==='function')openModal('taskModal');
+  };
+
+  function dailyModalActive(){
+    const id=$('editId')?.value||'';
+    if(taskById(id))return false;
+    const title=String($('taskModalTitle')?.textContent||'').toLowerCase();
+    const type=String($('mType')?.value||'').toLowerCase();
+    const isNewDailyType=!id&&(type.includes('hằng')||type.includes('hang'))&&type.includes('ngày');
+    return !!(
+      isNewDailyType ||
+      window.__dailyTemplateModal54 ||
+      window.__forceDailyTemplateSave54 ||
+      window.__forceDailyTemplateSave53 ||
+      window.__forceDailyTemplateSave51 ||
+      window.__taskFormMode43==='dailyTemplate' ||
+      window.__taskFormMode43==='dailyTemplateNew' ||
+      dailyById(id) ||
+      title.includes('việc hằng ngày')
+    );
+  }
+  function dailyBase(){
     return {
       time:$('mTime')?.value||'08:00',
       title:($('mTitle')?.value||'').trim(),
@@ -3228,48 +3308,31 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       adminNote:$('mAdminNote')?.value||'',
       note:$('mAdminNote')?.value||'',
       img:$('mImg')?.value||'',
-      imgs:imgs.slice(),
+      imgs:getTempImages(),
       remindPlan:$('mRemind')?.value||'',
       type:'Hằng ngày'
     };
   }
-
-  function isDailyTemplateSave(){
-    const id=$('editId')?.value||'';
-    const task=id&&window.state?.tasks?state.tasks.find(x=>String(x.id)===String(id)):null;
-    if(task)return false;
-    const daily=id&&window.state?.dailyTemplates?state.dailyTemplates.find(x=>String(x.id)===String(id)):null;
-    const title=String($('taskModalTitle')?.textContent||'').toLowerCase();
-    const type=String($('mType')?.value||'').toLowerCase();
-    return !!(
-      window.__forceDailyTemplateSave53 ||
-      window.__forceDailyTemplateSave51 ||
-      window.__taskFormMode43==='dailyTemplate' ||
-      window.__taskFormMode43==='dailyTemplateNew' ||
-      daily ||
-      title.includes('việc hằng ngày') ||
-      (type.includes('hằng') && !id)
-    );
-  }
-
-  function saveDailyTemplateOnly53(){
+  function saveDailyOnly(){
     if(!window.state)window.state={};
     state.dailyTemplates=arr(state.dailyTemplates);
     const id=$('editId')?.value||'';
-    const base=dailyBaseFromModal();
+    const base=dailyBase();
     if(!base.title){alert('Nhập tên công việc');return}
     if(!state.employees||!state.employees.length){alert('Chưa có nhân viên. Tạo nhân viên trước.');return}
     if(!base.emp){alert('Chọn nhân viên trước khi lưu việc hằng ngày.');return}
-    let d=id?state.dailyTemplates.find(x=>String(x.id)===String(id)):null;
+
+    let d=id?dailyById(id):null;
     if(d)Object.assign(d,{...base,id:d.id,active:d.active!==false});
     else state.dailyTemplates.push({id:'daily_'+Date.now(),...base,active:true});
 
-    try{
-      if(!window.db)localStorage.setItem('task_reminder_v27_firebase',JSON.stringify(state));
-    }catch(e){}
-
     const p=window.db?window.db.ref(root()+'/dailyTemplates').set(byId(state.dailyTemplates)):Promise.resolve();
     Promise.resolve(p).then(()=>{
+      try{
+        if(!window.db)localStorage.setItem('task_reminder_v27_firebase',JSON.stringify(state));
+      }catch(e){}
+      window.__dailyTemplateModal54=false;
+      window.__forceDailyTemplateSave54=false;
       window.__forceDailyTemplateSave53=false;
       window.__forceDailyTemplateSave51=false;
       window.__taskFormMode43='';
@@ -3280,27 +3343,14 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     }).catch(e=>alert('Firebase lỗi ghi việc hằng ngày: '+e.message));
   }
 
-  const prevOpenTaskForm53=window.openTaskForm;
-  window.openDailyTemplateForm=function(id=null){
-    window.__forceDailyTemplateSave53=true;
-    window.__forceDailyTemplateSave51=true;
-    window.__taskFormMode43=id?'dailyTemplate':'dailyTemplateNew';
-    if(typeof prevOpenTaskForm53==='function')prevOpenTaskForm53(id,'Hằng ngày');
-    window.__forceDailyTemplateSave53=true;
-    window.__forceDailyTemplateSave51=true;
-    window.__taskFormMode43=id?'dailyTemplate':'dailyTemplateNew';
-    if($('mType'))$('mType').value='Hằng ngày';
-    if($('taskModalTitle'))$('taskModalTitle').textContent=id?'Sửa việc hằng ngày':'Tạo việc hằng ngày';
-  };
-
-  const prevSaveTask53=window.saveTask;
+  const prevSaveTask54=window.saveTask;
   window.saveTask=function(){
-    if(isDailyTemplateSave())return saveDailyTemplateOnly53();
-    return typeof prevSaveTask53==='function'?prevSaveTask53():undefined;
+    if(dailyModalActive())return saveDailyOnly();
+    return typeof prevSaveTask54==='function'?prevSaveTask54():undefined;
   };
   try{saveTask=window.saveTask}catch(e){}
 
-  function patchDailyButtons53(){
+  function patchDailyButtons(){
     const btn=document.querySelector('#dailyTab .section-title .btn.blue');
     if(btn)btn.setAttribute('onclick','openDailyTemplateForm()');
     document.querySelectorAll('#dailyTab button[onclick*="openTaskForm"]').forEach(b=>{
@@ -3310,43 +3360,64 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     });
   }
 
-  const stockTitleByClass={diff:'Thống kê thiếu/dư',friend:'Thống kê Bán người quen',customer:'Thống kê Bán Khách mua'};
-  function patchStock53(){
-    document.querySelectorAll('#tonKhoSections .tkSection').forEach(sec=>{
-      const key=sec.classList.contains('diff')?'diff':sec.classList.contains('friend')?'friend':'customer';
-      const label=stockTitleByClass[key];
-      const h3=sec.querySelector('.tkHead h3');
-      const h4=sec.querySelector('h4');
-      if(h3)h3.textContent=label;
-      if(h4)h4.textContent=label;
-      sec.querySelectorAll('button').forEach(b=>{b.type='button'});
+  const stockTitles={diff:'Thống kê thiếu/dư',friend:'Thống kê Bán người quen',customer:'Thống kê Bán Khách mua'};
+  const stockFilter={};
+  function stockSectionId(sec){
+    if(sec.classList.contains('diff'))return 'diff';
+    if(sec.classList.contains('friend'))return 'friend';
+    return 'customer';
+  }
+  function cellText(row,n){
+    return String(row.children[n]?.textContent||'').trim();
+  }
+  function rowMatches(row,type,value){
+    if(!type||type==='all')return true;
+    if(type==='stockType')return cellText(row,5)===value;
+    if(type==='payment')return cellText(row,7)===value;
+    if(type==='status')return cellText(row,9)===value;
+    return true;
+  }
+  function applyStockFilter(secId){
+    const sec=document.querySelector('#tonKhoSections .tkSection.'+secId);
+    if(!sec)return;
+    const title=stockTitles[secId]||'';
+    const h3=sec.querySelector('.tkHead h3');
+    const h4=sec.querySelector('h4');
+    if(h3)h3.textContent=title;
+    if(h4)h4.textContent=title;
+    const f=stockFilter[secId]||null;
+    sec.querySelectorAll('.tkStat').forEach(btn=>{
+      const raw=btn.getAttribute('onclick')||'';
+      const isTotal=raw.includes("'all'");
+      const isActive=!f?isTotal:(raw.includes("'"+f.type+"'")&&raw.includes("'"+String(f.value).replace(/'/g,"\\'")+"'"));
+      btn.classList.toggle('active',!!isActive);
+      btn.type='button';
+    });
+    sec.querySelectorAll('.tkTable tbody tr').forEach(row=>{
+      if(row.querySelector('.dkNoRows'))return;
+      row.style.display=rowMatches(row,f?.type,f?.value)?'':'none';
     });
   }
-
-  const prevFilter53=window.tkSetFilter;
+  function patchStockAll(){
+    document.querySelectorAll('#tonKhoSections .tkSection').forEach(sec=>applyStockFilter(stockSectionId(sec)));
+  }
   window.tkSetFilter=function(secId,type,value){
-    const sec=document.querySelector('#tonKhoSections .tkSection.'+secId);
-    const top=sec?sec.getBoundingClientRect().top:null;
-    const x=window.scrollX;
-    const out=typeof prevFilter53==='function'?prevFilter53(secId,type,value):undefined;
-    requestAnimationFrame(()=>{
-      patchStock53();
-      const next=document.querySelector('#tonKhoSections .tkSection.'+secId);
-      if(next&&top!==null)window.scrollTo(x,window.scrollY+next.getBoundingClientRect().top-top);
-    });
-    return out;
+    const cur=stockFilter[secId];
+    if(type==='all'||(cur&&cur.type===type&&cur.value===value))delete stockFilter[secId];
+    else stockFilter[secId]={type,value};
+    applyStockFilter(secId);
   };
 
-  const prevRenderStock53=window.renderStock;
-  if(typeof prevRenderStock53==='function'){
+  const prevRenderStock54=window.renderStock;
+  if(typeof prevRenderStock54==='function'){
     window.renderStock=function(){
-      const out=prevRenderStock53.apply(this,arguments);
-      patchStock53();
+      const out=prevRenderStock54.apply(this,arguments);
+      patchStockAll();
       return out;
     };
   }
 
-  setTimeout(()=>{patchDailyButtons53();patchStock53()},100);
-  setInterval(()=>{patchDailyButtons53();if(!$('tonKhoTab')?.classList.contains('hidden'))patchStock53()},1000);
+  setTimeout(()=>{patchDailyButtons();patchStockAll()},100);
+  setInterval(()=>{patchDailyButtons();if(!$('tonKhoTab')?.classList.contains('hidden'))patchStockAll()},1000);
 })();
 </script>
