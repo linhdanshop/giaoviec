@@ -45,7 +45,9 @@
     attention: null,
     dismissedReminders: new Set(),
     reminderTimer: null,
+    attentionCloseTimer: null,
     soundStopper: null,
+    quickLinks: [],
     adminNotifyOn: localStorage.getItem('giaoviec.adminNotify') === '1'
   };
 
@@ -77,6 +79,17 @@
   function dateLabel(v){ const p = String(v||'').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : ''; }
   function nowIso(){ return new Date().toISOString(); }
   function minutes(ms){ return Math.max(0, Math.floor(ms / 60000)); }
+  function compactDuration(ms){
+    const m = minutes(ms);
+    if (m < 1) return 'vừa xong';
+    if (m < 60) return `${m}p`;
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    if (h < 24) return `${h}h${r ? r + 'p' : ''}`;
+    const d = Math.floor(h / 24);
+    const hr = h % 24;
+    return `${d}n${hr ? hr + 'h' : ''}`;
+  }
   function money(n){ return Number(n||0).toLocaleString('vi-VN'); }
   function loadJson(key){ try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
   function saveJson(key, val){ if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); }
@@ -152,6 +165,7 @@
       test.textContent = `🔔 Test nhắc: ${state.adminNotifyOn ? 'Bật' : 'Tắt'}`;
       test.classList.toggle('adminNotifyOn', state.adminNotifyOn);
     }
+    renderQuickLinks();
     Device.updateHeartbeat();
     renderLoginChoices();
   }
@@ -243,6 +257,7 @@
     current(){
       const saved = state.devices[this.id] || {};
       const local = loadJson('giaoviec.deviceProfile') || {};
+      const wasAway = !saved.lastSeen || Date.now() - (saved.lastSeen || 0) > DEVICE_STALE_MS;
       return {
         id: this.id,
         name: local.name || saved.name || this.id,
@@ -250,6 +265,7 @@
         user: window.roleAdmin() ? 'Admin' : (auth.actor?.name || 'Nhân viên'),
         allowed: saved.allowed !== false,
         lastSeen: Date.now(),
+        onlineSince: wasAway ? Date.now() : (saved.onlineSince || Date.now()),
         online: true,
         logs: saved.logs || []
       };
@@ -295,11 +311,13 @@
     deviceRowsHtml(){
       return Object.values(state.devices || {}).sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(d => {
         const online = Date.now() - (d.lastSeen || 0) < DEVICE_STALE_MS;
+        const since = online ? (d.onlineSince || d.lastSeen || Date.now()) : (d.offlineSince || d.lastSeen || Date.now());
+        const statusText = online ? `Online ${compactDuration(Date.now() - since)}` : `Vắng ${compactDuration(Date.now() - since)}`;
         return `<div class="row ${d.id===this.selected?'active':''}" onclick="selectDevice('${esc(d.id)}')">
           <b>${esc(d.id)}</b>
           <span class="${online?'deviceNameOnline':''}">${esc(d.name || 'Máy đang mở')}</span>
           <span>${esc(d.user || '-')}</span>
-          <b class="${online?'devOnline':'devAway'}">${online?'Online':'Vắng'}</b>
+          <b class="devStatusStack ${online?'devOnline':'devAway'}"><span>${online?'Online':'Vắng'}</span><small>${esc(statusText.replace(online?'Online ':'Vắng ',''))}</small></b>
           <span>${d.allowed===false?'Bị chặn':'Được phép'}</span>
           ${window.roleAdmin()?`<button class="btn ${d.allowed===false?'green':'gray'}" onclick="event.stopPropagation();toggleDeviceAccess('${esc(d.id)}')">${d.allowed===false?'Cho phép':'Chặn'}</button>`:''}
           <button class="btn gray deviceHistoryBtn" onclick="event.stopPropagation();openDeviceHistory('${esc(d.id)}')">LS</button>
@@ -350,6 +368,12 @@
       taskRef('masters').on('value', snap => { state.masters = arr(snap.val()).map(this.normMaster); renderAll(); });
       taskRef('dailyTemplates').on('value', snap => { state.dailyTemplates = arr(snap.val()).map(this.normDaily); renderAll(); });
       taskRef('system').on('value', snap => { state.system = snap.val() || {}; });
+      taskRef('quickLinks').on('value', snap => {
+        const val = snap.val();
+        if (!val) taskRef('quickLinks').set(defaultQuickLinksObj()).catch(()=>{});
+        state.quickLinks = arr(val || defaultQuickLinksObj()).map(normalizeQuickLink);
+        renderQuickLinks();
+      });
       this.listenDate(state.date);
       setInterval(() => updateAuthUi(), 15000);
       setInterval(() => this.midnightCheck(), 15000);
@@ -469,7 +493,7 @@
         <td>${this.noteStack(t.report, 'Bấm để nhập báo cáo...', `openReport('${esc(t.id)}')`, t.reportImages, 'ảnh báo cáo')}</td>
         <td><div class="statusStack"><span class="status ${done?'done':'todo'}">${esc(t.status)}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div></td>
         <td>${this.durationHtml(t)}</td>
-        <td>${window.roleAdmin()?`<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button><input class="remindMini" value="${esc(t.remindPlan||'')}" onchange="saveQuickNote('${esc(t.id)}','remindPlan',this.value)" placeholder="08:10 10 3"></div>`:''}</td>
+        <td>${window.roleAdmin()?`<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button><button class="remindPlanBtn" onclick="openReminderConfig('${esc(t.id)}')">${esc(formatReminderPlan(t.remindPlan))}</button></div>`:''}</td>
         <td><button class="more" onclick="openTaskHistory('${esc(t.id)}')">${(t.logs||[]).length} dòng</button></td>
         <td class="action"><button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu">${window.roleAdmin()?`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="openTaskForm('${esc(t.id)}')">Sửa</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button><button class="danger" onclick="deleteTask('${esc(t.id)}')">Xóa</button>`:`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button>`}</div></td>
       </tr>`;
@@ -647,14 +671,14 @@
       const hour = Math.max(0, Math.min(23, parseInt(m[1], 10)));
       const minute = Math.max(0, Math.min(59, parseInt(m[2], 10)));
       const nums = raw.replace(m[0], ' ').match(/\d+/g)?.map(n => parseInt(n, 10)).filter(n => n > 0) || [];
-      return { hour, minute, interval: nums[0] || 0, count: Math.max(1, nums[1] || 1) };
+      return { hour, minute, interval: nums[0] || 0, repeat: Math.max(0, nums[1] || 0) };
     },
     reminderSlot(t, plan, now){
       const start = new Date(`${t.date}T${z(plan.hour)}:${z(plan.minute)}:00`);
       if (Number.isNaN(start.getTime()) || now < start) return 0;
       if (!plan.interval) return 1;
       const slot = Math.floor(minutes(now - start) / plan.interval) + 1;
-      return slot <= plan.count ? slot : 0;
+      return slot <= plan.repeat + 1 ? slot : 0;
     },
     async reminderTick(){
       const now = new Date();
@@ -672,6 +696,10 @@
     handleActiveReminder(){
       const active = state.tasks.find(t => t.activeReminder && !t.activeReminder.acknowledged);
       if (!active) return closeAttentionIfAny();
+      if (Date.now() - (active.activeReminder.createdAt || 0) > 60000) {
+        if (state.attention?.id === active.activeReminder.id) closeAttentionIfAny();
+        return;
+      }
       const rid = active.activeReminder.id;
       if (state.dismissedReminders.has(rid)) return;
       if (window.roleAdmin() && !state.adminNotifyOn) return;
@@ -695,8 +723,14 @@
     const table = $('taskTable');
     if (!table || table.dataset.resizable === '1') return;
     const cols = Array.from(table.querySelectorAll('colgroup col'));
+    const saved = loadJson('giaoviec.taskColWidths') || {};
+    cols.forEach(col => {
+      const key = col.dataset.col;
+      if (key && saved[key]) col.style.width = saved[key] + 'px';
+    });
     table.querySelectorAll('thead th').forEach((th, i) => {
       if (!cols[i]) return;
+      const key = cols[i].dataset.col || th.dataset.col || String(i);
       const grip = document.createElement('span');
       grip.className = 'colResizer';
       th.appendChild(grip);
@@ -709,6 +743,9 @@
           cols[i].style.width = width + 'px';
         };
         const up = () => {
+          const next = loadJson('giaoviec.taskColWidths') || {};
+          next[key] = Math.round(cols[i].getBoundingClientRect().width || parseInt(cols[i].style.width, 10) || th.getBoundingClientRect().width);
+          saveJson('giaoviec.taskColWidths', next);
           document.removeEventListener('mousemove', move);
           document.removeEventListener('mouseup', up);
         };
@@ -718,6 +755,37 @@
     });
     table.dataset.resizable = '1';
   }
+  function formatReminderPlan(raw){
+    raw = String(raw || '').trim();
+    if (!raw) return 'Cài nhắc';
+    const m = raw.match(/(\d{1,2})\s*[:hH]\s*(\d{1,2})/);
+    if (!m) return raw;
+    const nums = raw.replace(m[0], ' ').match(/\d+/g)?.map(n => parseInt(n, 10)).filter(n => n >= 0) || [];
+    return `${z(Math.min(23, parseInt(m[1], 10)))}:${z(Math.min(59, parseInt(m[2], 10)))} / ${nums[0] || 0}p / ${nums[1] || 0} lần`;
+  }
+  window.openReminderConfig = function(taskId){
+    if (!requireAdmin()) return;
+    const t = state.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    const plan = Tasks.reminderPlan(t) || { hour:8, minute:0, interval:10, repeat:0 };
+    $('detailTitle').textContent = `Cài nhắc việc - ${t.title}`;
+    $('detailBody').innerHTML = `<div class="form reminderConfigGrid">
+      <div><label>Giờ nhắc</label><input id="remindTimeInput" type="time" value="${z(plan.hour)}:${z(plan.minute)}"></div>
+      <div><label>Số phút nhắc lại</label><input id="remindIntervalInput" type="number" min="0" value="${esc(plan.interval || 0)}"></div>
+      <div><label>Số lần lặp lại</label><input id="remindRepeatInput" type="number" min="0" value="${esc(plan.repeat || 0)}"></div>
+      <div class="full mutedSmall">Ví dụ 08:10 / 10 / 3 sẽ nhắc lúc 08:10, 08:20, 08:30, 08:40 rồi dừng.</div>
+    </div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn red" onclick="saveReminderConfig('${esc(taskId)}', true)">Xóa cài nhắc</button><button class="btn blue" onclick="saveReminderConfig('${esc(taskId)}')">Lưu</button></div>`;
+    openModal('detailModal');
+  };
+  window.saveReminderConfig = function(taskId, clear){
+    if (!requireAdmin()) return;
+    const t = state.tasks.find(x => x.id === taskId);
+    if (!t) return;
+    const raw = clear ? '' : `${$('remindTimeInput')?.value || ''} ${Math.max(0, Number($('remindIntervalInput')?.value || 0))} ${Math.max(0, Number($('remindRepeatInput')?.value || 0))}`.trim();
+    const logs = [...(t.logs||[]), logLine('Cài nhắc việc', 'Admin', `${t.remindPlan||''} -> ${raw}`)];
+    taskRef('tasks', t.date, t.id).update({ remindPlan: raw, lastAutoReminderSlot:0, reminderAcked:false, activeReminder:null, logs });
+    closeModal('detailModal');
+  };
   function ensureDailyApplyAllButton(){
     const title = document.querySelector('#dailyTab .section-title');
     if (!title || $('applyAllDailyBtn')) return;
@@ -912,6 +980,7 @@
     if (!requireAdmin()) return;
     const t = state.tasks.find(x => x.id === taskId);
     if (!t) return;
+    if (t.status === 'Đã xong') return showToast('Việc đã xong, không gửi nhắc');
     const reminder = { id:`${t.id}-manual-${Date.now()}`, taskId:t.id, date:t.date, type:'manual', createdAt:Date.now(), acknowledged:false };
     taskRef('tasks', t.date, t.id).update({ activeReminder:reminder, reminderAcked:false });
   };
@@ -927,11 +996,21 @@
     if (foot) foot.innerHTML = `<button class="btn gray" onclick="closeAttention()">Không phải tôi</button><button class="btn orange" onclick="attentionAck()">Đã nhận nhắc</button>`;
     openModal('attentionModal');
     playSound10s();
+    clearTimeout(state.attentionCloseTimer);
+    state.attentionCloseTimer = setTimeout(() => {
+      if (state.attention?.id === r.id) window.closeAttention();
+    }, 60000);
   }
-  function closeAttentionIfAny(){ if (state.attention) { closeModal('attentionModal'); state.attention = null; } }
+  function closeAttentionIfAny(){
+    clearTimeout(state.attentionCloseTimer);
+    state.attentionCloseTimer = null;
+    if (state.attention) { closeModal('attentionModal'); state.attention = null; }
+  }
   window.closeAttention = function(){
     if (state.attention?.id) state.dismissedReminders.add(state.attention.id);
     state.attention = null;
+    clearTimeout(state.attentionCloseTimer);
+    state.attentionCloseTimer = null;
     stopSound();
     closeModal('attentionModal');
   };
@@ -1118,7 +1197,7 @@
         ${canEdit?`<button onclick="stockOpenForm('${sec}','${r.id}')">Sửa</button>`:''}
         ${window.roleAdmin()?`<button class="danger" onclick="stockDeleteRow('${sec}','${r.id}')">Xóa</button>`:''}
         ${window.roleAdmin()?`<button onclick="stockToggleCut('${sec}','${r.id}')">${r.cut==='Đã cắt tồn'?'Chưa cắt tồn':'Đã cắt tồn'}</button>`:''}
-        ${sec!=='diff'?`<button onclick="stockTogglePaid('${sec}','${r.id}')">${r.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán'}</button>${window.roleAdmin()?`<button onclick="stockPayAll('${sec}','${r.id}')">Thanh toán toàn bộ</button>`:''}`:''}
+        ${sec!=='diff'?`<button onclick="stockTogglePaid('${sec}','${r.id}')">${r.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán'}</button>`:''}
       </div></div>`;
       const td = (label, html, cls='') => `<td data-label="${esc(label)}" class="${cls}">${html}</td>`;
       const amountHtml = `<span class="${amt<0?'tkNeg':'tkPos'}">${money(amt)}</span>`;
@@ -1212,7 +1291,7 @@
     const row = Stock.rows(sec).find(r => r.id === rowId);
     if (!row) return;
     $('detailTitle').textContent = 'Ghi chú tồn kho';
-    $('detailBody').innerHTML = `<div class="form"><div class="full"><textarea id="stockNoteText" style="min-height:160px">${esc(row.note||'')}</textarea></div></div><div class="panelfoot"><button class="btn blue" onclick="stockSaveNote('${sec}','${rowId}')">Lưu</button></div>`;
+    $('detailBody').innerHTML = `<div class="form"><div class="full"><textarea id="stockNoteText" style="min-height:160px">${esc(row.note||'')}</textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="stockSaveNote('${sec}','${rowId}')">Lưu</button></div>`;
     openModal('detailModal');
   };
   window.stockSaveNote = function(sec,rowId){
@@ -1234,14 +1313,6 @@
     withActor(actor => {
       const row = Stock.rows(sec).find(r => r.id === rowId);
       stockRef('months', Stock.month, sec, rowId).update({ payment: row.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán', logs:[...(row.logs||[]), logLine('Đổi thanh toán',actor)] });
-    });
-  };
-  window.stockPayAll = function(sec,rowId){
-    if (sec === 'diff') return;
-    if (!requireAdmin()) return;
-    withActor(actor => {
-      const row = Stock.rows(sec).find(r => r.id === rowId);
-      stockRef('months', Stock.month, sec, rowId).update({ payment:'Đã thanh toán', logs:[...(row.logs||[]), logLine('Thanh toán toàn bộ',actor)] });
     });
   };
   window.stockHistory = function(sec,rowId){
@@ -1267,6 +1338,93 @@
   window.stockRenameFriend = function(oldName,newName){ if (!requireAdmin()) return; Stock.friends = Stock.friends.map(n => n===oldName ? newName.trim() : n).filter(Boolean); stockRef('friends').set(Stock.friends).then(()=>stockOpenFriends()); };
   window.stockDeleteFriend = function(n){ if (requireAdmin()) { Stock.friends = Stock.friends.filter(x => x!==n); stockRef('friends').set(Stock.friends).then(()=>stockOpenFriends()); } };
 
+  function defaultQuickLinksObj(){
+    return {
+      goi: { id:'goi', name:'Gọi', url:'https://linhdanshop.github.io/xulydon/', active:true, employee:true },
+      quet: { id:'quet', name:'Quét', url:'https://linhdanshop.github.io/quetbill/', active:true, employee:false },
+      xld: { id:'xld', name:'XLD', url:'https://linhdanshop.github.io/vandon/', active:true, employee:true }
+    };
+  }
+  function normalizeQuickLink(x){
+    return Object.assign({ id:id(), name:'Link', url:'#', active:true, employee:false }, x || {});
+  }
+  function renderQuickLinks(){
+    const host = $('quickLinks');
+    if (!host) return;
+    const links = (state.quickLinks.length ? state.quickLinks : arr(defaultQuickLinksObj()).map(normalizeQuickLink))
+      .filter(l => l.active !== false && (window.roleAdmin() || l.employee !== false));
+    host.innerHTML = links.map(l => `<button class="topMiniBtn" onclick="openQuickLinkUrl('${esc(l.id)}')">${esc(l.name)}</button>`).join('') +
+      (window.roleAdmin() ? `<button class="topMiniBtn" onclick="openQuickLinkSettings()">⚙</button>` : '');
+  }
+  window.openQuickLinkUrl = function(linkId){
+    const link = (state.quickLinks.length ? state.quickLinks : arr(defaultQuickLinksObj()).map(normalizeQuickLink)).find(l => l.id === linkId);
+    if (link?.url) window.open(link.url, '_blank');
+  };
+  window.openQuickLinkSettings = function(){
+    if (!requireAdmin()) return;
+    const rows = (state.quickLinks.length ? state.quickLinks : arr(defaultQuickLinksObj()).map(normalizeQuickLink));
+    $('detailTitle').textContent = 'Cài nút chuyển hướng';
+    $('detailBody').innerHTML = `<div class="quickLinkEditor">
+      ${rows.map(l => quickLinkRowHtml(l)).join('')}
+      <div class="quickLinkRow new">
+        <input id="qlNewName" placeholder="Tên nút">
+        <input id="qlNewUrl" placeholder="https://...">
+        <label><input id="qlNewActive" type="checkbox" checked> Bật</label>
+        <label><input id="qlNewEmployee" type="checkbox"> NV thấy</label>
+        <button class="btn blue" onclick="addQuickLink()">Thêm</button>
+      </div>
+    </div>`;
+    openModal('detailModal');
+  };
+  function quickLinkRowHtml(l){
+    return `<div class="quickLinkRow" data-id="${esc(l.id)}">
+      <input id="qlName_${esc(l.id)}" value="${esc(l.name)}" placeholder="Tên nút">
+      <input id="qlUrl_${esc(l.id)}" value="${esc(l.url)}" placeholder="https://...">
+      <label><input id="qlActive_${esc(l.id)}" type="checkbox" ${l.active!==false?'checked':''}> Bật</label>
+      <label><input id="qlEmployee_${esc(l.id)}" type="checkbox" ${l.employee!==false?'checked':''}> NV thấy</label>
+      <button class="btn blue" onclick="saveQuickLink('${esc(l.id)}')">Lưu</button>
+      <button class="btn red" onclick="deleteQuickLink('${esc(l.id)}')">Xóa</button>
+    </div>`;
+  }
+  window.saveQuickLink = function(linkId){
+    if (!requireAdmin()) return;
+    const data = {
+      id: linkId,
+      name: $('qlName_' + linkId)?.value.trim() || 'Link',
+      url: $('qlUrl_' + linkId)?.value.trim() || '#',
+      active: !!$('qlActive_' + linkId)?.checked,
+      employee: !!$('qlEmployee_' + linkId)?.checked
+    };
+    taskRef('quickLinks', linkId).set(data).then(()=>{
+      state.quickLinks = state.quickLinks.map(l => l.id === linkId ? data : l);
+      renderQuickLinks();
+      openQuickLinkSettings();
+      showToast('Đã lưu nút');
+    });
+  };
+  window.addQuickLink = function(){
+    if (!requireAdmin()) return;
+    const linkId = id();
+    const data = {
+      id: linkId,
+      name: $('qlNewName')?.value.trim() || 'Link',
+      url: $('qlNewUrl')?.value.trim() || '#',
+      active: !!$('qlNewActive')?.checked,
+      employee: !!$('qlNewEmployee')?.checked
+    };
+    taskRef('quickLinks', linkId).set(data).then(()=>{
+      state.quickLinks = [...state.quickLinks.filter(l => l.id !== linkId), data];
+      renderQuickLinks();
+      openQuickLinkSettings();
+    });
+  };
+  window.deleteQuickLink = function(linkId){
+    if (requireAdmin() && confirm('Xóa nút này?')) taskRef('quickLinks', linkId).remove().then(()=>{
+      state.quickLinks = state.quickLinks.filter(l => l.id !== linkId);
+      renderQuickLinks();
+      openQuickLinkSettings();
+    });
+  };
   function ensureHeaderTools(){
     ensurePolishStyle();
     if (!$('headerToggleBtn')) {
@@ -1284,9 +1442,10 @@
       links.id = 'quickLinks';
       links.style.display = 'flex';
       links.style.gap = '6px';
-      links.innerHTML = `<button class="topMiniBtn" onclick="window.open('https://linhdanshop.github.io/xulydon/','_blank')">Gọi</button><button class="topMiniBtn adminQuick" onclick="window.open('https://linhdanshop.github.io/quetbill/','_blank')">Quét</button><button class="topMiniBtn" onclick="window.open('https://linhdanshop.github.io/vandon/','_blank')">XLD</button>`;
+      links.style.alignItems = 'center';
       document.querySelector('.topright')?.prepend(links);
     }
+    renderQuickLinks();
   }
   function ensurePolishStyle(){
     if ($('appPolishStyle')) return;
@@ -1311,9 +1470,17 @@
       .tkStat.friendStat span{display:block;color:#7f1d1d!important;font-weight:900}
       .tkStat.friendStat strong,.tkStat.friendStat em{display:block;color:#991b1b!important;font-style:normal;font-size:14px;line-height:1.2}
       .deviceNameOnline{color:#dc2626!important;font-weight:1000}
+      .devStatusStack{display:flex;flex-direction:column;gap:2px;line-height:1.1}
+      .devStatusStack small{font-size:11px;color:inherit;font-weight:800}
       .deviceHistoryBtn{height:32px!important;padding:0 10px!important;border-radius:8px!important;min-width:0!important}
       .dkCodeHot span,.dkHotCode{color:#dc2626!important;font-weight:1000}
       .remindMini{width:86px!important}
+      .remindPlanBtn{height:30px;border:1px solid #dbe5f2;border-radius:8px;background:#fff;color:#334155;font-weight:900;padding:0 8px;cursor:pointer;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .reminderConfigGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+      .quickLinkEditor{padding:14px;display:grid;gap:10px}
+      .quickLinkRow{display:grid;grid-template-columns:160px minmax(260px,1fr) 82px 98px 72px 72px;gap:8px;align-items:center;border:1px solid #dbe5f2;border-radius:12px;background:#fff;padding:10px}
+      .quickLinkRow input[type="text"],.quickLinkRow input:not([type]){height:38px;border:1px solid #dbe5f2;border-radius:9px;padding:0 10px}
+      .quickLinkRow label{font-weight:900;color:#334155;display:flex;gap:5px;align-items:center}
       .dkNoteBtn{width:100%;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;text-align:left;font-weight:800;cursor:pointer;min-height:34px}
       .dkNoteBtn.empty{color:#94a3b8}
       @media(max-width:760px){
@@ -1326,12 +1493,22 @@
         .tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}
         .tkTable .action{justify-self:start}
         .tkStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+        .quickLinkRow{grid-template-columns:1fr!important}
+        .reminderConfigGrid{grid-template-columns:1fr!important}
         .tkHead>div{display:flex;gap:8px;flex-wrap:wrap}
+        #dailyTab .section-title{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;align-items:center!important}
+        #dailyTab .section-title h2{grid-column:1/-1!important;margin-bottom:0!important}
+        #dailyTab .section-title .btn{width:100%!important;min-width:0!important;height:42px!important;white-space:normal!important;line-height:1.15!important;padding:0 8px!important}
+        #dailyTab .miniTable tr{padding:12px!important}
+        #dailyTab .miniTable td{display:block!important;width:100%!important;padding:8px 0!important}
+        #dailyTab .miniTable td:before{display:block!important;margin-bottom:5px!important;font-size:11px!important;color:#64748b!important;min-width:0!important}
         #dailyTab .miniTable td[data-label="Nội dung"],#dailyTab .miniTable td[data-label="Ghi chú admin"]{align-items:start!important}
-        #dailyTab .miniTable td[data-label="Tên CV"]{grid-template-columns:74px minmax(0,1fr)!important}
-        #dailyTab .dailyTitlePill{min-width:0!important;width:100%!important;white-space:normal!important;word-break:break-word}
+        #dailyTab .miniTable td[data-label="Tên CV"]{display:block!important}
+        #dailyTab .dailyTitlePill{display:block!important;min-width:0!important;width:100%!important;white-space:normal!important;word-break:break-word;text-align:left!important}
+        #dailyTab .dailyTextClip{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;white-space:normal!important;word-break:break-word!important}
         #dailyTab .empchips{max-width:none!important;flex-direction:row!important;flex-wrap:wrap!important}
-        #dailyTab .dailyTinyActions{flex-direction:row!important;flex-wrap:wrap!important}
+        #dailyTab .dailyTinyActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+        #dailyTab .dailyTinyActions .btn,#dailyTab .dailyApplyBtn{width:100%!important;height:36px!important}
       }
     </style>`);
   }

@@ -694,7 +694,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const title=$('detailTitle'), body=$('detailBody');
     if(!title||!body)return;
     title.textContent='Ghi chú mã '+code;
-    body.innerHTML='<div class="form"><div class="full"><textarea id="dkCodeNoteText" style="min-height:160px">'+esc(ns[code]||'')+'</textarea></div></div><div class="panelfoot"><button class="btn blue" onclick="dkSaveCodeNote(\''+secId+'\',\''+esc(code)+'\')">Lưu</button></div>';
+    body.innerHTML='<div class="form"><div class="full"><textarea id="dkCodeNoteText" style="min-height:160px">'+esc(ns[code]||'')+'</textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'detailModal\')">Đóng</button><button class="btn blue" onclick="dkSaveCodeNote(\''+secId+'\',\''+esc(code)+'\')">Lưu</button></div>';
     openModal('detailModal');
     setTimeout(()=>$('dkCodeNoteText')&&$('dkCodeNoteText').focus(),60);
   };
