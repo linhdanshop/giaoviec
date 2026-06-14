@@ -99,14 +99,14 @@
   function openModal(id){
     const el = $(id);
     if (!el) return;
-    el.style.zIndex = String(++modalZ);
+    el.style.setProperty('z-index', String(++modalZ), 'important');
     el.classList.add('open');
   }
   function closeModal(id){
     const el = $(id);
     if (el) {
       el.classList.remove('open');
-      el.style.zIndex = '';
+      el.style.removeProperty('z-index');
     }
     if (id === 'attentionModal') stopSound();
   }
@@ -280,8 +280,8 @@
         tab.innerHTML = `<div class="section-title"><h2>🟢 Thiết bị online</h2></div><div class="card masterbox"><div id="deviceRows">${this.deviceRowsHtml()}</div></div>`;
         return;
       }
-      tab.innerHTML = `
-        <div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Admin bấm một máy để sửa tên hoặc cho phép/chặn truy cập nhân viên</span></div>
+        tab.innerHTML = `
+        <div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Admin bấm một máy để sửa tên hoặc cho phép/chặn truy cập nhân viên</span><button class="btn gray deviceHistoryBtn" onclick="openDeviceTotalHistory()">Lịch sử tổng</button></div>
         <div class="card masterbox">
           <div class="deviceEditor">
             <div><label>Máy đang sửa</label><b>${esc(this.selected || this.id)}</b></div>
@@ -297,12 +297,12 @@
         const online = Date.now() - (d.lastSeen || 0) < DEVICE_STALE_MS;
         return `<div class="row ${d.id===this.selected?'active':''}" onclick="selectDevice('${esc(d.id)}')">
           <b>${esc(d.id)}</b>
-          <span>${esc(d.name || 'Máy đang mở')}</span>
+          <span class="${online?'deviceNameOnline':''}">${esc(d.name || 'Máy đang mở')}</span>
           <span>${esc(d.user || '-')}</span>
           <b class="${online?'devOnline':'devAway'}">${online?'Online':'Vắng'}</b>
           <span>${d.allowed===false?'Bị chặn':'Được phép'}</span>
           ${window.roleAdmin()?`<button class="btn ${d.allowed===false?'green':'gray'}" onclick="event.stopPropagation();toggleDeviceAccess('${esc(d.id)}')">${d.allowed===false?'Cho phép':'Chặn'}</button>`:''}
-          <button class="btn gray" onclick="event.stopPropagation();openDeviceHistory('${esc(d.id)}')">Lịch sử</button>
+          <button class="btn gray deviceHistoryBtn" onclick="event.stopPropagation();openDeviceHistory('${esc(d.id)}')">LS</button>
         </div>`;
       }).join('');
     }
@@ -330,6 +330,14 @@
     const d = state.devices[id] || {};
     $('detailTitle').textContent = `Lịch sử thiết bị - ${id}`;
     $('detailBody').innerHTML = `<pre class="copyBox">${esc(logText(d.logs || []))}</pre>`;
+    openModal('detailModal');
+  };
+  window.openDeviceTotalHistory = function(){
+    const logs = Object.values(state.devices || {}).flatMap(d => (d.logs || []).map(l => Object.assign({ deviceId:d.id, deviceName:d.name || d.id }, l)));
+    logs.sort((a,b)=>(b.at||0)-(a.at||0));
+    const text = logs.map(l => `${new Date(l.at || Date.now()).toLocaleString('vi-VN')} - ${l.deviceName || l.deviceId || '-'} - ${l.actor || '-'} - ${l.action || ''}${l.detail ? ': ' + l.detail : ''}`).join('\n') || 'Chưa có lịch sử thiết bị';
+    $('detailTitle').textContent = 'Lịch sử tổng thiết bị';
+    $('detailBody').innerHTML = `<pre class="copyBox">${esc(text)}</pre>`;
     openModal('detailModal');
   };
   window.saveDeviceInfo = function(){};
@@ -461,7 +469,7 @@
         <td>${this.noteStack(t.report, 'Bấm để nhập báo cáo...', `openReport('${esc(t.id)}')`, t.reportImages, 'ảnh báo cáo')}</td>
         <td><div class="statusStack"><span class="status ${done?'done':'todo'}">${esc(t.status)}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div></td>
         <td>${this.durationHtml(t)}</td>
-        <td>${window.roleAdmin()?`<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button><input class="remindMini" value="${esc(t.remindPlan||'')}" onchange="saveQuickNote('${esc(t.id)}','remindPlan',this.value)" placeholder="phút"></div>`:''}</td>
+        <td>${window.roleAdmin()?`<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button><input class="remindMini" value="${esc(t.remindPlan||'')}" onchange="saveQuickNote('${esc(t.id)}','remindPlan',this.value)" placeholder="08:10 10 3"></div>`:''}</td>
         <td><button class="more" onclick="openTaskHistory('${esc(t.id)}')">${(t.logs||[]).length} dòng</button></td>
         <td class="action"><button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu">${window.roleAdmin()?`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="openTaskForm('${esc(t.id)}')">Sửa</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button><button class="danger" onclick="deleteTask('${esc(t.id)}')">Xóa</button>`:`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button>`}</div></td>
       </tr>`;
@@ -527,12 +535,12 @@
     renderMasters(){
       const body = $('masterBody');
       if (body) body.innerHTML = state.masters.map(m => `<tr>
-        <td><label class="defaultPick"><input type="radio" name="defaultMaster" ${m.isDefault?'checked':''} onchange="setDefaultMaster('${esc(m.id)}')"><span>${m.isDefault?'Đang chọn':'Chọn'}</span></label></td>
+        <td><label class="defaultPick"><input type="radio" name="defaultMaster" ${m.isDefault?'checked':''} ${window.roleAdmin()?'':'disabled'} onchange="setDefaultMaster('${esc(m.id)}')"><span>${m.isDefault?'Đang chọn':'Chọn'}</span></label></td>
         <td><b>${esc(m.title)}</b><div class="masterHint">${esc(m.time||'')}</div></td>
         <td><div class="subMobileText">${esc(m.content)}</div></td>
         <td>${esc(m.emp||'')}</td>
         <td><div class="subMobileText">${esc(m.note||'')}</div></td>
-        <td class="adminOnly"><button class="btn gray" onclick="openMasterForm('${esc(m.id)}')">Sửa</button> <button class="btn blue" onclick="createFromMaster('${esc(m.id)}')">Tạo việc</button></td>
+        <td class="adminOnly"><button class="btn gray" onclick="openMasterForm('${esc(m.id)}')">Sửa</button> <button class="btn blue" onclick="createFromMaster('${esc(m.id)}')">Tạo việc</button> <button class="btn red" onclick="deleteMaster('${esc(m.id)}')">Xóa</button></td>
       </tr>`).join('');
     },
     readForm(){
@@ -633,19 +641,29 @@
       }
     },
     reminderPlan(t){
-      const first = String(t.remindPlan || '').split(/[,\s]+/).map(x => parseInt(x,10)).find(n => n > 0);
-      return first || 0;
+      const raw = String(t.remindPlan || '').trim();
+      const m = raw.match(/(\d{1,2})\s*[:hH]\s*(\d{1,2})/);
+      if (!m) return null;
+      const hour = Math.max(0, Math.min(23, parseInt(m[1], 10)));
+      const minute = Math.max(0, Math.min(59, parseInt(m[2], 10)));
+      const nums = raw.replace(m[0], ' ').match(/\d+/g)?.map(n => parseInt(n, 10)).filter(n => n > 0) || [];
+      return { hour, minute, interval: nums[0] || 0, count: Math.max(1, nums[1] || 1) };
+    },
+    reminderSlot(t, plan, now){
+      const start = new Date(`${t.date}T${z(plan.hour)}:${z(plan.minute)}:00`);
+      if (Number.isNaN(start.getTime()) || now < start) return 0;
+      if (!plan.interval) return 1;
+      const slot = Math.floor(minutes(now - start) / plan.interval) + 1;
+      return slot <= plan.count ? slot : 0;
     },
     async reminderTick(){
       const now = new Date();
       for (const t of state.tasks) {
-        if (t.date !== todayStr() || t.status === 'Đã xong') continue;
-        const step = this.reminderPlan(t);
-        if (!step) continue;
-        if (this.lateMins(t) > 0) continue;
-        const elapsed = minutes(now - this.startDate(t));
-        if (elapsed < step) continue;
-        const slot = Math.floor(elapsed / step);
+        if (t.date !== todayStr() || t.status === 'Đã xong' || t.reminderAcked) continue;
+        const plan = this.reminderPlan(t);
+        if (!plan) continue;
+        const slot = this.reminderSlot(t, plan, now);
+        if (!slot) continue;
         if (slot <= (t.lastAutoReminderSlot || 0)) continue;
         const reminder = { id:`${t.id}-auto-${slot}`, taskId:t.id, date:t.date, type:'auto', slot, createdAt:Date.now(), acknowledged:false };
         await taskRef('tasks', t.date, t.id).update({ lastAutoReminderSlot:slot, activeReminder:reminder });
@@ -761,7 +779,13 @@
       const r = btn.getBoundingClientRect();
       menu.style.position = 'fixed';
       menu.style.left = Math.max(8, r.right - 150) + 'px';
-      menu.style.top = Math.min(window.innerHeight - 12, r.bottom + 6) + 'px';
+      requestAnimationFrame(() => {
+        const h = menu.offsetHeight || 180;
+        const openDownTop = r.bottom + 6;
+        const openUpTop = r.top - h - 6;
+        const top = openDownTop + h > window.innerHeight - 8 ? Math.max(8, openUpTop) : openDownTop;
+        menu.style.top = top + 'px';
+      });
     }
   };
   document.addEventListener('click', () => $$('.menu.open').forEach(m => { m.classList.remove('open'); m.style.position=''; m.style.left=''; m.style.top=''; }));
@@ -771,6 +795,7 @@
     const def = !taskId ? state.masters.find(m => m.isDefault) : null;
     const seed = def ? { title:def.title, content:def.content, adminNote:def.note, time:def.time, employees:def.emp?[def.emp]:[], type:'Phát sinh', date:state.date } : null;
     Tasks.fillForm(taskId ? state.tasks.find(t => t.id === taskId) : seed, 'task');
+    if (def && $('mMaster')) $('mMaster').value = def.id;
   };
   window.openDailyTemplateForm = function(templateId){
     if (!requireAdmin()) return;
@@ -804,7 +829,7 @@
     if (!t) return;
     withActor(actor => {
       const logs = [...(t.logs||[]), logLine('Đánh dấu đã xong', actor)];
-      taskRef('tasks', t.date, t.id).update({ status:'Đã xong', doneAt: nowIso(), logs, activeReminder:null });
+      taskRef('tasks', t.date, t.id).update({ status:'Đã xong', doneAt: nowIso(), logs, activeReminder:null, reminderAcked:true });
     });
   };
   window.saveQuickNote = function(taskId, field, value){
@@ -813,7 +838,9 @@
     if (field === 'remindPlan' && !window.roleAdmin()) return showToast('Nhân viên không được nhắc việc');
     const apply = actor => {
       const logs = [...(t.logs||[]), logLine(`Sửa ${field}`, actor, `${t[field]||''} -> ${value||''}`)];
-      taskRef('tasks', t.date, t.id).update({ [field]: value, logs });
+      const data = { [field]: value, logs };
+      if (field === 'remindPlan') Object.assign(data, { lastAutoReminderSlot:0, reminderAcked:false, activeReminder:null });
+      taskRef('tasks', t.date, t.id).update(data);
     };
     window.roleAdmin() ? apply('Admin') : withActor(apply);
   };
@@ -886,7 +913,7 @@
     const t = state.tasks.find(x => x.id === taskId);
     if (!t) return;
     const reminder = { id:`${t.id}-manual-${Date.now()}`, taskId:t.id, date:t.date, type:'manual', createdAt:Date.now(), acknowledged:false };
-    taskRef('tasks', t.date, t.id).update({ activeReminder:reminder });
+    taskRef('tasks', t.date, t.id).update({ activeReminder:reminder, reminderAcked:false });
   };
   function showAttention(t){
     const r = t.activeReminder;
@@ -914,7 +941,7 @@
     withActor(actor => {
       const t = state.tasks.find(x => x.id === a.taskId);
       const logs = [...(t?.logs||[]), logLine('Đã nhận nhắc', actor)];
-      taskRef('tasks', a.date, a.taskId).update({ activeReminder: Object.assign({}, t?.activeReminder || {}, { acknowledged:true, acknowledgedBy:actor, acknowledgedAt:Date.now() }), logs });
+      taskRef('tasks', a.date, a.taskId).update({ activeReminder: Object.assign({}, t?.activeReminder || {}, { acknowledged:true, acknowledgedBy:actor, acknowledgedAt:Date.now() }), reminderAcked:true, logs });
       closeAttentionIfAny();
     });
   };
@@ -981,6 +1008,7 @@
     const m = state.masters.find(x => x.id === masterId);
     if (!m) return;
     Tasks.fillForm({ title:m.title, content:m.content, adminNote:m.note, time:m.time, employees:m.emp?[m.emp]:[], type:'Phát sinh', date:state.date }, 'task');
+    if ($('mMaster')) $('mMaster').value = m.id;
   };
   window.setDefaultMaster = function(masterId){
     if (!requireAdmin()) return;
@@ -1006,6 +1034,10 @@
     if (!item.title || !item.content || !item.emp) return showToast('Mẫu CV phải có tên, nội dung và nhân viên');
     taskRef('masters', item.id).set(item);
     closeModal('masterModal');
+  };
+  window.deleteMaster = function(masterId){
+    if (!requireAdmin()) return;
+    if (confirm('Xóa mẫu CV này?')) taskRef('masters', masterId).remove();
   };
   window.addEmployee = function(){
     if (!requireAdmin()) return;
@@ -1054,9 +1086,9 @@
       ];
     },
     rows(sec){ return arr(this.data[sec] || {}).map(r => Object.assign({ id:id(), createdAt:Date.now(), code:'', qty:0, price:0, note:'', payment:'Chưa thanh toán', cut:'Chưa cắt tồn', logs:[] }, r)); },
-    calc(row){
+    calc(row, sec){
       const amount = Math.abs(Number(row.qty||0)) * Number(row.price||0);
-      return row.stockType === 'Thiếu' ? -amount : amount;
+      return sec === 'diff' && row.stockType === 'Thiếu' ? -amount : amount;
     },
     render(){
       if (!$('tonKhoTab')) ensureStockTab();
@@ -1078,7 +1110,7 @@
     },
     rowHtml(sec,r){
       const stt = this.rows(sec).findIndex(x => x.id === r.id) + 1;
-      const amt = this.calc(r);
+      const amt = this.calc(r, sec);
       const note = `<button class="tkNoteBtn" onclick="stockOpenNote('${sec}','${r.id}')">${esc(r.note || 'Ghi chú...')}</button>`;
       const status = `<span class="status ${r.cut==='Đã cắt tồn'?'done':'todo'}">${esc(r.cut)}</span>`;
       const canEdit = window.roleAdmin() || r.cut !== 'Đã cắt tồn';
@@ -1086,7 +1118,7 @@
         ${canEdit?`<button onclick="stockOpenForm('${sec}','${r.id}')">Sửa</button>`:''}
         ${window.roleAdmin()?`<button class="danger" onclick="stockDeleteRow('${sec}','${r.id}')">Xóa</button>`:''}
         ${window.roleAdmin()?`<button onclick="stockToggleCut('${sec}','${r.id}')">${r.cut==='Đã cắt tồn'?'Chưa cắt tồn':'Đã cắt tồn'}</button>`:''}
-        ${sec!=='diff'?`<button onclick="stockTogglePaid('${sec}','${r.id}')">${r.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán'}</button><button onclick="stockPayAll('${sec}','${r.id}')">Thanh toán toàn bộ</button>`:''}
+        ${sec!=='diff'?`<button onclick="stockTogglePaid('${sec}','${r.id}')">${r.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán'}</button>${window.roleAdmin()?`<button onclick="stockPayAll('${sec}','${r.id}')">Thanh toán toàn bộ</button>`:''}`:''}
       </div></div>`;
       const td = (label, html, cls='') => `<td data-label="${esc(label)}" class="${cls}">${html}</td>`;
       const amountHtml = `<span class="${amt<0?'tkNeg':'tkPos'}">${money(amt)}</span>`;
@@ -1100,15 +1132,15 @@
       const filt = this.filter[sec] || 'all';
       const btn = (key,label,count,cls='') => `<button class="tkStat ${cls} ${filt===key?'active':''}" onclick="stockSetFilter('${sec}','${key}')"><b>${count}</b><span>${label}</span></button>`;
       if (sec === 'diff') {
-        const sum = rows.reduce((s,r)=>s+this.calc(r),0);
+        const sum = rows.reduce((s,r)=>s+this.calc(r,'diff'),0);
         return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Thiếu','Thiếu',rows.filter(r=>r.stockType==='Thiếu').length,'warn')}${btn('Dư','Dư',rows.filter(r=>r.stockType==='Dư').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money ${sum<0?'neg':'pos'}"><b>${money(sum)}</b><span>Chênh lệch</span></div></div>`;
       }
-      const friendStats = sec==='friend' ? this.friendStats(rows).map(s => btn('friend:'+s.name, `${s.name} (${s.count}) TT ${money(s.total)}`, s.count, 'friendStat')).join('') : '';
-      return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Chưa thanh toán','Chưa TT',rows.filter(r=>r.payment!=='Đã thanh toán').length,'warn')}${btn('Đã thanh toán','Đã TT',rows.filter(r=>r.payment==='Đã thanh toán').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money"><b>${money(rows.reduce((s,r)=>s+this.calc(r),0))}</b><span>Tổng tiền</span></div>${friendStats}</div>`;
+      const friendStats = sec==='friend' ? this.friendStats(rows).map(s => `<button class="tkStat friendStat ${(filt==='friend:'+s.name)?'active':''}" onclick="stockSetFilter('${sec}','friend:${esc(s.name)}')"><b>${s.count}</b><span><strong>${esc(s.name)} (${s.count})</strong><em>TT ${money(s.total)}</em></span></button>`).join('') : '';
+      return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Chưa thanh toán','Chưa TT',rows.filter(r=>r.payment!=='Đã thanh toán').length,'warn')}${btn('Đã thanh toán','Đã TT',rows.filter(r=>r.payment==='Đã thanh toán').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money"><b>${money(rows.reduce((s,r)=>s+this.calc(r,sec),0))}</b><span>Tổng tiền</span></div>${friendStats}</div>`;
     },
     friendStats(rows){
       const map = {};
-      rows.forEach(r => { const n = r.friend || 'Khác'; map[n] = map[n] || { name:n,count:0,total:0 }; map[n].count++; map[n].total += this.calc(r); });
+      rows.forEach(r => { const n = r.friend || 'Khác'; map[n] = map[n] || { name:n,count:0,total:0 }; map[n].count++; map[n].total += Math.abs(Number(r.qty||0)) * Number(r.price||0); });
       return Object.values(map);
     },
     filteredRows(sec){
@@ -1134,11 +1166,11 @@
       const div = document.createElement('div');
       div.id = 'tonKhoTab';
       div.className = 'hidden';
-      div.innerHTML = `<div class="section-title"><h2>📦 Tồn Kho</h2><span class="hint">Dữ liệu tách riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><input id="stockMonth" type="month" value="${Stock.month}" onchange="stockChangeMonth(this.value)"></div><div id="stockSections" class="tkGrid"></div>`;
+      div.innerHTML = `<div class="section-title"><h2>📦 Tồn Kho</h2><span class="hint">Dữ liệu tách riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><label class="stockMonthBox"><span>Tháng</span><input id="stockMonth" type="month" value="${Stock.month}" onchange="stockChangeMonth(this.value)"></label><button class="btn gray" onclick="stockTotalHistory()">Lịch sử tổng</button></div><div id="stockSections" class="tkGrid"></div>`;
       document.querySelector('.wrap')?.appendChild(div);
     }
     if (!$('tkStyleCore')) {
-      document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkStats{grid-template-columns:repeat(2,minmax(0,1fr))}.tkHead{align-items:flex-start;flex-direction:column}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection{padding:9px}.tkTableWrap{overflow:visible}.tkTable{display:block;min-width:0;border:0}.tkTable thead{display:none}.tkTable tbody{display:block}.tkTable tr{display:block;background:#fff;border:1px solid #dbe5f2;border-radius:14px;margin:10px 0;padding:10px}.tkTable td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:center;border:0;padding:6px 0}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}}</style>`);
+      document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px;align-items:center}.stockMonthBox{display:inline-flex;align-items:center;gap:8px;border:1px solid #dbe5f2;background:#fff;border-radius:12px;padding:7px 10px;font-weight:900}.stockMonthBox span{color:#64748b;font-size:12px;text-transform:uppercase}.stockMonthBox input{height:32px;border:0;font-weight:900;background:transparent}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkToolbar{justify-content:space-between}.tkStats{grid-template-columns:repeat(2,minmax(0,1fr))}.tkHead{align-items:flex-start;flex-direction:column}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection{padding:9px}.tkTableWrap{overflow:visible}.tkTable{display:block;min-width:0;border:0}.tkTable thead{display:none}.tkTable tbody{display:block}.tkTable tr{display:block;background:#fff;border:1px solid #dbe5f2;border-radius:14px;margin:10px 0;padding:10px}.tkTable td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:center;border:0;padding:6px 0}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}}</style>`);
     }
   }
   window.stockChangeMonth = function(m){ Stock.month = m; Stock.filter = {}; Stock.bind(); };
@@ -1180,7 +1212,7 @@
     const row = Stock.rows(sec).find(r => r.id === rowId);
     if (!row) return;
     $('detailTitle').textContent = 'Ghi chú tồn kho';
-    $('detailBody').innerHTML = `<div class="form"><div class="full"><textarea id="stockNoteText" style="min-height:160px">${esc(row.note||'')}</textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="stockSaveNote('${sec}','${rowId}')">Lưu</button></div>`;
+    $('detailBody').innerHTML = `<div class="form"><div class="full"><textarea id="stockNoteText" style="min-height:160px">${esc(row.note||'')}</textarea></div></div><div class="panelfoot"><button class="btn blue" onclick="stockSaveNote('${sec}','${rowId}')">Lưu</button></div>`;
     openModal('detailModal');
   };
   window.stockSaveNote = function(sec,rowId){
@@ -1206,6 +1238,7 @@
   };
   window.stockPayAll = function(sec,rowId){
     if (sec === 'diff') return;
+    if (!requireAdmin()) return;
     withActor(actor => {
       const row = Stock.rows(sec).find(r => r.id === rowId);
       stockRef('months', Stock.month, sec, rowId).update({ payment:'Đã thanh toán', logs:[...(row.logs||[]), logLine('Thanh toán toàn bộ',actor)] });
@@ -1215,6 +1248,14 @@
     const row = Stock.rows(sec).find(r => r.id === rowId);
     $('detailTitle').textContent = 'Lịch sử tồn kho';
     $('detailBody').innerHTML = `<pre class="copyBox">${esc(logText(row?.logs||[]))}</pre>`;
+    openModal('detailModal');
+  };
+  window.stockTotalHistory = function(){
+    const logs = Stock.sections().flatMap(sec => Stock.rows(sec.id).flatMap(r => (r.logs || []).map(l => Object.assign({ section:sec.title, code:r.code }, l))));
+    logs.sort((a,b)=>(b.at||0)-(a.at||0));
+    const text = logs.map(l => `${new Date(l.at || Date.now()).toLocaleString('vi-VN')} - ${l.section || '-'} - ${l.code || '-'} - ${l.actor || '-'} - ${l.action || ''}${l.detail ? ': ' + l.detail : ''}`).join('\n') || 'Chưa có lịch sử tồn kho';
+    $('detailTitle').textContent = 'Lịch sử tổng tồn kho';
+    $('detailBody').innerHTML = `<pre class="copyBox">${esc(text)}</pre>`;
     openModal('detailModal');
   };
   window.stockOpenFriends = function(){
@@ -1262,11 +1303,17 @@
       .employeeInlineItem button{border:0;background:#fee2e2;color:#dc2626;border-radius:999px;width:24px;height:24px;font-weight:1000;cursor:pointer}
       .defaultPick{display:inline-flex;align-items:center;gap:6px;font-weight:900}
       .defaultPick input{width:auto;height:auto}
-      .tkCode{display:inline-block;background:#fee2e2!important;color:#b91c1c!important;border-radius:8px;padding:5px 9px;font-size:17px;font-weight:1000}
+      .tkCode{display:inline-block;background:transparent!important;color:#dc2626!important;border-radius:0!important;padding:0!important;font-size:17px;font-weight:1000}
       .tkStat.money.neg b,.tkNeg{color:#dc2626!important;font-weight:1000}
       .tkStat.money.pos b,.tkPos{color:#15803d!important;font-weight:1000}
-      .tkStat.friendStat{background:#fee2e2!important;color:#7f1d1d!important;border-color:#fecaca!important}
-      .tkStat.friendStat span{color:#7f1d1d!important;font-weight:900}
+      .tkStat.friendStat{background:#fff!important;color:#7f1d1d!important;border-color:#fecaca!important}
+      .tkStat.friendStat b{color:#7f1d1d!important}
+      .tkStat.friendStat span{display:block;color:#7f1d1d!important;font-weight:900}
+      .tkStat.friendStat strong,.tkStat.friendStat em{display:block;color:#991b1b!important;font-style:normal;font-size:14px;line-height:1.2}
+      .deviceNameOnline{color:#dc2626!important;font-weight:1000}
+      .deviceHistoryBtn{height:32px!important;padding:0 10px!important;border-radius:8px!important;min-width:0!important}
+      .dkCodeHot span,.dkHotCode{color:#dc2626!important;font-weight:1000}
+      .remindMini{width:86px!important}
       .dkNoteBtn{width:100%;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;text-align:left;font-weight:800;cursor:pointer;min-height:34px}
       .dkNoteBtn.empty{color:#94a3b8}
       @media(max-width:760px){
@@ -1281,6 +1328,10 @@
         .tkStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
         .tkHead>div{display:flex;gap:8px;flex-wrap:wrap}
         #dailyTab .miniTable td[data-label="Nội dung"],#dailyTab .miniTable td[data-label="Ghi chú admin"]{align-items:start!important}
+        #dailyTab .miniTable td[data-label="Tên CV"]{grid-template-columns:74px minmax(0,1fr)!important}
+        #dailyTab .dailyTitlePill{min-width:0!important;width:100%!important;white-space:normal!important;word-break:break-word}
+        #dailyTab .empchips{max-width:none!important;flex-direction:row!important;flex-wrap:wrap!important}
+        #dailyTab .dailyTinyActions{flex-direction:row!important;flex-wrap:wrap!important}
       }
     </style>`);
   }
