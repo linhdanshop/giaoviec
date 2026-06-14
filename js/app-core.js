@@ -53,6 +53,7 @@
     session: loadJson('giaoviec.session') || null,
     actor: loadJson('giaoviec.actor') || null
   };
+  let modalZ = 6000;
 
   window.APP_ROOTS = Object.assign(window.APP_ROOTS || {}, {
     taskReminder: TASK_ROOT,
@@ -95,8 +96,20 @@
     clearTimeout(el._timer);
     el._timer = setTimeout(() => el.classList.remove('show'), 2200);
   }
-  function openModal(id){ const el = $(id); if (el) el.classList.add('open'); }
-  function closeModal(id){ const el = $(id); if (el) el.classList.remove('open'); if (id === 'attentionModal') stopSound(); }
+  function openModal(id){
+    const el = $(id);
+    if (!el) return;
+    el.style.zIndex = String(++modalZ);
+    el.classList.add('open');
+  }
+  function closeModal(id){
+    const el = $(id);
+    if (el) {
+      el.classList.remove('open');
+      el.style.zIndex = '';
+    }
+    if (id === 'attentionModal') stopSound();
+  }
   function logLine(action, actor, extra){
     return { at: Date.now(), actor: actor || currentActorName(), action, detail: extra || '' };
   }
@@ -135,7 +148,10 @@
     $$('.employeeOnly').forEach(el => el.classList.toggle('hidden', window.roleAdmin()));
     $$('.adminQuick').forEach(el => el.classList.toggle('hidden', !window.roleAdmin()));
     const test = $('adminTestNotify');
-    if (test) test.textContent = `🔔 Test nhắc: ${state.adminNotifyOn ? 'Bật' : 'Tắt'}`;
+    if (test) {
+      test.textContent = `🔔 Test nhắc: ${state.adminNotifyOn ? 'Bật' : 'Tắt'}`;
+      test.classList.toggle('adminNotifyOn', state.adminNotifyOn);
+    }
     Device.updateHeartbeat();
     renderLoginChoices();
   }
@@ -210,31 +226,43 @@
   const Device = {
     id: localStorage.getItem('giaoviec.deviceId') || ('PC-' + Math.random().toString(36).slice(2,6).toUpperCase()),
     selected: '',
+    loaded: false,
     bind(){
       localStorage.setItem('giaoviec.deviceId', this.id);
       const idEl = $('deviceId'); if (idEl) idEl.textContent = this.id;
       const d1 = $('d1'); if (d1) d1.textContent = this.id;
       taskRef('devices').on('value', snap => {
         state.devices = snap.val() || {};
+        this.loaded = true;
+        const current = state.devices[this.id] || {};
+        if (!current.id || Date.now() - (current.lastSeen || 0) > 15000) this.updateHeartbeat(true);
         this.render();
       });
-      this.updateHeartbeat();
       setInterval(() => this.updateHeartbeat(), 25000);
     },
     current(){
       const saved = state.devices[this.id] || {};
+      const local = loadJson('giaoviec.deviceProfile') || {};
       return {
         id: this.id,
-        name: saved.name || this.id,
-        ip: saved.ip || '',
+        name: local.name || saved.name || this.id,
+        ip: local.ip || saved.ip || '',
         user: window.roleAdmin() ? 'Admin' : (auth.actor?.name || 'Nhân viên'),
         allowed: saved.allowed !== false,
         lastSeen: Date.now(),
-        online: true
+        online: true,
+        logs: saved.logs || []
       };
     },
-    updateHeartbeat(){
-      taskRef('devices', this.id).update(this.current()).catch(()=>{});
+    updateHeartbeat(force){
+      if (!this.loaded && !force) return;
+      const saved = state.devices[this.id] || {};
+      const data = this.current();
+      const wasAway = !saved.lastSeen || Date.now() - (saved.lastSeen || 0) > DEVICE_STALE_MS;
+      const logs = Array.isArray(saved.logs) ? saved.logs.slice(-80) : [];
+      if (wasAway) logs.push(logLine('Online', data.user, data.name || data.id));
+      data.logs = logs.slice(-100);
+      taskRef('devices', this.id).update(data).catch(()=>{});
     },
     render(){
       if ((document.activeElement?.id || '').startsWith('deviceEdit')) return;
@@ -274,6 +302,7 @@
           <b class="${online?'devOnline':'devAway'}">${online?'Online':'Vắng'}</b>
           <span>${d.allowed===false?'Bị chặn':'Được phép'}</span>
           ${window.roleAdmin()?`<button class="btn ${d.allowed===false?'green':'gray'}" onclick="event.stopPropagation();toggleDeviceAccess('${esc(d.id)}')">${d.allowed===false?'Cho phép':'Chặn'}</button>`:''}
+          <button class="btn gray" onclick="event.stopPropagation();openDeviceHistory('${esc(d.id)}')">Lịch sử</button>
         </div>`;
       }).join('');
     }
@@ -282,13 +311,26 @@
   window.saveSelectedDevice = function(){
     if (!requireAdmin()) return;
     const id = Device.selected || Device.id;
-    taskRef('devices', id).update({ name: $('deviceEditName')?.value.trim() || id, ip: $('deviceEditIp')?.value.trim() || '' });
+    const cur = state.devices[id] || {};
+    const name = $('deviceEditName')?.value.trim() || id;
+    const ip = $('deviceEditIp')?.value.trim() || '';
+    const logs = [...(cur.logs || []), logLine('Đổi tên máy', 'Admin', `${cur.name || ''} -> ${name}`)].slice(-100);
+    if (id === Device.id) saveJson('giaoviec.deviceProfile', { name, ip });
+    taskRef('devices', id).update({ name, ip, logs });
     showToast('Đã lưu tên máy');
   };
   window.toggleDeviceAccess = function(id){
     if (!requireAdmin()) return;
     const cur = state.devices[id] || {};
-    taskRef('devices', id).update({ allowed: cur.allowed === false });
+    const next = cur.allowed === false;
+    const logs = [...(cur.logs || []), logLine(next ? 'Cho phép truy cập' : 'Chặn truy cập', 'Admin')].slice(-100);
+    taskRef('devices', id).update({ allowed: next, logs });
+  };
+  window.openDeviceHistory = function(id){
+    const d = state.devices[id] || {};
+    $('detailTitle').textContent = `Lịch sử thiết bị - ${id}`;
+    $('detailBody').innerHTML = `<pre class="copyBox">${esc(logText(d.logs || []))}</pre>`;
+    openModal('detailModal');
   };
   window.saveDeviceInfo = function(){};
 
@@ -403,6 +445,7 @@
       const rows = this.filtered();
       body.innerHTML = rows.map(t => this.row(t)).join('');
       if (mobile) mobile.innerHTML = rows.map(t => this.mobileCard(t)).join('');
+      setupColumnResizers();
     },
     row(t){
       const color = empColor((t.employees||[])[0]);
@@ -411,11 +454,11 @@
       return `<tr class="${done?'done':''} ${late?'overdue':''}">
         <td><div class="timeStack"><b>${esc(t.time)}</b><small>${dateLabel(t.date)}</small></div></td>
         <td><div class="titlepill" style="--empColor:${color}" onclick="openTaskDetail('${esc(t.id)}')">${esc(t.title)}</div><span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc(t.type)}</span></td>
-        <td><div class="contentText clip">${esc(t.content)}</div>${this.imgBadge(t.images,'ảnh công việc')}</td>
+        <td><div class="contentText clip">${esc(t.content)}</div></td>
         <td>${this.empChips(t.employees)}</td>
         <td>${this.imgBadge(t.images,'ảnh')}</td>
-        <td>${window.roleAdmin()?`<textarea class="quickText" placeholder="Admin ghi chú..." onchange="saveQuickNote('${esc(t.id)}','adminNote',this.value)">${esc(t.adminNote)}</textarea>`:`<button class="noteview ${t.adminNote?'':'empty'}" onclick="openAdminNote('${esc(t.id)}')">${esc(t.adminNote||'Admin ghi chú...')}</button>`}${this.imgBadge(t.adminImages,'ảnh ghi chú')}</td>
-        <td><button class="noteview ${t.report?'':'empty'}" onclick="openReport('${esc(t.id)}')">${esc(t.report||'Bấm để nhập báo cáo...')}</button>${this.imgBadge(t.reportImages,'ảnh báo cáo')}</td>
+        <td>${this.noteStack(t.adminNote, 'Admin ghi chú...', `openAdminNote('${esc(t.id)}')`, t.adminImages, 'ảnh ghi chú')}</td>
+        <td>${this.noteStack(t.report, 'Bấm để nhập báo cáo...', `openReport('${esc(t.id)}')`, t.reportImages, 'ảnh báo cáo')}</td>
         <td><div class="statusStack"><span class="status ${done?'done':'todo'}">${esc(t.status)}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div></td>
         <td>${this.durationHtml(t)}</td>
         <td>${window.roleAdmin()?`<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button><input class="remindMini" value="${esc(t.remindPlan||'')}" onchange="saveQuickNote('${esc(t.id)}','remindPlan',this.value)" placeholder="phút"></div>`:''}</td>
@@ -437,6 +480,9 @@
       const count = Array.isArray(images) ? images.length : 0;
       return count ? `<button class="imgbadge" onclick="openImages(${JSON.stringify(images).replace(/"/g,'&quot;')},'${esc(label)}')">📷 ${count} ảnh</button>` : '';
     },
+    noteStack(text, empty, click, images, imgLabel){
+      return `<div class="cellNoteStack"><button class="noteview ${text?'':'empty'}" onclick="${click}">${esc(text||empty)}</button>${this.imgBadge(images,imgLabel)}</div>`;
+    },
     empChips(names){
       return `<div class="empchips">${(names||[]).map(n => `<span class="empchip" style="--empColor:${empColor(n)}">${esc(n)}</span>`).join('')}</div>`;
     },
@@ -452,7 +498,10 @@
       const masterPick = $('mMaster');
       if (masterPick) masterPick.innerHTML = `<option value="">-- Không chọn mẫu --</option>` + state.masters.map(m => `<option value="${esc(m.id)}">${esc(m.title)}</option>`).join('');
       const empBody = $('empManageBody');
-      if (empBody) empBody.innerHTML = state.employees.map(n => `<tr><td><b>${esc(n)}</b></td><td class="adminOnly"><button class="btn red" onclick="deleteEmployee('${esc(n)}')">Xóa</button></td></tr>`).join('');
+      if (empBody) {
+        const chips = state.employees.map(n => `<span class="employeeInlineItem"><b>${esc(n)}</b>${window.roleAdmin()?`<button type="button" onclick="deleteEmployee('${esc(n)}')">×</button>`:''}</span>`).join('');
+        empBody.innerHTML = `<tr><td colspan="2"><div class="employeeInlineList">${chips || '<span class="muted">Chưa có nhân viên</span>'}</div></td></tr>`;
+      }
     },
     renderDaily(){
       ensureDailyApplyAllButton();
@@ -460,13 +509,16 @@
       if (!body) return;
       body.innerHTML = this.sort(state.dailyTemplates).map(t => {
         const color = empColor((t.employees||[])[0]);
+        const statusHtml = window.roleAdmin()
+          ? `<button class="statusToggle ${t.active?'on':'off'}" onclick="event.stopPropagation();toggleDailyActive('${esc(t.id)}')">${t.active?'Đang bật':'Tắt'}</button>`
+          : `<span class="statusToggle ${t.active?'on':'off'}">${t.active?'Đang bật':'Tắt'}</span>`;
         return `<tr class="dailyRowView" onclick="openDailyDetail('${esc(t.id)}')">
           <td data-label="Giờ">${esc(t.time)}</td>
           <td data-label="Tên CV"><span class="dailyTitlePill" style="--empColor:${color}">${esc(t.title)}</span></td>
           <td data-label="Nhân viên">${this.empChips(t.employees)}</td>
           <td data-label="Nội dung"><div class="dailyTextClip contentText">${esc(t.content)}</div>${this.imgBadge(t.images,'ảnh')}</td>
           <td data-label="Ghi chú admin"><div class="dailyTextClip">${esc(t.adminNote || '')}</div></td>
-          <td data-label="Trạng thái"><button class="statusToggle ${t.active?'on':'off'} adminOnly" onclick="event.stopPropagation();toggleDailyActive('${esc(t.id)}')">${t.active?'Đang bật':'Tắt'}</button><span class="statusToggle ${t.active?'on':'off'} employeeOnly">${t.active?'Đang bật':'Tắt'}</span></td>
+          <td data-label="Trạng thái">${statusHtml}</td>
           <td data-label="Áp dụng" class="adminOnly"><button class="btn green dailyApplyBtn" onclick="event.stopPropagation();applyDailyTemplate('${esc(t.id)}')">Áp dụng</button></td>
           <td data-label="Thao tác" class="adminOnly"><div class="dailyTinyActions"><button class="btn gray" onclick="event.stopPropagation();openDailyTemplateForm('${esc(t.id)}')">Sửa</button><button class="btn red" onclick="event.stopPropagation();deleteDailyTemplate('${esc(t.id)}')">Xóa</button></div></td>
         </tr>`;
@@ -475,7 +527,7 @@
     renderMasters(){
       const body = $('masterBody');
       if (body) body.innerHTML = state.masters.map(m => `<tr>
-        <td>${m.isDefault?'<span class="defaultBadge">Đang chọn</span>':''}</td>
+        <td><label class="defaultPick"><input type="radio" name="defaultMaster" ${m.isDefault?'checked':''} onchange="setDefaultMaster('${esc(m.id)}')"><span>${m.isDefault?'Đang chọn':'Chọn'}</span></label></td>
         <td><b>${esc(m.title)}</b><div class="masterHint">${esc(m.time||'')}</div></td>
         <td><div class="subMobileText">${esc(m.content)}</div></td>
         <td>${esc(m.emp||'')}</td>
@@ -621,6 +673,33 @@
     }
     return el;
   }
+  function setupColumnResizers(){
+    const table = $('taskTable');
+    if (!table || table.dataset.resizable === '1') return;
+    const cols = Array.from(table.querySelectorAll('colgroup col'));
+    table.querySelectorAll('thead th').forEach((th, i) => {
+      if (!cols[i]) return;
+      const grip = document.createElement('span');
+      grip.className = 'colResizer';
+      th.appendChild(grip);
+      grip.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        const startX = ev.clientX;
+        const startW = cols[i].getBoundingClientRect().width || th.getBoundingClientRect().width;
+        const move = e => {
+          const width = Math.max(56, Math.round(startW + e.clientX - startX));
+          cols[i].style.width = width + 'px';
+        };
+        const up = () => {
+          document.removeEventListener('mousemove', move);
+          document.removeEventListener('mouseup', up);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+      });
+    });
+    table.dataset.resizable = '1';
+  }
   function ensureDailyApplyAllButton(){
     const title = document.querySelector('#dailyTab .section-title');
     if (!title || $('applyAllDailyBtn')) return;
@@ -640,6 +719,7 @@
     Stock.render();
     Device.render();
     applyMobileLabels();
+    updateAuthUi();
   }
   function applyMobileLabels(){
     $$('.miniTable tbody tr').forEach(tr => {
@@ -665,14 +745,32 @@
   };
   window.toggleMenu = function(ev, btn){
     ev.stopPropagation();
-    $$('.menu.open').forEach(m => { if (!btn.nextElementSibling || m !== btn.nextElementSibling) m.classList.remove('open'); });
-    btn.nextElementSibling?.classList.toggle('open');
+    const menu = btn.nextElementSibling;
+    $$('.menu.open').forEach(m => {
+      if (m !== menu) {
+        m.classList.remove('open');
+        m.style.position = '';
+        m.style.left = '';
+        m.style.top = '';
+      }
+    });
+    if (!menu) return;
+    const willOpen = !menu.classList.contains('open');
+    menu.classList.toggle('open', willOpen);
+    if (willOpen) {
+      const r = btn.getBoundingClientRect();
+      menu.style.position = 'fixed';
+      menu.style.left = Math.max(8, r.right - 150) + 'px';
+      menu.style.top = Math.min(window.innerHeight - 12, r.bottom + 6) + 'px';
+    }
   };
-  document.addEventListener('click', () => $$('.menu.open').forEach(m => m.classList.remove('open')));
+  document.addEventListener('click', () => $$('.menu.open').forEach(m => { m.classList.remove('open'); m.style.position=''; m.style.left=''; m.style.top=''; }));
 
   window.openTaskForm = function(taskId){
     if (!requireAdmin()) return;
-    Tasks.fillForm(state.tasks.find(t => t.id === taskId), 'task');
+    const def = !taskId ? state.masters.find(m => m.isDefault) : null;
+    const seed = def ? { title:def.title, content:def.content, adminNote:def.note, time:def.time, employees:def.emp?[def.emp]:[], type:'Phát sinh', date:state.date } : null;
+    Tasks.fillForm(taskId ? state.tasks.find(t => t.id === taskId) : seed, 'task');
   };
   window.openDailyTemplateForm = function(templateId){
     if (!requireAdmin()) return;
@@ -743,7 +841,12 @@
   window.openAdminNote = function(taskId){
     const t = state.tasks.find(x => x.id === taskId);
     if (!t) return;
-    if (!window.roleAdmin()) return openTaskDetail(taskId);
+    if (!window.roleAdmin()) {
+      $('detailTitle').textContent = `Admin ghi chú - ${t.title}`;
+      $('detailBody').innerHTML = `<div class="detailSection adminBox"><div>${esc(t.adminNote||'Không có ghi chú')}</div>${Tasks.imgBadge(t.adminImages,'ảnh ghi chú')}</div>`;
+      openModal('detailModal');
+      return;
+    }
     $('aId').value = taskId;
     $('aText').value = t.adminNote || '';
     setPreviewImages('adminPreview', t.adminImages || []);
@@ -879,6 +982,12 @@
     if (!m) return;
     Tasks.fillForm({ title:m.title, content:m.content, adminNote:m.note, time:m.time, employees:m.emp?[m.emp]:[], type:'Phát sinh', date:state.date }, 'task');
   };
+  window.setDefaultMaster = function(masterId){
+    if (!requireAdmin()) return;
+    const updates = {};
+    state.masters.forEach(m => { updates[`${m.id}/isDefault`] = m.id === masterId; });
+    taskRef('masters').update(updates);
+  };
   window.openMasterForm = function(masterId){
     if (!requireAdmin()) return;
     const m = state.masters.find(x => x.id === masterId) || {};
@@ -892,7 +1001,8 @@
   };
   window.saveMaster = function(){
     if (!requireAdmin()) return;
-    const item = { id:$('msId').value || id(), title:$('msTitle').value.trim(), emp:$('msEmp').value, time:$('msTime').value, content:$('msContent').value.trim(), note:$('msNote').value.trim() };
+    const old = state.masters.find(x => x.id === $('msId').value) || {};
+    const item = { id:$('msId').value || id(), title:$('msTitle').value.trim(), emp:$('msEmp').value, time:$('msTime').value, content:$('msContent').value.trim(), note:$('msNote').value.trim(), isDefault: !!old.isDefault };
     if (!item.title || !item.content || !item.emp) return showToast('Mẫu CV phải có tên, nội dung và nhân viên');
     taskRef('masters', item.id).set(item);
     closeModal('masterModal');
@@ -944,7 +1054,10 @@
       ];
     },
     rows(sec){ return arr(this.data[sec] || {}).map(r => Object.assign({ id:id(), createdAt:Date.now(), code:'', qty:0, price:0, note:'', payment:'Chưa thanh toán', cut:'Chưa cắt tồn', logs:[] }, r)); },
-    calc(row){ return Number(row.qty||0) * Number(row.price||0); },
+    calc(row){
+      const amount = Math.abs(Number(row.qty||0)) * Number(row.price||0);
+      return row.stockType === 'Thiếu' ? -amount : amount;
+    },
     render(){
       if (!$('tonKhoTab')) ensureStockTab();
       if (state.tab !== 'tonKho') return;
@@ -955,7 +1068,7 @@
     sectionHtml(sec){
       const rows = this.filteredRows(sec.id);
       const shown = this.expanded[sec.id] ? rows : rows.slice(0,10);
-      return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue adminOnly" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>10?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
+      return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>10?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
     },
     headHtml(sec){
       const common = '<th>STT</th><th>Ngày lập</th><th>Mã SP</th><th>SL</th><th>Giá bán</th>';
@@ -968,23 +1081,29 @@
       const amt = this.calc(r);
       const note = `<button class="tkNoteBtn" onclick="stockOpenNote('${sec}','${r.id}')">${esc(r.note || 'Ghi chú...')}</button>`;
       const status = `<span class="status ${r.cut==='Đã cắt tồn'?'done':'todo'}">${esc(r.cut)}</span>`;
+      const canEdit = window.roleAdmin() || r.cut !== 'Đã cắt tồn';
       const menu = `<div class="action"><button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu">
-        <button onclick="stockOpenForm('${sec}','${r.id}')">Sửa</button>
+        ${canEdit?`<button onclick="stockOpenForm('${sec}','${r.id}')">Sửa</button>`:''}
         ${window.roleAdmin()?`<button class="danger" onclick="stockDeleteRow('${sec}','${r.id}')">Xóa</button>`:''}
         ${window.roleAdmin()?`<button onclick="stockToggleCut('${sec}','${r.id}')">${r.cut==='Đã cắt tồn'?'Chưa cắt tồn':'Đã cắt tồn'}</button>`:''}
         ${sec!=='diff'?`<button onclick="stockTogglePaid('${sec}','${r.id}')">${r.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán'}</button><button onclick="stockPayAll('${sec}','${r.id}')">Thanh toán toàn bộ</button>`:''}
       </div></div>`;
-      const base = `<td>${stt}</td><td>${new Date(r.createdAt||Date.now()).toLocaleDateString('vi-VN')}</td><td class="tkCode">${esc(r.code)}</td><td>${esc(r.qty)}</td><td>${money(r.price)}</td>`;
-      if (sec === 'diff') return `<tr>${base}<td>${esc(r.stockType||'Thiếu')}</td><td class="${amt<0?'tkNeg':'tkPos'}">${money(amt)}</td><td>${note}</td><td>${status}</td><td><button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button></td><td>${menu}</td></tr>`;
-      if (sec === 'friend') return `<tr>${base}<td>${esc(r.friend||'')}</td><td>${money(amt)}</td><td>${esc(r.payment)}</td><td>${note}</td><td>${status}</td><td><button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button></td><td>${menu}</td></tr>`;
-      return `<tr>${base}<td>${esc(r.customer||'')}</td><td>${esc(r.phone||'')}</td><td>${money(amt)}</td><td>${esc(r.payment)}</td><td>${note}</td><td>${status}</td><td><button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button></td><td>${menu}</td></tr>`;
+      const td = (label, html, cls='') => `<td data-label="${esc(label)}" class="${cls}">${html}</td>`;
+      const amountHtml = `<span class="${amt<0?'tkNeg':'tkPos'}">${money(amt)}</span>`;
+      const base = `${td('STT',stt)}${td('Ngày lập',new Date(r.createdAt||Date.now()).toLocaleDateString('vi-VN'))}${td('Mã SP',`<span class="tkCode">${esc(r.code)}</span>`)}${td('SL',esc(r.qty))}${td('Giá bán',money(r.price))}`;
+      if (sec === 'diff') return `<tr>${base}${td('Tồn kho',esc(r.stockType||'Thiếu'))}${td('Thành tiền',amountHtml)}${td('Ghi chú',note)}${td('Trạng thái',status)}${td('Lịch sử',`<button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button>`)}${td('Thao tác',menu)}</tr>`;
+      if (sec === 'friend') return `<tr>${base}${td('Người quen',esc(r.friend||''))}${td('Thành tiền',amountHtml)}${td('Thanh toán',esc(r.payment))}${td('Ghi chú',note)}${td('Trạng thái',status)}${td('Lịch sử',`<button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button>`)}${td('Thao tác',menu)}</tr>`;
+      return `<tr>${base}${td('Khách mua',esc(r.customer||''))}${td('SĐT',esc(r.phone||''))}${td('Thành tiền',amountHtml)}${td('Thanh toán',esc(r.payment))}${td('Ghi chú',note)}${td('Trạng thái',status)}${td('Lịch sử',`<button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button>`)}${td('Thao tác',menu)}</tr>`;
     },
     statsHtml(sec){
       const rows = this.rows(sec);
       const filt = this.filter[sec] || 'all';
       const btn = (key,label,count,cls='') => `<button class="tkStat ${cls} ${filt===key?'active':''}" onclick="stockSetFilter('${sec}','${key}')"><b>${count}</b><span>${label}</span></button>`;
-      if (sec === 'diff') return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Thiếu','Thiếu',rows.filter(r=>r.stockType==='Thiếu').length,'warn')}${btn('Dư','Dư',rows.filter(r=>r.stockType==='Dư').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money"><b>${money(rows.reduce((s,r)=>s+this.calc(r),0))}</b><span>Chênh lệch</span></div></div>`;
-      const friendStats = sec==='friend' ? this.friendStats(rows).map(s => btn('friend:'+s.name, `${s.name} (${s.count}) TT ${money(s.total)}`, s.count, 'money')).join('') : '';
+      if (sec === 'diff') {
+        const sum = rows.reduce((s,r)=>s+this.calc(r),0);
+        return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Thiếu','Thiếu',rows.filter(r=>r.stockType==='Thiếu').length,'warn')}${btn('Dư','Dư',rows.filter(r=>r.stockType==='Dư').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money ${sum<0?'neg':'pos'}"><b>${money(sum)}</b><span>Chênh lệch</span></div></div>`;
+      }
+      const friendStats = sec==='friend' ? this.friendStats(rows).map(s => btn('friend:'+s.name, `${s.name} (${s.count}) TT ${money(s.total)}`, s.count, 'friendStat')).join('') : '';
       return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Chưa thanh toán','Chưa TT',rows.filter(r=>r.payment!=='Đã thanh toán').length,'warn')}${btn('Đã thanh toán','Đã TT',rows.filter(r=>r.payment==='Đã thanh toán').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money"><b>${money(rows.reduce((s,r)=>s+this.calc(r),0))}</b><span>Tổng tiền</span></div>${friendStats}</div>`;
     },
     friendStats(rows){
@@ -1019,7 +1138,7 @@
       document.querySelector('.wrap')?.appendChild(div);
     }
     if (!$('tkStyleCore')) {
-      document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkStats{grid-template-columns:repeat(2,1fr)}.tkHead{align-items:flex-start;flex-direction:column}.tkTable{min-width:1050px}.tkSection{padding:9px}}</style>`);
+      document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkStats{grid-template-columns:repeat(2,minmax(0,1fr))}.tkHead{align-items:flex-start;flex-direction:column}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection{padding:9px}.tkTableWrap{overflow:visible}.tkTable{display:block;min-width:0;border:0}.tkTable thead{display:none}.tkTable tbody{display:block}.tkTable tr{display:block;background:#fff;border:1px solid #dbe5f2;border-radius:14px;margin:10px 0;padding:10px}.tkTable td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:center;border:0;padding:6px 0}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}}</style>`);
     }
   }
   window.stockChangeMonth = function(m){ Stock.month = m; Stock.filter = {}; Stock.bind(); };
@@ -1027,6 +1146,7 @@
   window.stockToggleExpand = function(sec){ Stock.expanded[sec] = !Stock.expanded[sec]; Stock.render(); };
   window.stockOpenForm = function(sec,rowId){
     const row = Stock.rows(sec).find(r => r.id === rowId) || { id:'', code:'', qty:1, price:0, stockType:'Thiếu', friend:'', customer:'', phone:'', note:'', payment:'Chưa thanh toán', cut:'Chưa cắt tồn' };
+    if (rowId && !window.roleAdmin() && row.cut === 'Đã cắt tồn') return showToast('Dòng đã cắt tồn, nhân viên chỉ được xem');
     const friendOptions = Stock.friends.map(n => `<option ${row.friend===n?'selected':''}>${esc(n)}</option>`).join('');
     $('detailTitle').textContent = rowId ? 'Sửa dòng tồn kho' : 'Thêm dòng tồn kho';
     $('detailBody').innerHTML = `<div class="form"><input id="stkId" type="hidden" value="${esc(row.id)}"><div><label>Mã sản phẩm</label><input id="stkCode" value="${esc(row.code)}" oninput="this.value=this.value.toUpperCase()"></div><div><label>Số lượng</label><input id="stkQty" type="number" value="${esc(row.qty)}"></div><div><label>Giá bán</label><input id="stkPrice" type="number" value="${esc(row.price)}"></div>${sec==='diff'?`<div><label>Tồn kho</label><select id="stkStock"><option ${row.stockType==='Thiếu'?'selected':''}>Thiếu</option><option ${row.stockType==='Dư'?'selected':''}>Dư</option></select></div>`:''}${sec==='friend'?`<div><label>Người quen</label><select id="stkFriend">${friendOptions}</select></div>`:''}${sec==='customer'?`<div><label>Khách mua</label><input id="stkCustomer" value="${esc(row.customer)}"></div><div><label>SĐT</label><input id="stkPhone" value="${esc(row.phone)}"></div>`:''}</div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="stockSaveForm('${sec}')">Lưu</button></div>`;
@@ -1036,6 +1156,7 @@
     withActor(actor => {
       const oldId = $('stkId').value || id();
       const old = Stock.rows(sec).find(r => r.id === oldId) || {};
+      if (old.id && !window.roleAdmin() && old.cut === 'Đã cắt tồn') return showToast('Dòng đã cắt tồn, nhân viên không được sửa');
       const item = Object.assign({}, old, {
         id: oldId,
         createdAt: old.createdAt || Date.now(),
@@ -1077,12 +1198,19 @@
     stockRef('months', Stock.month, sec, rowId).update({ cut: row.cut==='Đã cắt tồn'?'Chưa cắt tồn':'Đã cắt tồn', logs:[...(row.logs||[]), logLine('Đổi trạng thái cắt tồn','Admin')] });
   };
   window.stockTogglePaid = function(sec,rowId){
+    if (sec === 'diff') return;
     withActor(actor => {
       const row = Stock.rows(sec).find(r => r.id === rowId);
       stockRef('months', Stock.month, sec, rowId).update({ payment: row.payment==='Đã thanh toán'?'Chưa thanh toán':'Đã thanh toán', logs:[...(row.logs||[]), logLine('Đổi thanh toán',actor)] });
     });
   };
-  window.stockPayAll = window.stockTogglePaid;
+  window.stockPayAll = function(sec,rowId){
+    if (sec === 'diff') return;
+    withActor(actor => {
+      const row = Stock.rows(sec).find(r => r.id === rowId);
+      stockRef('months', Stock.month, sec, rowId).update({ payment:'Đã thanh toán', logs:[...(row.logs||[]), logLine('Thanh toán toàn bộ',actor)] });
+    });
+  };
   window.stockHistory = function(sec,rowId){
     const row = Stock.rows(sec).find(r => r.id === rowId);
     $('detailTitle').textContent = 'Lịch sử tồn kho';
@@ -1091,14 +1219,15 @@
   };
   window.stockOpenFriends = function(){
     $('detailTitle').textContent = 'Danh sách người quen';
-    $('detailBody').innerHTML = `<div class="form"><div class="full adminOnly"><input id="friendNew" placeholder="Tên người quen"><button class="btn blue" onclick="stockAddFriend()">+ Thêm</button></div><div class="full">${Stock.friends.map(n=>`<div class="tkFriendItem"><input value="${esc(n)}" ${window.roleAdmin()?'':'disabled'} onchange="stockRenameFriend('${esc(n)}',this.value)">${window.roleAdmin()?`<button class="btn red" onclick="stockDeleteFriend('${esc(n)}')">Xóa</button>`:''}</div>`).join('')}</div></div>`;
+    $('detailBody').innerHTML = `<div class="form">${window.roleAdmin()?`<div class="full"><input id="friendNew" placeholder="Tên người quen"><button class="btn blue" onclick="stockAddFriend()">+ Thêm</button></div>`:''}<div class="full">${Stock.friends.map(n=>`<div class="tkFriendItem"><input value="${esc(n)}" ${window.roleAdmin()?'':'disabled'} onchange="stockRenameFriend('${esc(n)}',this.value)">${window.roleAdmin()?`<button class="btn red" onclick="stockDeleteFriend('${esc(n)}')">Xóa</button>`:''}</div>`).join('') || '<b>Chưa có người quen</b>'}</div></div>`;
     openModal('detailModal');
   };
-  window.stockAddFriend = function(){ if (!requireAdmin()) return; const n = $('friendNew').value.trim(); if (n) stockRef('friends').set(Array.from(new Set([...Stock.friends,n]))); };
-  window.stockRenameFriend = function(oldName,newName){ if (!requireAdmin()) return; stockRef('friends').set(Stock.friends.map(n => n===oldName ? newName.trim() : n).filter(Boolean)); };
-  window.stockDeleteFriend = function(n){ if (requireAdmin()) stockRef('friends').set(Stock.friends.filter(x => x!==n)); };
+  window.stockAddFriend = function(){ if (!requireAdmin()) return; const n = $('friendNew').value.trim(); if (n) { Stock.friends = Array.from(new Set([...Stock.friends,n])); stockRef('friends').set(Stock.friends).then(()=>stockOpenFriends()); } };
+  window.stockRenameFriend = function(oldName,newName){ if (!requireAdmin()) return; Stock.friends = Stock.friends.map(n => n===oldName ? newName.trim() : n).filter(Boolean); stockRef('friends').set(Stock.friends).then(()=>stockOpenFriends()); };
+  window.stockDeleteFriend = function(n){ if (requireAdmin()) { Stock.friends = Stock.friends.filter(x => x!==n); stockRef('friends').set(Stock.friends).then(()=>stockOpenFriends()); } };
 
   function ensureHeaderTools(){
+    ensurePolishStyle();
     if (!$('headerToggleBtn')) {
       const btn = document.createElement('button');
       btn.id = 'headerToggleBtn';
@@ -1117,6 +1246,43 @@
       links.innerHTML = `<button class="topMiniBtn" onclick="window.open('https://linhdanshop.github.io/xulydon/','_blank')">Gọi</button><button class="topMiniBtn adminQuick" onclick="window.open('https://linhdanshop.github.io/quetbill/','_blank')">Quét</button><button class="topMiniBtn" onclick="window.open('https://linhdanshop.github.io/vandon/','_blank')">XLD</button>`;
       document.querySelector('.topright')?.prepend(links);
     }
+  }
+  function ensurePolishStyle(){
+    if ($('appPolishStyle')) return;
+    document.head.insertAdjacentHTML('beforeend', `<style id="appPolishStyle">
+      #adminTestNotify.adminNotifyOn{background:#fde68a!important;color:#7c2d12!important}
+      .cellNoteStack{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+      .cellNoteStack .noteview{width:100%;text-align:left}
+      .cellNoteStack .imgbadge{margin-top:0}
+      .menu.open{z-index:7000!important}
+      .colResizer{position:absolute;top:0;right:0;width:9px;height:100%;cursor:col-resize;user-select:none}
+      .colResizer:hover{background:#bfdbfe}
+      .employeeInlineList{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+      .employeeInlineItem{display:inline-flex;align-items:center;gap:8px;border:1px solid #dbe5f2;background:#f8fafc;border-radius:999px;padding:7px 10px;font-weight:900}
+      .employeeInlineItem button{border:0;background:#fee2e2;color:#dc2626;border-radius:999px;width:24px;height:24px;font-weight:1000;cursor:pointer}
+      .defaultPick{display:inline-flex;align-items:center;gap:6px;font-weight:900}
+      .defaultPick input{width:auto;height:auto}
+      .tkCode{display:inline-block;background:#fee2e2!important;color:#b91c1c!important;border-radius:8px;padding:5px 9px;font-size:17px;font-weight:1000}
+      .tkStat.money.neg b,.tkNeg{color:#dc2626!important;font-weight:1000}
+      .tkStat.money.pos b,.tkPos{color:#15803d!important;font-weight:1000}
+      .tkStat.friendStat{background:#fee2e2!important;color:#7f1d1d!important;border-color:#fecaca!important}
+      .tkStat.friendStat span{color:#7f1d1d!important;font-weight:900}
+      .dkNoteBtn{width:100%;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;text-align:left;font-weight:800;cursor:pointer;min-height:34px}
+      .dkNoteBtn.empty{color:#94a3b8}
+      @media(max-width:760px){
+        .tkTableWrap{overflow:visible!important}
+        .tkTable{display:block!important;min-width:0!important;border:0!important}
+        .tkTable thead{display:none!important}
+        .tkTable tbody{display:block!important}
+        .tkTable tr{display:block!important;background:#fff!important;border:1px solid #dbe5f2!important;border-radius:14px!important;margin:10px 0!important;padding:10px!important}
+        .tkTable td{display:grid!important;grid-template-columns:92px minmax(0,1fr)!important;gap:10px!important;align-items:center!important;border:0!important;padding:6px 0!important}
+        .tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}
+        .tkTable .action{justify-self:start}
+        .tkStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+        .tkHead>div{display:flex;gap:8px;flex-wrap:wrap}
+        #dailyTab .miniTable td[data-label="Nội dung"],#dailyTab .miniTable td[data-label="Ghi chú admin"]{align-items:start!important}
+      }
+    </style>`);
   }
 
   function init(){

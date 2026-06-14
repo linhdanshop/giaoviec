@@ -508,7 +508,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const ns=notes(sec.id);
     let html='<tr class="dkReconGroup dkGroup'+esc(kind||'')+'"><td colspan="3">'+esc(title)+'('+rows.length+')</td></tr><tr class="dkReconHead"><th>STT</th><th>Mã đơn</th><th>Ghi chú</th></tr>';
     if(!rows.length)return html+'<tr><td colspan="3" class="dkNoRows">Không có</td></tr>';
-    return html+rows.map((code,i)=>'<tr><td class="dkStt">'+(i+1)+'</td><td class="dkCodeCell">'+esc(code)+'</td><td><input class="dkNoteInput" value="'+esc(ns[code]||'')+'" placeholder="Nhập ghi chú..." oninput="dkSaveCodeNoteDebounced(\''+sec.id+'\',\''+esc(code)+'\',this.value)"></td></tr>').join('');
+    return html+rows.map((code,i)=>'<tr><td class="dkStt">'+(i+1)+'</td><td class="dkCodeCell">'+esc(code)+'</td><td><button class="dkNoteBtn '+(ns[code]?'':'empty')+'" onclick="dkOpenCodeNote(\''+sec.id+'\',\''+esc(code)+'\')">'+esc(ns[code]||'Ghi chú...')+'</button></td></tr>').join('');
   }
   function oldMissingRows(sec){
     const leftLabel=sec.cols[0].label, rightLabel=sec.cols[1].label;
@@ -537,7 +537,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const ns=notes(sec.id);
     const showAll=!!expanded[key];
     const shown=showAll?rows:rows.slice(0,6);
-    const body=shown.length?shown.map((code,i)=>'<div class="dkMobileItem"><div class="dkMobileItemTop"><span class="dkMobileIndex">'+(i+1)+'</span><span class="dkMobileCode">'+esc(code)+'</span></div><input class="dkNoteInput" value="'+esc(ns[code]||'')+'" placeholder="Ghi chú mã này..." oninput="dkSaveCodeNoteDebounced(\''+sec.id+'\',\''+esc(code)+'\',this.value)"></div>').join(''):'<div class="dkNoRows" style="padding:10px">Không có</div>';
+    const body=shown.length?shown.map((code,i)=>'<div class="dkMobileItem"><div class="dkMobileItemTop"><span class="dkMobileIndex">'+(i+1)+'</span><span class="dkMobileCode">'+esc(code)+'</span></div><button class="dkNoteBtn '+(ns[code]?'':'empty')+'" onclick="dkOpenCodeNote(\''+sec.id+'\',\''+esc(code)+'\')">'+esc(ns[code]||'Ghi chú...')+'</button></div>').join(''):'<div class="dkNoRows" style="padding:10px">Không có</div>';
     return '<div class="dkMobileGroup dkGroup'+esc(kind||'')+'"><div class="dkMobileGroupHead">'+esc(title)+'('+rows.length+')</div><div class="dkMobileList">'+body+(rows.length>6?'<button class="dkMore" onclick="dkToggleMore(\''+key+'\')">'+(showAll?'Thu gọn':'Xem thêm '+(rows.length-6))+'</button>':'')+'</div></div>';
   }
   function reconcileHtml(sec){
@@ -686,6 +686,27 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       saveDay();
     },650);
   };
+  window.dkOpenCodeNote=function(secId,code){
+    ensureStarted();
+    const ns=notes(secId);
+    const title=$('detailTitle'), body=$('detailBody');
+    if(!title||!body)return;
+    title.textContent='Ghi chú mã '+code;
+    body.innerHTML='<div class="form"><div class="full"><textarea id="dkCodeNoteText" style="min-height:160px">'+esc(ns[code]||'')+'</textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'detailModal\')">Đóng</button><button class="btn blue" onclick="dkSaveCodeNote(\''+secId+'\',\''+esc(code)+'\')">Lưu</button></div>';
+    openModal('detailModal');
+    setTimeout(()=>$('dkCodeNoteText')&&$('dkCodeNoteText').focus(),60);
+  };
+  window.dkSaveCodeNote=function(secId,code){
+    ensureStarted();
+    askActor(actor=>{
+      const ns=notes(secId);
+      const old=String(ns[code]||'');
+      const next=String(($('dkCodeNoteText')&&$('dkCodeNoteText').value)||'').trim();
+      if(next)ns[code]=next;else delete ns[code];
+      log('cập nhật ghi chú mã '+code+': '+shortText(old)+' -> '+shortText(next),actor);
+      saveDay().then(()=>{closeModal('detailModal');toast('Đã lưu ghi chú')});
+    });
+  };
   function colIn(d,secId,colId){return (((d.sections||{})[secId]||{})[colId]||[])}
   function scanDays(days,query){
     const q=String(query||'').trim(); const found=[];
@@ -716,7 +737,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const oldSwitch=window.switchTab;
   window.switchTab=function(t){
     if(t==='dongKiem'){
-      ['today','daily','master','devices'].forEach(x=>{const el=$(x+'Tab');if(el)el.classList.add('hidden')});
+      ['today','daily','master','devices','tonKho'].forEach(x=>{const el=$(x+'Tab');if(el)el.classList.add('hidden')});
       const dk=$('dongKiemTab'); if(dk)dk.classList.remove('hidden');
       document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
       ensureStarted(); renderDongKiem(); return;
