@@ -1,8 +1,52 @@
-# Nhac Viec Shop - Desktop Reminder
+# Nhac Viec Shop Reminder
 
-App Windows nho chay tray de nhan nhac viec tu Firebase `taskReminder`.
+App Windows chay tray de nhan thong bao nhac viec tu Firebase `taskReminder`.
 
-## Cai dat lan dau
+## Cach tien nhat: tao file cai `.exe`
+
+Chay tren may chinh:
+
+```powershell
+cd C:\Users\Admin\Documents\GitHub\giaoviec\desktop-reminder
+powershell -ExecutionPolicy Bypass -File .\scripts\build-installer.ps1
+```
+
+Sau khi build xong, vao thu muc:
+
+```text
+C:\Users\Admin\Documents\GitHub\giaoviec\desktop-reminder\dist
+```
+
+Copy file `.exe` trong thu muc `dist` sang may khac va bam cai.
+
+## Cai tren may khac
+
+May khac chi can chay file `.exe` da build. Khong can copy source code, khong can chay `npm install`.
+
+Khi app chay lan dau:
+
+- App tu tao ma thiet bi rieng cho may do.
+- App tu cai chay cung Windows.
+- App hien o tray.
+- Co the bam chuot phai icon tray de doi ten may hoac thoat app.
+
+## Go cai dat
+
+Go trong Windows:
+
+```text
+Settings > Apps > Installed apps > Nhac Viec Shop Reminder > Uninstall
+```
+
+Neu dang dung ban source/debug thi go auto-start bang:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\remove-startup.ps1
+```
+
+## Chay debug tu source
+
+Dung khi can test code:
 
 ```powershell
 cd C:\Users\Admin\Documents\GitHub\giaoviec\desktop-reminder
@@ -10,22 +54,11 @@ npm install
 npm start
 ```
 
-## Cai chay cung Windows
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install-startup.ps1
-```
-
-Muốn gỡ chạy cùng Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\remove-startup.ps1
-```
-
 ## Flow
 
-- App ghi online vào `taskReminder/desktopClients/{deviceId}`.
-- Khi có `activeReminder` trong task hôm nay, app bật popup luôn nổi trên cùng, reo chuông 10 giây, tự đóng sau 1 phút.
-- App ghi lịch sử đã hiện nhắc vào `taskReminder/reminderDeliveries/{date}/{reminderId}/{deviceId}`.
-- Khi một máy bấm `Đã nhận nhắc`, app ghi ack vào task. Web và app máy khác tự tắt popup theo Firebase.
-- Khi app đang online, web không bật popup nhắc để tránh trùng thông báo.
+- App ghi online vao `taskReminder/desktopClients/{deviceId}`.
+- `deviceId` la ma ngau nhien co dinh theo tung may, tranh trung ten may Windows.
+- Khi co `activeReminder` trong task hom nay, app bat popup luon noi tren cung, reo chuong 10 giay, tu dong sau 1 phut.
+- App ghi lich su da hien nhac vao `taskReminder/reminderDeliveries/{date}/{reminderId}/{deviceId}`.
+- Khi mot may bam `Da nhan nhac`, app ghi ack vao task. Web va app may khac tu tat popup theo Firebase.
+- Khi co app dang online, web khong bat popup nhac de tranh trung thong bao.

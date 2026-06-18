@@ -2,12 +2,43 @@
   "name": "giaoviec-desktop-reminder",
   "version": "1.0.0",
   "private": true,
+  "description": "Nhac Viec Shop desktop reminder",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.linhdanshop.giaoviec.reminder",
+    "productName": "Nhac Viec Shop Reminder",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nhac Viec Shop Reminder"
+    }
   },
   "dependencies": {
-    "electron": "^31.7.7",
     "firebase": "^10.14.1"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
   }
 }

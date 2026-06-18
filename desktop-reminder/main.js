@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electr
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { initializeApp } = require('firebase/app');
 const { getDatabase, ref, onValue, onDisconnect, update, set, get } = require('firebase/database');
 
@@ -31,9 +32,13 @@ const safeHost = () => (os.hostname() || 'WINDOWS').replace(/[^a-zA-Z0-9-]/g, ''
 
 function readConfig(){
   try {
-    return JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+    const saved = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+    if (!saved.deviceId) saved.deviceId = `DESKTOP-${crypto.randomUUID()}`;
+    if (!saved.name) saved.name = `App-${safeHost()}`;
+    saveConfig(saved);
+    return saved;
   } catch {
-    const cfg = { deviceId: `DESKTOP-${safeHost()}`, name: `App-${safeHost()}` };
+    const cfg = { deviceId: `DESKTOP-${crypto.randomUUID()}`, name: `App-${safeHost()}` };
     fs.mkdirSync(path.dirname(configPath()), { recursive:true });
     fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2));
     return cfg;
@@ -274,6 +279,9 @@ ipcMain.on('ack-reminder', async (_ev, actor) => {
 });
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    app.setLoginItemSettings({ openAtLogin: true, path: process.execPath });
+  }
   initializeApp(firebaseConfig);
   db = getDatabase();
   createTray();
