@@ -29,6 +29,7 @@
   const state = {
     tab: 'today',
     date: todayStr(),
+    realToday: todayStr(),
     metric: 'total',
     empFilter: 'Tất cả',
     employees: [],
@@ -36,7 +37,9 @@
     dailyTemplates: [],
     tasks: [],
     prevOpenCount: 0,
+    prevOpenItems: [],
     devices: {},
+    desktopClients: {},
     system: {},
     currentTaskRef: null,
     currentTaskCb: null,
@@ -96,6 +99,9 @@
   function saveJson(key, val){ if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); }
   function arr(v){ return Array.isArray(v) ? v.filter(Boolean) : Object.entries(v || {}).map(([key, value]) => typeof value === 'object' ? Object.assign({ id: value.id || key }, value) : value); }
   function listNames(v){ return arr(v).map(x => typeof x === 'string' ? x.trim() : String(x?.name || x?.title || '').trim()).filter(Boolean); }
+  function desktopReminderOnline(){
+    return Object.values(state.desktopClients || {}).some(c => c && c.online !== false && Date.now() - (c.lastSeen || 0) < DEVICE_STALE_MS);
+  }
   function empColor(name){
     const names = state.employees.length ? state.employees : ['Huyền','Nguyệt','Thủy','An','Su'];
     const idx = Math.max(0, names.indexOf(name));
@@ -369,6 +375,10 @@
       taskRef('masters').on('value', snap => { state.masters = arr(snap.val()).map(this.normMaster); renderAll(); });
       taskRef('dailyTemplates').on('value', snap => { state.dailyTemplates = arr(snap.val()).map(this.normDaily); renderAll(); });
       taskRef('system').on('value', snap => { state.system = snap.val() || {}; });
+      taskRef('desktopClients').on('value', snap => {
+        state.desktopClients = snap.val() || {};
+        if (desktopReminderOnline()) closeAttentionIfAny();
+      });
       taskRef('quickLinks').on('value', snap => {
         const val = snap.val();
         if (!val) taskRef('quickLinks').set(defaultQuickLinksObj()).catch(()=>{});
@@ -413,13 +423,18 @@
       taskRef('tasks').once('value').then(snap => {
         const data = snap.val() || {};
         let count = 0;
+        const items = [];
         Object.keys(data).forEach(day => {
           if (day >= date) return;
           arr(data[day]).forEach(t => {
-            if ((t.status || 'Chưa làm') !== 'Đã xong') count++;
+            if ((t.status || 'Chưa làm') !== 'Đã xong') {
+              count++;
+              items.push(this.normTask(Object.assign({ date: day }, t)));
+            }
           });
         });
         state.prevOpenCount = count;
+        state.prevOpenItems = items;
         this.renderStats(state.tasks.filter(t => t.date === state.date));
       }).catch(() => {});
     },
@@ -659,27 +674,32 @@
         logs: [logLine('Áp dụng từ việc hằng ngày', actor, `Mẫu: ${tpl.title}`)]
       });
     },
-    async applyAll(date = state.date, actor='Admin'){
+    async applyAll(date = state.date, actor='Admin', opts = {}){
       const active = state.dailyTemplates.filter(t => t.active !== false);
       const existing = arr((await taskRef('tasks', date).once('value')).val()).map(x => this.normTask(Object.assign({date},x)));
       const updates = {};
+      let added = 0;
       active.forEach(tpl => {
         if (!existing.some(t => t.sourceTemplateId === tpl.id)) {
           const task = this.fromTemplate(tpl, date, actor);
           updates[`tasks/${date}/${task.id}`] = task;
+          added++;
         }
       });
       updates[`system/dailyGenerated/${date}`] = true;
       await taskRef().update(updates);
-      showToast(`Đã áp dụng ${active.length} việc hằng ngày`);
+      if (!opts.silent) showToast(`Đã áp dụng ${added} việc hằng ngày`);
+      return added;
     },
     midnightCheck(){
       const now = todayStr();
-      if (now !== state.date && new Date().getHours() === 0) {
-        state.date = now;
-        this.listenDate(now);
-        this.applyAll(now, 'Hệ thống 00:00');
-      }
+      if (now === state.realToday) return;
+      const wasViewingToday = state.date === state.realToday;
+      state.realToday = now;
+      this.applyAll(now, 'Hệ thống 00:00', { silent:true }).then(() => {
+        if (wasViewingToday) this.listenDate(now);
+        else this.loadPreviousOpenCount(state.date);
+      }).catch(() => {});
     },
     reminderPlan(t){
       const raw = String(t.remindPlan || '').trim();
@@ -719,6 +739,7 @@
       }
       const rid = active.activeReminder.id;
       if (state.dismissedReminders.has(rid)) return;
+      if (desktopReminderOnline()) return closeAttentionIfAny();
       if (window.roleAdmin() && !state.adminNotifyOn) return;
       showAttention(active);
     }
@@ -974,11 +995,62 @@
     taskRef('tasks', t.date, t.id).update({ adminNote:text, adminImages:getPreviewImages('adminPreview'), logs });
     closeModal('adminNoteModal');
   };
-  window.openTaskHistory = function(taskId){
+  window.openTaskHistory = async function(taskId){
     const t = state.tasks.find(x => x.id === taskId);
     if (!t) return;
     $('detailTitle').textContent = `Lịch sử - ${t.title}`;
-    $('detailBody').innerHTML = `<pre class="copyBox">${esc(logText(t.logs))}</pre>`;
+    $('detailBody').innerHTML = `<pre class="copyBox">Đang tải lịch sử...</pre>`;
+    openModal('detailModal');
+    let reminderLines = [];
+    try {
+      const snap = await taskRef('reminderDeliveries', t.date).once('value');
+      const groups = snap.val() || {};
+      Object.values(groups).forEach(group => {
+        Object.values(group || {}).forEach(d => {
+          if (d && d.taskId === t.id) {
+            const shown = d.shownAt ? new Date(d.shownAt).toLocaleString('vi-VN') : '-';
+            const ack = d.acknowledgedBy ? ` - nhận bởi ${d.acknowledgedBy}` : '';
+            reminderLines.push(`${shown} - ${d.deviceName || d.deviceId || '-'} - Đã hiện nhắc${ack}`);
+          }
+        });
+      });
+      reminderLines.sort().reverse();
+    } catch {}
+    const text = `${logText(t.logs)}\n\n--- Lịch sử nhắc tới app Windows ---\n${reminderLines.join('\n') || 'Chưa có máy app nhận nhắc'}`;
+    $('detailBody').innerHTML = `<pre class="copyBox">${esc(text)}</pre>`;
+  };
+  window.viewPrevOpenDate = function(day){
+    state.metric = 'total';
+    if (typeof setDateButtonActive === 'function') setDateButtonActive(day === todayStr() ? 'Hôm nay' : '');
+    Tasks.listenDate(day);
+    closeModal('detailModal');
+  };
+  window.openPreviousOpenTasks = function(){
+    const items = (state.prevOpenItems || []).slice().sort((a,b) =>
+      (b.date || '').localeCompare(a.date || '') || (a.time || '').localeCompare(b.time || '') || (a.title || '').localeCompare(b.title || '')
+    );
+    $('detailTitle').textContent = 'Việc ngày trước chưa làm';
+    if (!items.length) {
+      $('detailBody').innerHTML = '<div class="copyBox">Không có việc ngày trước chưa làm.</div>';
+      openModal('detailModal');
+      return;
+    }
+    const groups = {};
+    items.forEach(t => {
+      if (!groups[t.date]) groups[t.date] = [];
+      groups[t.date].push(t);
+    });
+    $('detailBody').innerHTML = `<div class="prevOpenList">${Object.keys(groups).sort().reverse().map(day => `
+      <div class="prevOpenGroup">
+        <div class="prevOpenHead"><b>${esc(dateLabel(day))} (${esc(day)})</b><button class="btn gray" onclick="viewPrevOpenDate('${esc(day)}')">Xem ngày</button></div>
+        <div class="prevOpenRows">${groups[day].map(t => `
+          <div class="prevOpenRow">
+            <b>${esc(t.time || '')}</b>
+            <span>${esc(t.title || '')}</span>
+            <span>${esc((t.employees || []).join(', ') || 'Chưa có nhân viên')}</span>
+            <small>${esc(t.status || 'Chưa làm')}</small>
+          </div>`).join('')}</div>
+      </div>`).join('')}</div>`;
     openModal('detailModal');
   };
   window.openTaskDetail = function(taskId){
@@ -1195,7 +1267,7 @@
     },
     sectionHtml(sec){
       const rows = this.filteredRows(sec.id);
-      const limit = 10;
+      const limit = 6;
       const shown = this.expanded[sec.id] ? rows : rows.slice(0, limit);
       return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>limit?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
     },

@@ -313,7 +313,7 @@
       <div class="card stat" data-metric="Đã xong" onclick="setMetricFilter('Đã xong')"><b id="stDone">0</b><span>Đã xong</span></div>
       <div class="card stat" data-metric="Hằng ngày" onclick="setMetricFilter('Hằng ngày')"><b id="stDaily">0</b><span>Hằng ngày</span></div>
       <div class="card stat" data-metric="Phát sinh" onclick="setMetricFilter('Phát sinh')"><b id="stOnce">0</b><span>Phát sinh</span></div>
-      <div class="card stat" data-metric="prevOpen"><b id="stPrevOpen">0</b><span>Việc ngày trước chưa làm</span></div>
+      <div class="card stat" data-metric="prevOpen" onclick="openPreviousOpenTasks()"><b id="stPrevOpen">0</b><span>Việc ngày trước chưa làm</span></div>
     </div>
     <div class="section-title"><h2>📋 Danh sách công việc</h2><span class="hint">Ưu tiên việc chưa xong/quá giờ lên trên · Kéo mép tiêu đề cột để đổi kích cỡ, máy tự nhớ</span></div>
     <div class="tablebox"><table class="tasktable" id="taskTable"><colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="img"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time" class="w-time">Giờ</th><th data-col="title" class="w-title">Tên CV</th><th data-col="content">Nội dung</th><th data-col="emp" class="w-emp">Nhân viên</th><th data-col="img" class="w-img">Ảnh</th><th data-col="admin">Admin ghi chú</th><th data-col="report">Báo cáo NV</th><th data-col="status" class="w-status">Trạng thái</th><th data-col="duration">TG xử lý</th><th data-col="remind">Nhắc việc</th><th data-col="log" class="w-log">Lịch sử</th><th data-col="act" class="w-act">Thao tác</th></tr></thead><tbody id="taskBody"></tbody></table></div>
@@ -424,7 +424,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 @media(max-width:760px){.attentionEmpChip{font-size:22px;padding:8px 13px}.dkCameraSelect{height:36px}}
 /* FINAL 44 - focused display fixes 2026-06-18 */
 #statsRow{grid-template-columns:repeat(7,minmax(0,1fr))!important}
-#statsRow .stat[data-metric="prevOpen"]{cursor:default}
+#statsRow .stat[data-metric="prevOpen"]{cursor:pointer}
 #detailBody .detailContentFull .bigcontent,
 #detailBody .detailSection .bigcontent,
 #detailBody .copyBox{white-space:pre-wrap!important;word-break:break-word!important;overflow:visible!important;max-height:none!important}
@@ -441,12 +441,14 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 #dailyTab .dailyTaskContent{display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;line-height:1.35!important;word-break:break-word!important}
 #dailyTab .dailyTime b{font-size:21px!important}
 .tkStat.money.pos b{color:#15803d!important}.tkStat.money.neg b{color:#dc2626!important}
+.prevOpenList{display:grid;gap:10px;padding:12px}.prevOpenGroup{border:1px solid #dbe5f2;border-radius:12px;background:#fff;overflow:hidden}.prevOpenHead{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#eef3f9;padding:10px 12px}.prevOpenRows{display:grid}.prevOpenRow{display:grid;grid-template-columns:120px minmax(0,1fr) 190px 110px;gap:10px;align-items:center;border-top:1px solid #e5edf6;padding:9px 12px}.prevOpenRow b,.prevOpenRow span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.prevOpenRow small{font-weight:900;color:#b45309;background:#fef3c7;border-radius:999px;padding:5px 8px;text-align:center}
 @media(max-width:760px){
   #statsRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   #dailyTab .miniTable tr{grid-template-columns:1fr!important}
   #dailyTab .miniTable td{grid-template-columns:96px minmax(0,1fr)!important;align-items:start!important}
   #dailyTab .dailyTaskTitle{max-width:none!important}
   #dailyTab .dailyTaskContent{-webkit-line-clamp:3!important}
+  .prevOpenRow{grid-template-columns:1fr;gap:4px}.prevOpenRow b,.prevOpenRow span{white-space:normal}
 }
 
 </style>
