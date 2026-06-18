@@ -313,6 +313,7 @@
       <div class="card stat" data-metric="Đã xong" onclick="setMetricFilter('Đã xong')"><b id="stDone">0</b><span>Đã xong</span></div>
       <div class="card stat" data-metric="Hằng ngày" onclick="setMetricFilter('Hằng ngày')"><b id="stDaily">0</b><span>Hằng ngày</span></div>
       <div class="card stat" data-metric="Phát sinh" onclick="setMetricFilter('Phát sinh')"><b id="stOnce">0</b><span>Phát sinh</span></div>
+      <div class="card stat" data-metric="prevOpen"><b id="stPrevOpen">0</b><span>Việc ngày trước chưa làm</span></div>
     </div>
     <div class="section-title"><h2>📋 Danh sách công việc</h2><span class="hint">Ưu tiên việc chưa xong/quá giờ lên trên · Kéo mép tiêu đề cột để đổi kích cỡ, máy tự nhớ</span></div>
     <div class="tablebox"><table class="tasktable" id="taskTable"><colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="img"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time" class="w-time">Giờ</th><th data-col="title" class="w-title">Tên CV</th><th data-col="content">Nội dung</th><th data-col="emp" class="w-emp">Nhân viên</th><th data-col="img" class="w-img">Ảnh</th><th data-col="admin">Admin ghi chú</th><th data-col="report">Báo cáo NV</th><th data-col="status" class="w-status">Trạng thái</th><th data-col="duration">TG xử lý</th><th data-col="remind">Nhắc việc</th><th data-col="log" class="w-log">Lịch sử</th><th data-col="act" class="w-act">Thao tác</th></tr></thead><tbody id="taskBody"></tbody></table></div>
@@ -359,13 +360,13 @@
 <div id="reportModal" class="modal"><div class="panel"><div class="panelhead"><h3>Báo cáo nhân viên</h3><button class="x" onclick="closeModal('reportModal')">×</button></div><div class="form"><input type="hidden" id="rId"><div class="full"><label>Nội dung báo cáo</label><textarea id="rText" style="min-height:160px" placeholder="Nhân viên nhập báo cáo việc ở đây..."></textarea><div class="pastebox" style="margin-top:10px">Ctrl+V ảnh báo cáo vào popup này</div><div id="reportPreview" class="previewImgs"></div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('reportModal')">Đóng</button><button class="btn blue" onclick="saveReport()">Lưu báo cáo</button></div></div></div>
 
 <div id="adminNoteModal" class="modal"><div class="panel"><div class="panelhead"><h3>Admin ghi chú</h3><button class="x" onclick="closeModal('adminNoteModal')">×</button></div><div class="form"><input type="hidden" id="aId"><div class="full"><label>Nội dung admin ghi chú</label><textarea id="aText" style="min-height:160px" placeholder="Admin nhập ghi chú ở đây..."></textarea><div class="pastebox" style="margin-top:10px">Ctrl+V ảnh ghi chú admin vào popup này</div><div id="adminPreview" class="previewImgs"></div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('adminNoteModal')">Đóng</button><button class="btn blue" onclick="saveAdminNote()">Lưu ghi chú</button></div></div></div>
-<div id="detailModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="detailTitle">Chi tiết</h3><button class="x" onclick="closeModal('detailModal')">×</button></div><div id="detailBody" style="line-height:1.55"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button></div></div></div>
+<div id="detailModal" class="modal"><div class="panel"><div class="panelhead"><h3 id="detailTitle">Chi tiết</h3><button class="x" onclick="closeModal('detailModal')">×</button></div><div id="detailBody" style="line-height:1.55"></div></div></div>
 <div id="masterModal" class="modal"><div class="panel"><div class="panelhead"><h3>Thêm mẫu công việc</h3><button class="x" onclick="closeModal('masterModal')">×</button></div><div class="form"><input type="hidden" id="msId"><div class="full"><label>Tên CV</label><input id="msTitle"></div><div><label>Nhân viên mặc định</label><select id="msEmp"></select></div><div><label>Giờ mặc định</label><input id="msTime" type="time"></div><div class="full"><label>Nội dung mẫu</label><textarea id="msContent"></textarea></div><div class="full"><label>Ghi chú mẫu</label><textarea id="msNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('masterModal')">Đóng</button><button class="btn blue" onclick="saveMaster()">Lưu mẫu</button></div></div></div>
 
 
 <div id="actorModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Bạn là ai đang thao tác?</h3></div><div class="form"><div class="full"><label>Chọn người thao tác</label><select id="actorSelect"></select></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('actorModal')">Đóng</button><button class="btn blue" onclick="confirmActor()">Xác nhận</button></div></div></div>
 <div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Tích chọn Admin hoặc tên nhân viên. Nhân viên vẫn xem được tất cả việc; chỉ khác quyền thao tác.</small></div></div></div></div>
-<div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div style="padding:14px"><img id="bigImage" src=""></div></div></div>
+<div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div class="imageStage"><img id="bigImage" src=""></div></div></div>
 
 
 <div id="attentionModal" class="modal"><div class="panel attentionPanel"><div class="attentionHead"><h3>🔔 NHẮC VIỆC</h3><button class="x" onclick="closeAttention()">×</button></div><div id="attentionBody" class="attentionBody"></div><div class="attentionFoot"><button class="btn gray" onclick="closeAttention()">Để sau</button><button class="btn orange" onclick="attentionAck()">Đã nhận nhắc</button></div></div></div>
@@ -421,6 +422,32 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 .dkScannerHint{margin:8px 0 0;color:#475569;font-weight:800;line-height:1.35}
 .dkCameraSelect{width:100%;height:38px;border:1px solid #d9e3f0;border-radius:10px;padding:0 10px;margin-bottom:10px;font-weight:800;background:#fff}
 @media(max-width:760px){.attentionEmpChip{font-size:22px;padding:8px 13px}.dkCameraSelect{height:36px}}
+/* FINAL 44 - focused display fixes 2026-06-18 */
+#statsRow{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+#statsRow .stat[data-metric="prevOpen"]{cursor:default}
+#detailBody .detailContentFull .bigcontent,
+#detailBody .detailSection .bigcontent,
+#detailBody .copyBox{white-space:pre-wrap!important;word-break:break-word!important;overflow:visible!important;max-height:none!important}
+#detailBody .detailCore,#detailBody .detailMain{overflow:visible!important;max-height:none!important}
+.attentionPanel{max-height:92vh!important;overflow:auto!important}
+.attentionBody .copyBox{white-space:pre-wrap!important;word-break:break-word!important;overflow:visible!important;max-height:none!important;line-height:1.45!important}
+.attentionAdminNote{white-space:pre-wrap!important;word-break:break-word!important;line-height:1.45!important}
+.imageViewer .panel{display:flex!important;flex-direction:column!important;max-height:92vh!important;background:#0f172a!important}
+.imageViewer .panelhead{position:static!important;background:#fff!important;flex:0 0 auto!important}
+.imageViewer .panelhead .galleryNav,.imageViewer .galleryNav{position:static!important;right:auto!important;bottom:auto!important;margin-left:auto!important;background:#0f172acc!important;border:1px solid #334155!important;border-radius:12px!important;padding:8px!important;z-index:2!important}
+.imageViewer .imageStage{padding:14px!important;display:flex!important;align-items:center!important;justify-content:center!important;min-height:0!important;overflow:auto!important;background:#0f172a!important}
+.imageViewer img{max-width:100%!important;max-height:calc(92vh - 130px)!important;object-fit:contain!important}
+#dailyTab .dailyTaskTitle{display:block!important;width:100%!important;max-width:220px!important;line-height:1.25!important;white-space:normal!important;word-break:break-word!important}
+#dailyTab .dailyTaskContent{display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;line-height:1.35!important;word-break:break-word!important}
+#dailyTab .dailyTime b{font-size:21px!important}
+.tkStat.money.pos b{color:#15803d!important}.tkStat.money.neg b{color:#dc2626!important}
+@media(max-width:760px){
+  #statsRow{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #dailyTab .miniTable tr{grid-template-columns:1fr!important}
+  #dailyTab .miniTable td{grid-template-columns:96px minmax(0,1fr)!important;align-items:start!important}
+  #dailyTab .dailyTaskTitle{max-width:none!important}
+  #dailyTab .dailyTaskContent{-webkit-line-clamp:3!important}
+}
 
 </style>
 

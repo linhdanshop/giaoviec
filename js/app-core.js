@@ -4,7 +4,7 @@
   const TASK_ROOT = 'taskReminder';
   const STOCK_ROOT = 'tonKho';
   const ADMIN_PASS = '@An12345678';
-  const ADMIN_MINUTES = 240;
+  const ADMIN_MINUTES = 1440;
   const ACTOR_MINUTES = 60;
   const DEVICE_STALE_MS = 90000;
   const $ = id => document.getElementById(id);
@@ -35,6 +35,7 @@
     masters: [],
     dailyTemplates: [],
     tasks: [],
+    prevOpenCount: 0,
     devices: {},
     system: {},
     currentTaskRef: null,
@@ -406,6 +407,21 @@
         Tasks.handleActiveReminder();
       };
       state.currentTaskRef.on('value', state.currentTaskCb);
+      this.loadPreviousOpenCount(date);
+    },
+    loadPreviousOpenCount(date){
+      taskRef('tasks').once('value').then(snap => {
+        const data = snap.val() || {};
+        let count = 0;
+        Object.keys(data).forEach(day => {
+          if (day >= date) return;
+          arr(data[day]).forEach(t => {
+            if ((t.status || 'Chưa làm') !== 'Đã xong') count++;
+          });
+        });
+        state.prevOpenCount = count;
+        this.renderStats(state.tasks.filter(t => t.date === state.date));
+      }).catch(() => {});
     },
     saveTaskObj(date, task){
       return taskRef('tasks', date, task.id).set(task);
@@ -466,6 +482,7 @@
       set('stDone', base.filter(t => t.status === 'Đã xong').length);
       set('stDaily', base.filter(t => t.type === 'Hằng ngày').length);
       set('stOnce', base.filter(t => t.type !== 'Hằng ngày').length);
+      set('stPrevOpen', state.prevOpenCount || 0);
       $$('#statsRow .stat').forEach(x => x.classList.toggle('active', x.dataset.metric === state.metric));
     },
     render(){
@@ -545,10 +562,10 @@
           ? `<button class="statusToggle ${t.active?'on':'off'}" onclick="event.stopPropagation();toggleDailyActive('${esc(t.id)}')">${t.active?'Đang bật':'Tắt'}</button>`
           : `<span class="statusToggle ${t.active?'on':'off'}">${t.active?'Đang bật':'Tắt'}</span>`;
         return `<tr class="dailyRowView" onclick="openDailyDetail('${esc(t.id)}')">
-          <td data-label="Giờ">${esc(t.time)}</td>
-          <td data-label="Tên CV"><span class="dailyTitlePill" style="--empColor:${color}">${esc(t.title)}</span></td>
+          <td data-label="Giờ"><div class="timeStack dailyTime"><b>${esc(t.time)}</b></div></td>
+          <td data-label="Tên CV"><span class="titlepill dailyTaskTitle" style="--empColor:${color}">${esc(t.title)}</span></td>
           <td data-label="Nhân viên">${this.empChips(t.employees)}</td>
-          <td data-label="Nội dung"><div class="dailyTextClip contentText">${esc(t.content)}</div>${this.imgBadge(t.images,'ảnh')}</td>
+          <td data-label="Nội dung"><div class="contentText dailyTaskContent">${esc(t.content)}</div>${this.imgBadge(t.images,'ảnh')}</td>
           <td data-label="Ghi chú admin"><div class="dailyTextClip">${esc(t.adminNote || '')}</div></td>
           <td data-label="Trạng thái">${statusHtml}</td>
           <td data-label="Áp dụng" class="adminOnly"><button class="btn green dailyApplyBtn" onclick="event.stopPropagation();applyDailyTemplate('${esc(t.id)}')">Áp dụng</button></td>
@@ -1178,8 +1195,9 @@
     },
     sectionHtml(sec){
       const rows = this.filteredRows(sec.id);
-      const shown = this.expanded[sec.id] ? rows : rows.slice(0,10);
-      return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>10?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
+      const limit = 10;
+      const shown = this.expanded[sec.id] ? rows : rows.slice(0, limit);
+      return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>limit?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
     },
     headHtml(sec){
       const common = '<th>STT</th><th>Ngày lập</th><th>Mã SP</th><th>SL</th><th>Giá bán</th>';
@@ -1212,7 +1230,9 @@
       const btn = (key,label,count,cls='') => `<button class="tkStat ${cls} ${filt===key?'active':''}" onclick="stockSetFilter('${sec}','${key}')"><b>${count}</b><span>${label}</span></button>`;
       if (sec === 'diff') {
         const sum = rows.reduce((s,r)=>s+this.calc(r,'diff'),0);
-        return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Thiếu','Thiếu',rows.filter(r=>r.stockType==='Thiếu').length,'warn')}${btn('Dư','Dư',rows.filter(r=>r.stockType==='Dư').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money ${sum<0?'neg':'pos'}"><b>${money(sum)}</b><span>Chênh lệch</span></div></div>`;
+        const plus = rows.reduce((s,r)=>{ const v = this.calc(r,'diff'); return v > 0 ? s + v : s; },0);
+        const minus = rows.reduce((s,r)=>{ const v = this.calc(r,'diff'); return v < 0 ? s + v : s; },0);
+        return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Thiếu','Thiếu',rows.filter(r=>r.stockType==='Thiếu').length,'warn')}${btn('Dư','Dư',rows.filter(r=>r.stockType==='Dư').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money pos"><b>${money(plus)}</b><span>Tổng tiền dư</span></div><div class="tkStat money neg"><b>${money(minus)}</b><span>Tổng tiền âm</span></div><div class="tkStat money ${sum<0?'neg':'pos'}"><b>${money(sum)}</b><span>Chênh lệch</span></div></div>`;
       }
       const friendStats = sec==='friend' ? this.friendStats(rows).map(s => `<button class="tkStat friendStat ${(filt==='friend:'+s.name)?'active':''}" onclick="stockSetFilter('${sec}','friend:${esc(s.name)}')"><b>${s.count}</b><span><strong>${esc(s.name)} (${s.count})</strong><em>TT ${money(s.total)}</em></span></button>`).join('') : '';
       return `<div class="tkStats">${btn('all','Tổng',rows.length)}${btn('Chưa thanh toán','Chưa TT',rows.filter(r=>r.payment!=='Đã thanh toán').length,'warn')}${btn('Đã thanh toán','Đã TT',rows.filter(r=>r.payment==='Đã thanh toán').length,'ok')}${btn('Chưa cắt tồn','Chưa cắt',rows.filter(r=>r.cut!=='Đã cắt tồn').length)}${btn('Đã cắt tồn','Đã cắt',rows.filter(r=>r.cut==='Đã cắt tồn').length)}<div class="tkStat money"><b>${money(rows.reduce((s,r)=>s+this.calc(r,sec),0))}</b><span>Tổng tiền</span></div>${friendStats}</div>`;
