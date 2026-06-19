@@ -69,7 +69,9 @@ function reminderExpired(task){
   return Date.now() - (((task || {}).activeReminder || {}).createdAt || 0) > 60000;
 }
 function reminderDone(task){
-  return !task || task.status === 'Đã xong' || task.reminderAcked || !task.activeReminder || task.activeReminder.acknowledged || reminderExpired(task);
+  const reminder = task && task.activeReminder;
+  const ackedAuto = task && task.reminderAcked && (!reminder || reminder.type !== 'manual');
+  return !task || task.status === 'Đã xong' || ackedAuto || !reminder || reminder.acknowledged || reminderExpired(task);
 }
 
 function createTray(){
@@ -157,7 +159,10 @@ function handleTasks(tasks){
     const fresh = tasks.find(t => t.id === currentTask.id);
     if (reminderDone(fresh)) closePopup();
   }
-  const active = tasks.find(t => t.activeReminder && !t.activeReminder.acknowledged && !t.reminderAcked && t.status !== 'Đã xong' && !reminderExpired(t));
+  const active = tasks.find(t => {
+    const r = t.activeReminder;
+    return r && !r.acknowledged && (r.type === 'manual' || !t.reminderAcked) && t.status !== 'Đã xong' && !reminderExpired(t);
+  });
   if (!active) return;
   if (popup && currentTask && currentTask.activeReminder && active.activeReminder && currentTask.activeReminder.id === active.activeReminder.id) return;
   showReminder(active);
@@ -197,7 +202,9 @@ function showReminder(task){
   win.setAlwaysOnTop(true, 'screen-saver');
   win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(reminderHtml(task)));
   win.once('ready-to-show', () => {
-    if (popup === win && !win.isDestroyed()) win.show();
+    if (popup === win && !win.isDestroyed()) {
+      try { win.show(); } catch {}
+    }
   });
   win.on('closed', () => {
     if (popup === win) popup = null;
@@ -211,7 +218,9 @@ function closePopup(){
   const win = popup;
   popup = null;
   currentTask = null;
-  if (win && !win.isDestroyed()) win.close();
+  if (win && !win.isDestroyed()) {
+    try { win.close(); } catch {}
+  }
 }
 function reminderHtml(task){
   const names = (task.employees && task.employees.length ? task.employees : employees);

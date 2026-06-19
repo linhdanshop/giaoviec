@@ -314,12 +314,13 @@
       <div class="card stat" data-metric="Hằng ngày" onclick="setMetricFilter('Hằng ngày')"><b id="stDaily">0</b><span>Hằng ngày</span></div>
       <div class="card stat" data-metric="Phát sinh" onclick="setMetricFilter('Phát sinh')"><b id="stOnce">0</b><span>Phát sinh</span></div>
       <div class="card stat" data-metric="prevOpen" onclick="openPreviousOpenTasks()"><b id="stPrevOpen">0</b><span>Việc ngày trước chưa làm</span></div>
+      <div class="card stat" data-metric="cvNotes" onclick="openCvNotes()"><b id="stCvNotes">0</b><span>Note CV</span></div>
     </div>
     <div class="section-title"><h2>📋 Danh sách công việc</h2><span class="hint">Ưu tiên việc chưa xong/quá giờ lên trên · Kéo mép tiêu đề cột để đổi kích cỡ, máy tự nhớ</span></div>
     <div class="tablebox"><table class="tasktable" id="taskTable"><colgroup><col data-col="time"><col data-col="title"><col data-col="content"><col data-col="emp"><col data-col="img"><col data-col="admin"><col data-col="report"><col data-col="status"><col data-col="duration"><col data-col="remind"><col data-col="log"><col data-col="act"></colgroup><thead><tr><th data-col="time" class="w-time">Giờ</th><th data-col="title" class="w-title">Tên CV</th><th data-col="content">Nội dung</th><th data-col="emp" class="w-emp">Nhân viên</th><th data-col="img" class="w-img">Ảnh</th><th data-col="admin">Admin ghi chú</th><th data-col="report">Báo cáo NV</th><th data-col="status" class="w-status">Trạng thái</th><th data-col="duration">TG xử lý</th><th data-col="remind">Nhắc việc</th><th data-col="log" class="w-log">Lịch sử</th><th data-col="act" class="w-act">Thao tác</th></tr></thead><tbody id="taskBody"></tbody></table></div>
   </div>
 
-  <div id="dailyTab" class="hidden"><div class="section-title"><h2>🔁 Việc hằng ngày</h2><button class="btn blue adminOnly" onclick="openDailyTemplateForm()">+ Tạo việc hằng ngày</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th>Giờ</th><th>Tên CV</th><th>Nhân viên</th><th>Nội dung</th><th>Ghi chú admin</th><th>Trạng thái</th><th class="adminOnly">Áp dụng</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="dailyBody"></tbody></table></div></div>
+  <div id="dailyTab" class="hidden"><div class="section-title"><h2>🔁 Việc hằng ngày</h2><button class="btn blue adminOnly" onclick="openDailyTemplateForm()">+ Tạo việc hằng ngày</button></div><div class="card masterbox"><table class="miniTable" id="dailyTable"><colgroup><col data-col="time"><col data-col="title"><col data-col="emp"><col data-col="content"><col data-col="admin"><col data-col="status"><col data-col="apply"><col data-col="act"></colgroup><thead><tr><th data-col="time">Giờ</th><th data-col="title">Tên CV</th><th data-col="emp">Nhân viên</th><th data-col="content">Nội dung</th><th data-col="admin">Ghi chú admin</th><th data-col="status">Trạng thái</th><th data-col="apply" class="adminOnly">Áp dụng</th><th data-col="act" class="adminOnly">Thao tác</th></tr></thead><tbody id="dailyBody"></tbody></table></div></div>
   <div id="masterTab" class="hidden"><div class="section-title"><h2>🧾 CV mẫu</h2><span class="hint">Lưu sẵn các việc hay dùng để tạo nhanh, không phải gõ lại mỗi ngày</span><button class="btn blue adminOnly" onclick="openMasterForm()">+ Thêm mẫu CV</button></div><div class="card masterbox"><table class="miniTable"><thead><tr><th style="width:90px">Mặc định</th><th>Tên CV</th><th>Nội dung mẫu</th><th>NV mặc định</th><th>Ghi chú mẫu</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="masterBody"></tbody></table></div><div class="section-title"><h2>👥 Nhân viên</h2><span class="hint">Admin thêm/xóa nhân viên, bộ lọc và form tự cập nhật</span></div><div class="card masterbox"><div class="empManage adminOnly"><input id="newEmpName" placeholder="Tên nhân viên mới"><button class="btn blue" onclick="addEmployee()">+ Thêm nhân viên</button></div><table class="miniTable"><thead><tr><th>Tên nhân viên</th><th class="adminOnly">Thao tác</th></tr></thead><tbody id="empManageBody"></tbody></table></div></div>
   <div id="devicesTab" class="hidden">
   <div class="section-title"><h2>🟢 Thiết bị online</h2><span class="hint">Mỗi trình duyệt có 1 mã thiết bị cố định. IP chỉ để ghi chú vì đổi mạng sẽ đổi IP.</span></div>
@@ -423,7 +424,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 .dkCameraSelect{width:100%;height:38px;border:1px solid #d9e3f0;border-radius:10px;padding:0 10px;margin-bottom:10px;font-weight:800;background:#fff}
 @media(max-width:760px){.attentionEmpChip{font-size:22px;padding:8px 13px}.dkCameraSelect{height:36px}}
 /* FINAL 44 - focused display fixes 2026-06-18 */
-#statsRow{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+#statsRow{grid-template-columns:repeat(8,minmax(0,1fr))!important}
 #statsRow .stat[data-metric="prevOpen"]{cursor:pointer}
 #detailBody .detailContentFull .bigcontent,
 #detailBody .detailSection .bigcontent,
@@ -459,6 +460,17 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   #dailyTab .dailyTinyActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
   #dailyTab .dailyTinyActions .btn{width:100%!important;height:40px!important}
   .prevOpenRow{grid-template-columns:1fr;gap:4px}.prevOpenRow b,.prevOpenRow span{white-space:normal}
+}
+.contentText,.dailyTaskContent,.dailyTextClip,.mcontent,.bigcontent{white-space:pre-wrap!important}
+.cvNoteToolbar{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px 0;flex-wrap:wrap}
+.cvNoteTableWrap{padding:12px 14px}.cvNoteTable textarea{width:100%;min-height:72px;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:vertical;font-weight:700}.cvNoteImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
+@media(max-width:760px){
+  #dailyTab .miniTable tr.dailyRowView{display:block!important;width:100%!important;padding:12px!important}
+  #dailyTab .miniTable tr.dailyRowView>td{display:block!important;width:100%!important;max-width:100%!important;padding:8px 0!important}
+  #dailyTab .miniTable tr.dailyRowView>td:before{display:block!important;width:100%!important;min-width:0!important;margin:0 0 6px!important}
+  #dailyTab .dailyTaskTitle,#dailyTab .dailyTaskContent,#dailyTab .dailyTextClip,#dailyTab .titlepill{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important}
+  #dailyTab .dailyTaskContent,#dailyTab .dailyTextClip{white-space:pre-wrap!important;overflow:visible!important;-webkit-line-clamp:unset!important}
+  #dailyTab .dailyApplyBtn{width:100%!important;min-height:44px!important}
 }
 
 </style>

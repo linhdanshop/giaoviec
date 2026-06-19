@@ -38,6 +38,8 @@
     tasks: [],
     prevOpenCount: 0,
     prevOpenItems: [],
+    cvNotes: [],
+    activeCvNoteId: '',
     devices: {},
     desktopClients: {},
     system: {},
@@ -105,6 +107,17 @@
       return Date.now() - (c.lastSeen || 0) < Math.min(DEVICE_STALE_MS, 30000);
     });
   }
+  function currentBrowserHasDesktopReminder(){
+    if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')) return false;
+    const cur = state.devices[Device?.id] || {};
+    const profile = loadJson('giaoviec.deviceProfile') || {};
+    const names = new Set([Device?.id, cur.name, profile.name].filter(Boolean).map(x => String(x).trim().toLowerCase()));
+    return Object.values(state.desktopClients || {}).some(c => {
+      if (!c || c.app !== 'desktop-reminder' || c.online === false) return false;
+      if (Date.now() - (c.lastSeen || 0) >= Math.min(DEVICE_STALE_MS, 30000)) return false;
+      return names.has(String(c.name || '').trim().toLowerCase()) || names.has(String(c.host || '').trim().toLowerCase());
+    });
+  }
   function empColor(name){
     const names = state.employees.length ? state.employees : ['Huyền','Nguyệt','Thủy','An','Su'];
     const idx = Math.max(0, names.indexOf(name));
@@ -136,8 +149,34 @@
   function logLine(action, actor, extra){
     return { at: Date.now(), actor: actor || currentActorName(), action, detail: extra || '' };
   }
+  function changeDetail(before, after, fields){
+    if (!before || !before.id) return '';
+    const labels = { time:'Giờ', title:'Tên CV', content:'Nội dung', employees:'Nhân viên', type:'Loại', status:'Trạng thái', adminNote:'Admin ghi chú', report:'Báo cáo NV', remindPlan:'Nhắc việc' };
+    return fields.map(f => {
+      const a = Array.isArray(before[f]) ? before[f].join(', ') : String(before[f] ?? '');
+      const b = Array.isArray(after[f]) ? after[f].join(', ') : String(after[f] ?? '');
+      return a === b ? '' : `${labels[f] || f}: ${a} -> ${b}`;
+    }).filter(Boolean).join('\n');
+  }
+  function formatLogLine(l){
+    const head = `${new Date(l.at || Date.now()).toLocaleString('vi-VN')} - ${l.actor || '-'} - ${l.action || ''}`;
+    if (!l.detail) return head;
+    const detail = String(l.detail);
+    const changes = detail.split('\n').map(line => {
+      const idx = line.indexOf(' -> ');
+      if (idx < 0) return '';
+      const left = line.slice(0, idx);
+      const right = line.slice(idx + 4);
+      const sep = left.indexOf(': ');
+      const label = sep >= 0 ? left.slice(0, sep) : '';
+      const before = sep >= 0 ? left.slice(sep + 2) : left;
+      return `${label ? label + '\n' : ''}Trước: ${before || '(trống)'}\nSau: ${right || '(trống)'}`;
+    }).filter(Boolean);
+    if (changes.length) return `${head}\n${changes.join('\n')}`;
+    return `${head}: ${detail}`;
+  }
   function logText(logs){
-    return (logs || []).slice(-80).reverse().map(l => `${new Date(l.at || Date.now()).toLocaleString('vi-VN')} - ${l.actor || '-'} - ${l.action || ''}${l.detail ? ': ' + l.detail : ''}`).join('\n') || 'Chưa có lịch sử';
+    return (logs || []).slice(-80).reverse().map(formatLogLine).join('\n\n') || 'Chưa có lịch sử';
   }
 
   function cleanSession(){
@@ -380,7 +419,11 @@
       taskRef('system').on('value', snap => { state.system = snap.val() || {}; });
       taskRef('desktopClients').on('value', snap => {
         state.desktopClients = snap.val() || {};
-        if (desktopReminderOnline()) closeAttentionIfAny();
+        if (currentBrowserHasDesktopReminder()) closeAttentionIfAny();
+      });
+      taskRef('cvNotes').on('value', snap => {
+        state.cvNotes = arr(snap.val()).map(n => Object.assign({ id:id(), content:'', images:[], logs:[] }, n));
+        this.renderStats(state.tasks.filter(t => t.date === state.date));
       });
       taskRef('quickLinks').on('value', snap => {
         const val = snap.val();
@@ -469,7 +512,7 @@
     durationHtml(t){
       const label = t.status === 'Đã xong' ? 'Xong' : 'Đang';
       const late = this.lateMins(t);
-      return `<span class="durationBadge">${label} ${this.duration(t)}${late ? `<span class="lateLine">Trễ ${late}p</span>` : ''}</span>`;
+      return `<span class="durationBadge">${label} ${this.duration(t)}${late ? `<span class="lateLine">Trễ ${compactDuration(late * 60000)}</span>` : ''}</span>`;
     },
     sort(list){
       return list.slice().sort((a,b) => {
@@ -501,6 +544,7 @@
       set('stDaily', base.filter(t => t.type === 'Hằng ngày').length);
       set('stOnce', base.filter(t => t.type !== 'Hằng ngày').length);
       set('stPrevOpen', state.prevOpenCount || 0);
+      set('stCvNotes', state.cvNotes.length || 0);
       $$('#statsRow .stat').forEach(x => x.classList.toggle('active', x.dataset.metric === state.metric));
     },
     render(){
@@ -530,7 +574,7 @@
         <td>${this.durationHtml(t)}</td>
         <td>${window.roleAdmin()?`<div class="remindBox"><button class="remindBtn" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button><button class="remindPlanBtn" onclick="openReminderConfig('${esc(t.id)}')">${esc(formatReminderPlan(t.remindPlan))}</button></div>`:''}</td>
         <td><button class="more" onclick="openTaskHistory('${esc(t.id)}')">${(t.logs||[]).length} dòng</button></td>
-        <td class="action"><button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu">${window.roleAdmin()?`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="openTaskForm('${esc(t.id)}')">Sửa</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button><button class="danger" onclick="deleteTask('${esc(t.id)}')">Xóa</button>`:`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button>`}</div></td>
+        <td class="action"><button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu">${window.roleAdmin()?`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="openTaskForm('${esc(t.id)}')">Sửa</button><button onclick="toggleTaskDone('${esc(t.id)}')">${done?'Chưa xong':'Đã xong'}</button><button class="danger" onclick="deleteTask('${esc(t.id)}')">Xóa</button>`:`<button onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button onclick="setTaskDone('${esc(t.id)}')">Đã xong</button>`}</div></td>
       </tr>`;
     },
     mobileCard(t){
@@ -590,6 +634,7 @@
           <td data-label="Thao tác" class="adminOnly"><div class="dailyTinyActions"><button class="btn gray" onclick="event.stopPropagation();openDailyTemplateForm('${esc(t.id)}')">Sửa</button><button class="btn red" onclick="event.stopPropagation();deleteDailyTemplate('${esc(t.id)}')">Xóa</button></div></td>
         </tr>`;
       }).join('');
+      setupColumnResizers();
     },
     renderMasters(){
       const body = $('masterBody');
@@ -642,14 +687,16 @@
       if (!t.employees.length) return showToast('Phải tích chọn nhân viên mới được lưu');
       if (state.formMode === 'daily') {
         const old = state.dailyTemplates.find(x => x.id === t.id) || {};
-        const item = Object.assign({}, old, t, { type:'Hằng ngày', active: old.active !== false, logs:[...(old.logs||[]), logLine(old.id?'Sửa mẫu hằng ngày':'Tạo mẫu hằng ngày','Admin')] });
+        const detail = changeDetail(old, t, ['time','title','employees','content','adminNote','remindPlan']);
+        const item = Object.assign({}, old, t, { type:'Hằng ngày', active: old.active !== false, logs:[...(old.logs||[]), logLine(old.id?'Sửa mẫu hằng ngày':'Tạo mẫu hằng ngày','Admin', detail)] });
         await taskRef('dailyTemplates', item.id).set(item);
         closeModal('taskModal');
         showToast('Đã lưu mẫu hằng ngày');
         return;
       }
       const old = state.tasks.find(x => x.id === t.id) || {};
-      const item = Object.assign({}, old, t, { logs:[...(old.logs||[]), logLine(old.id?'Sửa việc':'Tạo việc','Admin')] });
+      const detail = changeDetail(old, t, ['date','time','title','employees','type','content','adminNote','remindPlan','status']);
+      const item = Object.assign({}, old, t, { logs:[...(old.logs||[]), logLine(old.id?'Sửa việc':'Tạo việc','Admin', detail)] });
       await this.saveTaskObj(item.date, item);
       closeModal('taskModal');
       showToast('Đã lưu việc');
@@ -742,7 +789,7 @@
       }
       const rid = active.activeReminder.id;
       if (state.dismissedReminders.has(rid)) return;
-      if (desktopReminderOnline()) return closeAttentionIfAny();
+      if (currentBrowserHasDesktopReminder()) return closeAttentionIfAny();
       if (window.roleAdmin() && !state.adminNotifyOn) return;
       showAttention(active);
     }
@@ -761,10 +808,24 @@
     return el;
   }
   function setupColumnResizers(){
-    const table = $('taskTable');
+    setupResizableTable('taskTable', 'giaoviec.taskColWidths');
+    setupResizableTable('dailyTable', 'giaoviec.dailyColWidths');
+  }
+  function setupResizableTable(tableId, storageKey){
+    const table = $(tableId);
     if (!table || table.dataset.resizable === '1') return;
-    const cols = Array.from(table.querySelectorAll('colgroup col'));
-    const saved = loadJson('giaoviec.taskColWidths') || {};
+    let group = table.querySelector('colgroup');
+    if (!group) {
+      group = document.createElement('colgroup');
+      Array.from(table.querySelectorAll('thead th')).forEach((th, i) => {
+        const col = document.createElement('col');
+        col.dataset.col = th.dataset.col || String(i);
+        group.appendChild(col);
+      });
+      table.insertBefore(group, table.firstChild);
+    }
+    const cols = Array.from(group.querySelectorAll('col'));
+    const saved = loadJson(storageKey) || {};
     cols.forEach(col => {
       const key = col.dataset.col;
       if (key && saved[key]) col.style.width = saved[key] + 'px';
@@ -784,9 +845,9 @@
           cols[i].style.width = width + 'px';
         };
         const up = () => {
-          const next = loadJson('giaoviec.taskColWidths') || {};
+          const next = loadJson(storageKey) || {};
           next[key] = Math.round(cols[i].getBoundingClientRect().width || parseInt(cols[i].style.width, 10) || th.getBoundingClientRect().width);
-          saveJson('giaoviec.taskColWidths', next);
+          saveJson(storageKey, next);
           document.removeEventListener('mousemove', move);
           document.removeEventListener('mouseup', up);
         };
@@ -936,10 +997,21 @@
   window.setTaskDone = function(taskId){
     const t = state.tasks.find(x => x.id === taskId);
     if (!t) return;
+    if (t.status === 'Đã xong') return;
     withActor(actor => {
       const logs = [...(t.logs||[]), logLine('Đánh dấu đã xong', actor)];
       taskRef('tasks', t.date, t.id).update({ status:'Đã xong', doneAt: nowIso(), logs, activeReminder:null, reminderAcked:true });
     });
+  };
+  window.toggleTaskDone = function(taskId){
+    const t = state.tasks.find(x => x.id === taskId);
+    if (!t || !requireAdmin()) return;
+    if (t.status === 'Đã xong') {
+      const logs = [...(t.logs||[]), logLine('Chuyển lại chưa xong', 'Admin', `${t.status || ''} -> Chưa làm`)];
+      taskRef('tasks', t.date, t.id).update({ status:'Chưa làm', doneAt:null, logs });
+      return;
+    }
+    window.setTaskDone(taskId);
   };
   window.saveQuickNote = function(taskId, field, value){
     const t = state.tasks.find(x => x.id === taskId);
@@ -1056,6 +1128,69 @@
       </div>`).join('')}</div>`;
     openModal('detailModal');
   };
+  window.openCvNotes = function(){
+    state.activeCvNoteId = '';
+    $('detailTitle').textContent = 'DANH SÁCH NOTE CV NHANH';
+    const rows = state.cvNotes.slice().sort((a,b)=>(b.at||0)-(a.at||0));
+    $('detailBody').innerHTML = `<div class="cvNoteToolbar">
+      <button class="btn blue" onclick="addCvNote()">+ Thêm note</button>
+      ${window.roleAdmin()?`<button class="btn red" onclick="deleteAllCvNotes()">Xóa hết danh sách</button>`:''}
+    </div>
+    <div class="cvNoteTableWrap"><table class="miniTable cvNoteTable">
+      <thead><tr><th>STT</th><th>Nội dung note</th><th>Tên</th><th>Thời gian</th><th>Lịch sử</th><th>Thao tác</th></tr></thead>
+      <tbody>${rows.map((n,i)=>cvNoteRow(n,i)).join('') || '<tr><td colspan="6" class="muted">Chưa có note CV</td></tr>'}</tbody>
+    </table></div>`;
+    openModal('detailModal');
+  };
+  function cvNoteRow(n, i){
+    const imgs = (n.images || []).map(src => previewImageHtml(`cvNoteImgs_${n.id}`, src)).join('');
+    return `<tr>
+      <td>${i+1}</td>
+      <td><textarea class="cvNoteInput" onfocus="stateSetActiveCvNote('${esc(n.id)}')" onmouseleave="this.blur()" onblur="saveCvNoteContent('${esc(n.id)}', this.value)" placeholder="Nhập note nhanh...">${esc(n.content || '')}</textarea><div class="mutedSmall">Ảnh có thể copy dán vào dòng này</div><div id="cvNoteImgs_${esc(n.id)}" class="previewImgs cvNoteImgs">${imgs}</div></td>
+      <td>${esc(n.name || '-')}</td>
+      <td>${n.at ? new Date(n.at).toLocaleString('vi-VN') : '-'}</td>
+      <td><button class="more" onclick="openCvNoteHistory('${esc(n.id)}')">${(n.logs||[]).length} dòng</button></td>
+      <td class="action">${window.roleAdmin()?`<button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu"><button class="danger" onclick="deleteCvNote('${esc(n.id)}')">Xóa</button></div>`:'-'}</td>
+    </tr>`;
+  }
+  window.stateSetActiveCvNote = id => { state.activeCvNoteId = id; };
+  window.addCvNote = function(){
+    withActor(actor => {
+      const note = { id:id(), content:'', images:[], name:actor || 'Admin', at:Date.now(), logs:[logLine('Tạo note CV', actor || 'Admin')] };
+      taskRef('cvNotes', note.id).set(note).then(() => setTimeout(openCvNotes, 80));
+    });
+  };
+  window.saveCvNoteContent = function(noteId, value){
+    const n = state.cvNotes.find(x => x.id === noteId);
+    if (!n || String(n.content || '') === String(value || '')) return;
+    withActor(actor => {
+      const logs = [...(n.logs||[]), logLine('Sửa nội dung note', actor, `${n.content||''} -> ${value||''}`)];
+      taskRef('cvNotes', noteId).update({ content:value || '', name:actor || n.name || 'Admin', at:Date.now(), logs });
+    });
+  };
+  window.saveCvNoteImages = function(noteId){
+    const n = state.cvNotes.find(x => x.id === noteId);
+    const images = getPreviewImages(`cvNoteImgs_${noteId}`);
+    if (!n) return;
+    withActor(actor => {
+      const logs = [...(n.logs||[]), logLine('Sửa ảnh note CV', actor, `${(n.images||[]).length} ảnh -> ${images.length} ảnh`)];
+      taskRef('cvNotes', noteId).update({ images, name:actor || n.name || 'Admin', at:Date.now(), logs });
+    });
+  };
+  window.openCvNoteHistory = function(noteId){
+    const n = state.cvNotes.find(x => x.id === noteId);
+    if (!n) return;
+    $('detailTitle').textContent = 'Lịch sử Note CV';
+    $('detailBody').innerHTML = `<pre class="copyBox">${esc(logText(n.logs || []))}</pre><div class="panelfoot"><button class="btn gray" onclick="openCvNotes()">Quay lại</button></div>`;
+  };
+  window.deleteCvNote = function(noteId){
+    if (!requireAdmin()) return;
+    if (confirm('Xóa note CV này?')) taskRef('cvNotes', noteId).remove().then(() => setTimeout(openCvNotes, 80));
+  };
+  window.deleteAllCvNotes = function(){
+    if (!requireAdmin()) return;
+    if (confirm('Xóa hết danh sách Note CV?')) taskRef('cvNotes').remove().then(() => setTimeout(openCvNotes, 80));
+  };
   window.openTaskDetail = function(taskId){
     const t = state.tasks.find(x => x.id === taskId);
     if (!t) return;
@@ -1074,7 +1209,7 @@
     if (!t) return;
     if (t.status === 'Đã xong') return showToast('Việc đã xong, không gửi nhắc');
     const reminder = { id:`${t.id}-manual-${Date.now()}`, taskId:t.id, date:t.date, type:'manual', createdAt:Date.now(), acknowledged:false };
-    taskRef('tasks', t.date, t.id).update({ activeReminder:reminder, reminderAcked:false });
+    taskRef('tasks', t.date, t.id).update({ activeReminder:reminder });
   };
   function showAttention(t){
     const r = t.activeReminder;
@@ -1152,16 +1287,38 @@
   function getPreviewImages(id){ return Array.from(($(id)?.querySelectorAll('img') || [])).map(img => img.src).filter(Boolean); }
   function setPreviewImages(id, images){
     const el = $(id);
-    if (el) el.innerHTML = (images||[]).map(src => `<img src="${esc(src)}"><button type="button" class="btn red" onclick="this.previousElementSibling.remove();this.remove()">×</button>`).join('');
+    if (el) el.innerHTML = (images||[]).map(src => previewImageHtml(id, src)).join('');
   }
+  function previewImageHtml(previewId, src){
+    return `<img src="${esc(src)}" onclick="openPreviewImages('${esc(previewId)}')"><button type="button" class="btn red" onclick="event.stopPropagation();this.previousElementSibling.remove();this.remove()">×</button>`;
+  }
+  window.openPreviewImages = function(previewId){
+    const imgs = getPreviewImages(previewId);
+    if (imgs.length) openImages(imgs, 'Xem ảnh');
+  };
   document.addEventListener('paste', e => {
     const modal = document.querySelector('.modal.open');
+    if (state.activeCvNoteId && modal?.id === 'detailModal') {
+      const cvPreview = $(`cvNoteImgs_${state.activeCvNoteId}`);
+      const files = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith('image/'));
+      if (cvPreview && files.length) {
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            cvPreview.insertAdjacentHTML('beforeend', previewImageHtml(cvPreview.id, reader.result));
+            window.saveCvNoteImages(state.activeCvNoteId);
+          };
+          reader.readAsDataURL(file);
+        });
+        return;
+      }
+    }
     const preview = modal?.querySelector('.previewImgs');
     if (!preview) return;
     const files = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith('image/'));
     files.forEach(file => {
       const reader = new FileReader();
-      reader.onload = () => preview.insertAdjacentHTML('beforeend', `<img src="${reader.result}"><button type="button" class="btn red" onclick="this.previousElementSibling.remove();this.remove()">×</button>`);
+      reader.onload = () => preview.insertAdjacentHTML('beforeend', previewImageHtml(preview.id, reader.result));
       reader.readAsDataURL(file);
     });
   });
@@ -1578,6 +1735,9 @@
       .quickLinkRow label{font-weight:900;color:#334155;display:flex;gap:5px;align-items:center}
       .dkNoteBtn{width:100%;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;text-align:left;font-weight:800;cursor:pointer;min-height:34px}
       .dkNoteBtn.empty{color:#94a3b8}
+      .contentText,.dailyTaskContent,.dailyTextClip,.mcontent,.bigcontent{white-space:pre-wrap!important}
+      .cvNoteToolbar{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px 0;flex-wrap:wrap}
+      .cvNoteTableWrap{padding:12px 14px}.cvNoteTable textarea{width:100%;min-height:72px;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:vertical;font-weight:700}.cvNoteImgs img,.previewImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
       @media(max-width:760px){
         .tkTableWrap{overflow:visible!important}
         .tkTable{display:block!important;min-width:0!important;border:0!important}
@@ -1599,8 +1759,8 @@
         #dailyTab .miniTable td:before{display:block!important;margin-bottom:5px!important;font-size:11px!important;color:#64748b!important;min-width:0!important}
         #dailyTab .miniTable td[data-label="Nội dung"],#dailyTab .miniTable td[data-label="Ghi chú admin"]{align-items:start!important}
         #dailyTab .miniTable td[data-label="Tên CV"]{display:block!important}
-        #dailyTab .dailyTitlePill{display:block!important;min-width:0!important;width:100%!important;white-space:normal!important;word-break:break-word;text-align:left!important}
-        #dailyTab .dailyTaskContent,#dailyTab .dailyTextClip{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;white-space:normal!important;word-break:break-word!important}
+        #dailyTab .dailyTitlePill,#dailyTab .dailyTaskTitle,#dailyTab .titlepill{display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;white-space:normal!important;word-break:break-word;text-align:left!important}
+        #dailyTab .dailyTaskContent,#dailyTab .dailyTextClip{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;white-space:pre-wrap!important;word-break:break-word!important;width:100%!important;max-width:100%!important}
         #dailyTab .empchips{max-width:none!important;flex-direction:row!important;flex-wrap:wrap!important}
         #dailyTab .dailyTinyActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
         #dailyTab .dailyTinyActions .btn,#dailyTab .dailyApplyBtn{width:100%!important;height:40px!important}
