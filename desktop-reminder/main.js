@@ -177,46 +177,58 @@ async function markDelivered(task){
   }).catch(() => {});
 }
 function showReminder(task){
+  closePopup();
   currentTask = task;
   markDelivered(task);
-  closePopup();
-  popup = new BrowserWindow({
-    width: 720,
-    height: 600,
+  const reminderId = task.activeReminder && task.activeReminder.id;
+  const win = new BrowserWindow({
+    width: 760,
+    height: 620,
     alwaysOnTop: true,
     resizable: true,
     frame: true,
+    show: false,
+    autoHideMenuBar: true,
     title: 'Nhắc việc',
     webPreferences: { nodeIntegration: true, contextIsolation: false, sandbox: false }
   });
-  popup.setAlwaysOnTop(true, 'screen-saver');
-  popup.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(reminderHtml(task)));
-  popup.once('ready-to-show', () => popup.show());
-  popup.on('closed', () => { popup = null; currentTask = null; });
+  popup = win;
+  win.removeMenu();
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(reminderHtml(task)));
+  win.once('ready-to-show', () => {
+    if (popup === win && !win.isDestroyed()) win.show();
+  });
+  win.on('closed', () => {
+    if (popup === win) popup = null;
+    if (currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) currentTask = null;
+  });
   setTimeout(() => {
-    if (popup && currentTask && currentTask.activeReminder && currentTask.activeReminder.id === task.activeReminder.id) closePopup();
+    if (popup === win && currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) closePopup();
   }, 60000);
 }
 function closePopup(){
-  if (popup && !popup.isDestroyed()) popup.close();
+  const win = popup;
   popup = null;
   currentTask = null;
+  if (win && !win.isDestroyed()) win.close();
 }
 function reminderHtml(task){
   const names = (task.employees && task.employees.length ? task.employees : employees);
   const chips = names.map(n => `<button class="choice" onclick="ack('${esc(n).replace(/'/g, "\\'")}')">${esc(n)}</button>`).join('');
   return `<!doctype html><meta charset="utf-8"><title>Nhắc việc</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,Tahoma,sans-serif;background:#fff7ed;color:#111827;font-weight:800}
-    .panel{min-height:100vh;border:5px solid #ef4444;background:#fff7ed}
-    .head{background:#dc2626;color:white;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-    h1{margin:0;font-size:34px;font-weight:1000}.x{width:44px;height:44px;border:0;border-radius:12px;background:#f1f5f9;font-size:22px;font-weight:1000;cursor:pointer}
-    .body{padding:24px}.title{font-size:25px;font-weight:1000;margin-bottom:18px}
-    .emp{border:2px solid #fb923c;border-radius:16px;background:#fff7ed;padding:16px;margin-bottom:14px}.emp small{display:block;color:#9a3412;margin-bottom:8px}
-    .empName{display:inline-flex;border:4px solid #f59e0b;border-radius:999px;background:#fff7ed;padding:8px 18px;font-size:28px;font-weight:1000}
-    .note{border:1px solid #dbe5f2;background:#f8fafc;border-radius:14px;padding:14px;margin-bottom:14px;white-space:pre-wrap;word-break:break-word}
-    .content{border:1px dashed #cbd5e1;border-radius:14px;background:white;padding:16px;line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow:auto}
-    .foot{padding:18px 24px;background:white;border-top:1px solid #fed7aa;display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+    *{box-sizing:border-box}html,body{width:100%;height:100%;overflow:hidden}body{margin:0;font-family:Arial,Tahoma,sans-serif;background:#fff7ed;color:#111827;font-weight:800}
+    .panel{height:100vh;border:5px solid #ef4444;background:#fff7ed;display:flex;flex-direction:column;overflow:hidden}
+    .head{background:#dc2626;color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto}
+    h1{margin:0;font-size:32px;font-weight:1000}.x{width:44px;height:44px;border:0;border-radius:12px;background:#f1f5f9;font-size:22px;font-weight:1000;cursor:pointer}
+    .body{padding:16px 24px;display:grid;gap:12px;flex:1 1 auto;min-height:0;overflow:hidden}.title{font-size:26px;font-weight:1000;margin:0;line-height:1.2}
+    .emp{border:2px solid #fb923c;border-radius:16px;background:#fff7ed;padding:12px;margin:0}.emp small{display:block;color:#9a3412;margin-bottom:8px}
+    .empName{display:inline-flex;border:4px solid #f59e0b;border-radius:999px;background:#fff7ed;padding:7px 17px;font-size:28px;font-weight:1000}
+    .note,.content{border-radius:14px;padding:13px;line-height:1.4;white-space:pre-wrap;word-break:break-word;overflow:auto}
+    .content{border:1px dashed #cbd5e1;background:white;max-height:170px}
+    .note{border:1px solid #dbe5f2;background:#f8fafc;max-height:92px}
+    .foot{padding:12px 24px;background:white;border-top:1px solid #fed7aa;display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;flex:0 0 auto}
     button{height:46px;border:0;border-radius:12px;padding:0 18px;font-weight:1000;font-size:15px;cursor:pointer}.gray{background:#e9eef5}.orange{background:#f59e0b;color:#111827}
     #choices{display:none;gap:8px;flex-wrap:wrap;width:100%;justify-content:flex-end}.choice{background:white;border:2px solid #f59e0b;color:#111827}
   </style>
@@ -225,8 +237,8 @@ function reminderHtml(task){
     <div class="body">
       <div class="title">${esc(task.time)} - ${esc(task.title)}</div>
       <div class="emp"><small>Nhân viên bàn giao</small>${names.map(n=>`<span class="empName">${esc(n)}</span>`).join(' ') || '<span class="empName">Chưa có</span>'}</div>
+      <div class="content"><b>Nội dung</b><br>${esc(task.content || 'Không có')}</div>
       <div class="note"><b>Ghi chú admin</b><br>${esc(task.adminNote || 'Không có')}</div>
-      <div class="content">${esc(task.content || '')}</div>
     </div>
     <div class="foot">
       <div id="choices">${chips}</div>
@@ -279,6 +291,7 @@ ipcMain.on('ack-reminder', async (_ev, actor) => {
 });
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   if (process.platform === 'win32') {
     app.setLoginItemSettings({ openAtLogin: true, path: process.execPath });
   }

@@ -100,7 +100,10 @@
   function arr(v){ return Array.isArray(v) ? v.filter(Boolean) : Object.entries(v || {}).map(([key, value]) => typeof value === 'object' ? Object.assign({ id: value.id || key }, value) : value); }
   function listNames(v){ return arr(v).map(x => typeof x === 'string' ? x.trim() : String(x?.name || x?.title || '').trim()).filter(Boolean); }
   function desktopReminderOnline(){
-    return Object.values(state.desktopClients || {}).some(c => c && c.online !== false && Date.now() - (c.lastSeen || 0) < DEVICE_STALE_MS);
+    return Object.values(state.desktopClients || {}).some(c => {
+      if (!c || c.app !== 'desktop-reminder' || c.online === false) return false;
+      return Date.now() - (c.lastSeen || 0) < Math.min(DEVICE_STALE_MS, 30000);
+    });
   }
   function empColor(name){
     const names = state.employees.length ? state.employees : ['Huyền','Nguyệt','Thủy','An','Su'];
@@ -1590,17 +1593,18 @@
         .tkHead>div{display:flex;gap:8px;flex-wrap:wrap}
         #dailyTab .section-title{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;align-items:center!important}
         #dailyTab .section-title h2{grid-column:1/-1!important;margin-bottom:0!important}
-        #dailyTab .section-title .btn{width:100%!important;min-width:0!important;height:42px!important;white-space:normal!important;line-height:1.15!important;padding:0 8px!important}
-        #dailyTab .miniTable tr{padding:12px!important}
+        #dailyTab .section-title .btn{width:100%!important;min-width:0!important;height:44px!important;white-space:normal!important;line-height:1.15!important;padding:0 8px!important;font-size:13px!important}
+        #dailyTab .miniTable tr{display:block!important;padding:12px!important}
         #dailyTab .miniTable td{display:block!important;width:100%!important;padding:8px 0!important}
         #dailyTab .miniTable td:before{display:block!important;margin-bottom:5px!important;font-size:11px!important;color:#64748b!important;min-width:0!important}
         #dailyTab .miniTable td[data-label="Nội dung"],#dailyTab .miniTable td[data-label="Ghi chú admin"]{align-items:start!important}
         #dailyTab .miniTable td[data-label="Tên CV"]{display:block!important}
         #dailyTab .dailyTitlePill{display:block!important;min-width:0!important;width:100%!important;white-space:normal!important;word-break:break-word;text-align:left!important}
-        #dailyTab .dailyTextClip{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;white-space:normal!important;word-break:break-word!important}
+        #dailyTab .dailyTaskContent,#dailyTab .dailyTextClip{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;white-space:normal!important;word-break:break-word!important}
         #dailyTab .empchips{max-width:none!important;flex-direction:row!important;flex-wrap:wrap!important}
         #dailyTab .dailyTinyActions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
-        #dailyTab .dailyTinyActions .btn,#dailyTab .dailyApplyBtn{width:100%!important;height:36px!important}
+        #dailyTab .dailyTinyActions .btn,#dailyTab .dailyApplyBtn{width:100%!important;height:40px!important}
+        #dailyTab .dailyApplyBtn{min-width:120px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important}
       }
     </style>`);
   }
