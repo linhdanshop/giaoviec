@@ -66,12 +66,13 @@ function compactDuration(ms){
 }
 function taskRef(...parts){ return ref(db, [TASK_ROOT].concat(parts).filter(Boolean).join('/')); }
 function reminderExpired(task){
-  return Date.now() - (((task || {}).activeReminder || {}).createdAt || 0) > 60000;
+  const reminder = (task || {}).activeReminder || {};
+  return !!reminder.expired || Date.now() - (reminder.createdAt || 0) > 60000;
 }
 function reminderDone(task){
   const reminder = task && task.activeReminder;
   const ackedAuto = task && task.reminderAcked && (!reminder || reminder.type !== 'manual');
-  return !task || task.status === 'Đã xong' || ackedAuto || !reminder || reminder.acknowledged || reminderExpired(task);
+  return !task || task.status === 'Đã xong' || ackedAuto || !reminder || reminder.acknowledged || reminder.expired || reminderExpired(task);
 }
 
 function createTray(){
@@ -159,10 +160,10 @@ function handleTasks(tasks){
     const fresh = tasks.find(t => t.id === currentTask.id);
     if (reminderDone(fresh)) closePopup();
   }
-  const active = tasks.find(t => {
+  const active = tasks.filter(t => {
     const r = t.activeReminder;
-    return r && !r.acknowledged && (r.type === 'manual' || !t.reminderAcked) && t.status !== 'Đã xong' && !reminderExpired(t);
-  });
+    return r && !r.acknowledged && !r.expired && (r.type === 'manual' || !t.reminderAcked) && t.status !== 'Đã xong' && !reminderExpired(t);
+  }).sort((a,b) => ((b.activeReminder || {}).createdAt || 0) - ((a.activeReminder || {}).createdAt || 0))[0];
   if (!active) return;
   if (popup && currentTask && currentTask.activeReminder && active.activeReminder && currentTask.activeReminder.id === active.activeReminder.id) return;
   showReminder(active);
@@ -211,8 +212,22 @@ function showReminder(task){
     if (currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) currentTask = null;
   });
   setTimeout(() => {
-    if (popup === win && currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) closePopup();
+    if (popup === win && currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) {
+      expireReminder(task, reminderId).finally(closePopup);
+    }
   }, 60000);
+}
+async function expireReminder(task, reminderId){
+  if (!task || !reminderId) return;
+  try {
+    const snap = await get(taskRef('tasks', task.date, task.id));
+    const fresh = snap.val() || {};
+    const reminder = fresh.activeReminder || {};
+    if (reminder.id !== reminderId || reminder.acknowledged || reminder.expired) return;
+    await update(taskRef('tasks', task.date, task.id), {
+      activeReminder: Object.assign({}, reminder, { expired:true, expiredAt:Date.now(), expiredDevice:config.deviceId })
+    });
+  } catch {}
 }
 function closePopup(){
   const win = popup;

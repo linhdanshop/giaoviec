@@ -800,15 +800,42 @@
         const reminder = { id:`${t.id}-auto-${slot}`, taskId:t.id, date:t.date, type:'auto', slot, createdAt:Date.now(), acknowledged:false };
         await taskRef('tasks', t.date, t.id).update({ lastAutoReminderSlot:slot, activeReminder:reminder });
       }
+      this.handleActiveReminder();
+    },
+    reminderClosed(t){
+      const r = t && t.activeReminder;
+      if (!r) return true;
+      return t.status === 'Đã xong' || r.acknowledged || r.expired || Date.now() - (r.createdAt || 0) > 60000;
+    },
+    reminderEligible(t){
+      const r = t && t.activeReminder;
+      return !!(r && t.status !== 'Đã xong' && !r.acknowledged && !r.expired && (r.type === 'manual' || !t.reminderAcked) && Date.now() - (r.createdAt || 0) <= 60000 && !state.dismissedReminders.has(r.id));
+    },
+    expireReminder(t){
+      const r = t && t.activeReminder;
+      if (!r || r.acknowledged || r.expired) return;
+      taskRef('tasks', t.date, t.id).once('value').then(snap => {
+        const fresh = snap.val() || {};
+        const reminder = fresh.activeReminder || {};
+        if (reminder.id !== r.id || reminder.acknowledged || reminder.expired) return;
+        return taskRef('tasks', t.date, t.id).update({ activeReminder: Object.assign({}, reminder, { expired:true, expiredAt:Date.now() }) });
+      }).catch(() => {});
     },
     handleActiveReminder(){
-      const active = state.tasks.find(t => t.activeReminder && !t.activeReminder.acknowledged);
-      if (!active) return closeAttentionIfAny();
-      if (Date.now() - (active.activeReminder.createdAt || 0) > 60000) {
-        if (state.attention?.id === active.activeReminder.id) closeAttentionIfAny();
-        return;
+      if (state.attention) {
+        const current = state.tasks.find(t => t.id === state.attention.taskId && t.activeReminder && t.activeReminder.id === state.attention.id);
+        if (!current || this.reminderClosed(current)) closeAttentionIfAny();
       }
+      state.tasks.forEach(t => {
+        const r = t.activeReminder;
+        if (r && !r.acknowledged && !r.expired && Date.now() - (r.createdAt || 0) > 60000) this.expireReminder(t);
+      });
+      const active = state.tasks
+        .filter(t => this.reminderEligible(t))
+        .sort((a,b) => (b.activeReminder.createdAt || 0) - (a.activeReminder.createdAt || 0))[0];
+      if (!active) return closeAttentionIfAny();
       const rid = active.activeReminder.id;
+      if (state.attention?.id === rid) return;
       if (state.dismissedReminders.has(rid)) return;
       if (currentBrowserHasDesktopReminder()) return closeAttentionIfAny();
       if (window.roleAdmin() && !state.adminNotifyOn) return;
@@ -1262,7 +1289,11 @@
     playSound10s();
     clearTimeout(state.attentionCloseTimer);
     state.attentionCloseTimer = setTimeout(() => {
-      if (state.attention?.id === r.id) window.closeAttention();
+      if (state.attention?.id === r.id) {
+        const fresh = state.tasks.find(x => x.id === t.id) || t;
+        Tasks.expireReminder(fresh);
+        closeAttentionIfAny();
+      }
     }, 60000);
   }
   function closeAttentionIfAny(){
@@ -1777,6 +1808,7 @@
       #dailyTable{table-layout:fixed!important}
       #dailyTable th,#dailyTable td{width:auto!important}
       #dailyTable th{position:relative}
+      #detailModal:has(.cvNoteTableWrap) .panel{width:min(1450px,98vw)!important}
       .cvNoteTableWrap{padding:10px 14px;max-height:70vh;overflow:auto}.cvNoteTable{table-layout:fixed}.cvNoteTable th:nth-child(1){width:50px}.cvNoteTable th:nth-child(2){width:36%}.cvNoteTable th:nth-child(3){width:150px}.cvNoteTable th:nth-child(4){width:90px}.cvNoteTable th:nth-child(5){width:145px}.cvNoteTable th:nth-child(6){width:88px}.cvNoteTable th:nth-child(7){width:78px}.cvNoteTable td{padding:8px 10px!important;vertical-align:top}.cvNoteTable textarea{width:100%;height:52px;min-height:52px;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:vertical;font-weight:700;line-height:1.25}.cvNoteImageCell{cursor:text}.cvNoteImgs{max-height:62px;overflow:auto;margin-top:3px}.cvNoteImgs img{width:54px;height:42px;object-fit:cover;cursor:pointer}.previewImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
       @media(max-width:760px){
         .tkTableWrap{overflow:visible!important}
