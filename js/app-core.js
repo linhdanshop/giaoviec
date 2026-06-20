@@ -146,6 +146,26 @@
     }
     if (id === 'attentionModal') stopSound();
   }
+  function closeTopModalByEsc(){
+    const openModals = $$('.modal.open')
+      .filter(el => !(el.id === 'loginModal' && document.body.classList.contains('authLocked')));
+    if (!openModals.length) return;
+    openModals.sort((a,b) => {
+      const za = parseInt(getComputedStyle(a).zIndex, 10) || 0;
+      const zb = parseInt(getComputedStyle(b).zIndex, 10) || 0;
+      return za - zb;
+    });
+    const top = openModals[openModals.length - 1];
+    if (top.id === 'attentionModal' && typeof window.closeAttention === 'function') window.closeAttention();
+    else closeModal(top.id);
+  }
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape') return;
+    const hasPopup = $$('.modal.open').length;
+    if (!hasPopup) return;
+    ev.preventDefault();
+    closeTopModalByEsc();
+  });
   function logLine(action, actor, extra){
     return { at: Date.now(), actor: actor || currentActorName(), action, detail: extra || '' };
   }
@@ -580,10 +600,11 @@
     mobileCard(t){
       const color = empColor((t.employees||[])[0]);
       const done = t.status === 'Đã xong', late = this.lateMins(t) > 0;
+      const mobileRemind = window.roleAdmin() && !done ? `<button class="remindBtn mobileManualRemind" onclick="manualRemind('${esc(t.id)}')">🔔 Nhắc</button>` : '';
       return `<div class="mobileTask ${done?'done':''} ${late?'overdue':''}">
         <div class="mtop"><div><div class="mtime">${esc(t.time)}</div><div class="mdate">${dateLabel(t.date)}</div></div><div class="titlepill" style="--empColor:${color}" onclick="openTaskDetail('${esc(t.id)}')">${esc(t.title)}</div><div class="statusStack"><span class="status ${done?'done':'todo'}">${esc(t.status)}</span>${late?'<span class="status late second">Quá giờ</span>':''}</div></div>
         <div class="mcontent">${esc(t.content)}</div>
-        <div class="mrow">${this.empChips(t.employees)}<span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc(t.type)}</span>${this.imgBadge(t.images,'ảnh')} ${this.durationHtml(t)}</div>
+        <div class="mrow">${this.empChips(t.employees)}<span class="badge ${t.type==='Hằng ngày'?'daily':'once'}">${esc(t.type)}</span>${this.imgBadge(t.images,'ảnh')} ${this.durationHtml(t)}${mobileRemind}</div>
         <div class="mactions"><button class="btn blue" onclick="openTaskDetail('${esc(t.id)}')">Chi tiết</button><button class="btn gray" onclick="openReport('${esc(t.id)}')">Báo cáo</button><button class="btn green" onclick="setTaskDone('${esc(t.id)}')">Đã xong</button></div>
       </div>`;
     },
@@ -985,8 +1006,23 @@
   window.openDailyDetail = function(id){
     const t = state.dailyTemplates.find(x => x.id === id);
     if (!t) return;
+    const color = empColor((t.employees||[])[0]);
+    const images = Tasks.imgBadge(t.images, 'ảnh công việc') || '<span class="muted">Không có ảnh</span>';
+    const adminActions = window.roleAdmin() ? `<div class="detailActions">
+      <button class="btn green" onclick="closeModal('detailModal');applyDailyTemplate('${esc(t.id)}')">Áp dụng</button>
+      <button class="btn gray" onclick="closeModal('detailModal');openDailyTemplateForm('${esc(t.id)}')">Sửa việc hằng ngày</button>
+      <button class="btn red" onclick="deleteDailyTemplate('${esc(t.id)}')">Xóa</button>
+    </div>` : '';
     $('detailTitle').textContent = `${t.time} - ${t.title}`;
-    $('detailBody').innerHTML = `<div class="detailWrap"><div class="detailTop"><div class="info">Nhân viên: ${esc((t.employees||[]).join(', '))}</div><div class="info">Trạng thái: ${t.active!==false?'Đang bật':'Tắt'}</div></div><div class="detailMain"><div class="detailSection"><h4>Nội dung</h4><div class="bigcontent">${esc(t.content)}</div>${Tasks.imgBadge(t.images,'ảnh')}</div><div class="detailSection"><h4>Admin ghi chú</h4>${esc(t.adminNote||'')}</div></div></div>`;
+    $('detailBody').innerHTML = `<div class="detailWrap">
+      <div class="detailTop"><div class="info">Nhân viên: ${esc((t.employees||[]).join(', ') || 'Chưa chọn')}</div><div class="info">Loại: Hằng ngày</div><div class="info">Trạng thái: ${t.active!==false?'Đang bật':'Tắt'}</div></div>
+      ${adminActions}
+      <div class="detailMain">
+        <div class="detailCore"><div><b>Giờ</b><div class="bigtime">${esc(t.time)}</div></div><div><b>Tên công việc</b><div class="bigtitle titlepill" style="--empColor:${color}">${esc(t.title)}</div></div><div class="detailContentFull"><b>Nội dung</b><div class="bigcontent">${esc(t.content)}</div></div></div>
+        <div class="detailSection"><h4>Ảnh công việc</h4>${images}</div>
+        <div class="detailSection adminBox"><h4>Admin ghi chú</h4><div class="dailyAdminDetail">${esc(t.adminNote || 'Không có')}</div></div>
+      </div>
+    </div>`;
     openModal('detailModal');
   };
   window.deleteTask = function(taskId){
@@ -1137,8 +1173,8 @@
       ${window.roleAdmin()?`<button class="btn red" onclick="deleteAllCvNotes()">Xóa hết danh sách</button>`:''}
     </div>
     <div class="cvNoteTableWrap"><table class="miniTable cvNoteTable">
-      <thead><tr><th>STT</th><th>Nội dung note</th><th>Tên</th><th>Thời gian</th><th>Lịch sử</th><th>Thao tác</th></tr></thead>
-      <tbody>${rows.map((n,i)=>cvNoteRow(n,i)).join('') || '<tr><td colspan="6" class="muted">Chưa có note CV</td></tr>'}</tbody>
+      <thead><tr><th>STT</th><th>Nội dung note</th><th>Ảnh</th><th>Tên</th><th>Thời gian</th><th>Lịch sử</th><th>Thao tác</th></tr></thead>
+      <tbody>${rows.map((n,i)=>cvNoteRow(n,i)).join('') || '<tr><td colspan="7" class="muted">Chưa có note CV</td></tr>'}</tbody>
     </table></div>`;
     openModal('detailModal');
   };
@@ -1146,7 +1182,8 @@
     const imgs = (n.images || []).map(src => previewImageHtml(`cvNoteImgs_${n.id}`, src)).join('');
     return `<tr>
       <td>${i+1}</td>
-      <td><textarea class="cvNoteInput" onfocus="stateSetActiveCvNote('${esc(n.id)}')" onmouseleave="this.blur()" onblur="saveCvNoteContent('${esc(n.id)}', this.value)" placeholder="Nhập note nhanh...">${esc(n.content || '')}</textarea><div class="mutedSmall">Ảnh có thể copy dán vào dòng này</div><div id="cvNoteImgs_${esc(n.id)}" class="previewImgs cvNoteImgs">${imgs}</div></td>
+      <td><textarea class="cvNoteInput" onfocus="stateSetActiveCvNote('${esc(n.id)}')" onmouseleave="this.blur()" onblur="saveCvNoteContent('${esc(n.id)}', this.value)" placeholder="Nhập note nhanh...">${esc(n.content || '')}</textarea></td>
+      <td class="cvNoteImageCell" onclick="stateSetActiveCvNote('${esc(n.id)}')"><div class="mutedSmall">Ctrl+V ảnh</div><div id="cvNoteImgs_${esc(n.id)}" class="previewImgs cvNoteImgs">${imgs}</div></td>
       <td>${esc(n.name || '-')}</td>
       <td>${n.at ? new Date(n.at).toLocaleString('vi-VN') : '-'}</td>
       <td><button class="more" onclick="openCvNoteHistory('${esc(n.id)}')">${(n.logs||[]).length} dòng</button></td>
@@ -1737,7 +1774,10 @@
       .dkNoteBtn.empty{color:#94a3b8}
       .contentText,.dailyTaskContent,.dailyTextClip,.mcontent,.bigcontent{white-space:pre-wrap!important}
       .cvNoteToolbar{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px 0;flex-wrap:wrap}
-      .cvNoteTableWrap{padding:12px 14px}.cvNoteTable textarea{width:100%;min-height:72px;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:vertical;font-weight:700}.cvNoteImgs img,.previewImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
+      #dailyTable{table-layout:fixed!important}
+      #dailyTable th,#dailyTable td{width:auto!important}
+      #dailyTable th{position:relative}
+      .cvNoteTableWrap{padding:10px 14px;max-height:70vh;overflow:auto}.cvNoteTable{table-layout:fixed}.cvNoteTable th:nth-child(1){width:50px}.cvNoteTable th:nth-child(2){width:36%}.cvNoteTable th:nth-child(3){width:150px}.cvNoteTable th:nth-child(4){width:90px}.cvNoteTable th:nth-child(5){width:145px}.cvNoteTable th:nth-child(6){width:88px}.cvNoteTable th:nth-child(7){width:78px}.cvNoteTable td{padding:8px 10px!important;vertical-align:top}.cvNoteTable textarea{width:100%;height:52px;min-height:52px;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:vertical;font-weight:700;line-height:1.25}.cvNoteImageCell{cursor:text}.cvNoteImgs{max-height:62px;overflow:auto;margin-top:3px}.cvNoteImgs img{width:54px;height:42px;object-fit:cover;cursor:pointer}.previewImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
       @media(max-width:760px){
         .tkTableWrap{overflow:visible!important}
         .tkTable{display:block!important;min-width:0!important;border:0!important}
