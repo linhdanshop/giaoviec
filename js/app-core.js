@@ -1195,9 +1195,10 @@
   window.openCvNotes = function(){
     state.activeCvNoteId = '';
     $('detailTitle').textContent = 'DANH SÁCH NOTE CV NHANH';
-    const rows = state.cvNotes.slice().sort((a,b)=>(b.at||0)-(a.at||0));
+    const rows = state.cvNotes.slice().sort((a,b)=>cvNoteCreatedAt(b)-cvNoteCreatedAt(a));
     $('detailBody').innerHTML = `<div class="cvNoteToolbar">
       <input id="cvNoteSearch" class="cvNoteSearch" value="${esc(state.cvNoteQuery || '')}" placeholder="Tìm nội dung note..." oninput="filterCvNotes(this.value)">
+      <button class="btn gray" onclick="openCvNoteAllHistory()">Lịch sử tổng</button>
       <button class="btn blue" onclick="addCvNote()">+ Thêm note</button>
       ${window.roleAdmin()?`<button class="btn red" onclick="deleteAllCvNotes()">Xóa hết danh sách</button>`:''}
     </div>
@@ -1206,18 +1207,36 @@
       <tbody id="cvNoteRows">${rows.map((n,i)=>cvNoteRow(n,i)).join('') || '<tr><td colspan="7" class="muted">Chưa có note CV</td></tr>'}</tbody>
     </table><div id="cvNoteNoResult" class="muted cvNoteNoResult hidden">Không tìm thấy note</div></div>`;
     openModal('detailModal');
-    setTimeout(() => filterCvNotes(state.cvNoteQuery || ''), 0);
+    setTimeout(() => {
+      filterCvNotes(state.cvNoteQuery || '');
+      $$('.cvNoteInput').forEach(autoGrowCvNote);
+    }, 0);
   };
+  function cvNoteCreatedAt(n){ return Number(n?.createdAt || (n?.logs || [])[0]?.at || n?.at || 0); }
+  function cvNoteUpdatedAt(n){ return Number(n?.updatedAt || n?.at || cvNoteCreatedAt(n)); }
+  function cvNoteTimeHtml(n){
+    const created = cvNoteCreatedAt(n);
+    const updated = cvNoteUpdatedAt(n);
+    const createdText = created ? new Date(created).toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', second:'2-digit', day:'numeric', month:'numeric', year:'numeric' }) : '-';
+    const updatedText = updated && updated > created + 1000 ? `<small class="cvNoteUpdated">Cập nhật mới: ${new Date(updated).toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}</small>` : '';
+    return `<div class="cvNoteTime"><span>${createdText}</span>${updatedText}</div>`;
+  }
+  function autoGrowCvNote(el){
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(72, el.scrollHeight)}px`;
+  }
+  window.autoGrowCvNote = autoGrowCvNote;
   function cvNoteRow(n, i){
     const safeId = esc(n.id);
     const imgs = (n.images || []).map((src, idx) => cvNoteImageHtml(n.id, src, idx)).join('');
     const searchText = esc(`${n.content || ''} ${n.name || ''}`.toLowerCase());
     return `<tr data-note-text="${searchText}">
       <td data-label="STT">${i+1}</td>
-      <td data-label="Nội dung note"><textarea class="cvNoteInput" onfocus="stateSetActiveCvNote('${safeId}')" onblur="saveCvNoteContent('${safeId}', this.value)" placeholder="Nhập note nhanh...">${esc(n.content || '')}</textarea></td>
+      <td data-label="Nội dung note"><textarea class="cvNoteInput" onfocus="stateSetActiveCvNote('${safeId}');autoGrowCvNote(this)" oninput="autoGrowCvNote(this)" onblur="saveCvNoteContent('${safeId}', this.value)" placeholder="Nhập note nhanh...">${esc(n.content || '')}</textarea></td>
       <td data-label="Ảnh" class="cvNoteImageCell" onclick="stateSetActiveCvNote('${safeId}')"><div class="mutedSmall">Ctrl+V ảnh</div><div id="cvNoteImgs_${safeId}" class="previewImgs cvNoteImgs">${imgs}</div></td>
       <td data-label="Tên">${esc(n.name || '-')}</td>
-      <td data-label="Thời gian">${n.at ? new Date(n.at).toLocaleString('vi-VN') : '-'}</td>
+      <td data-label="Thời gian">${cvNoteTimeHtml(n)}</td>
       <td data-label="Lịch sử"><button class="more" onclick="openCvNoteHistory('${safeId}')">${(n.logs||[]).length} dòng</button></td>
       <td data-label="Thao tác" class="action">${window.roleAdmin()?`<button class="dotbtn" onclick="toggleMenu(event,this)">⋮</button><div class="menu"><button class="danger" onclick="deleteCvNote('${safeId}')">Xóa</button></div>`:'-'}</td>
     </tr>`;
@@ -1241,7 +1260,8 @@
   window.stateSetActiveCvNote = id => { state.activeCvNoteId = id; };
   window.addCvNote = function(){
     withActor(actor => {
-      const note = { id:id(), content:'', images:[], name:actor || 'Admin', at:Date.now(), logs:[logLine('Tạo note CV', actor || 'Admin')] };
+      const now = Date.now();
+      const note = { id:id(), content:'', images:[], name:actor || 'Admin', at:now, createdAt:now, updatedAt:now, logs:[logLine('Tạo note CV', actor || 'Admin')] };
       taskRef('cvNotes', note.id).set(note).then(() => setTimeout(openCvNotes, 80));
     });
   };
@@ -1253,9 +1273,11 @@
       ref.once('value').then(snap => {
         const cur = snap.val() || n;
         if (String(cur.content || '') === String(value || '')) return;
+        const now = Date.now();
+        const createdAt = cvNoteCreatedAt(cur) || now;
         const logs = [...(cur.logs||[]), logLine('Sửa nội dung note', actor, `${cur.content||''} -> ${value||''}`)];
-        return ref.update({ content:value || '', name:actor || cur.name || 'Admin', at:Date.now(), logs });
-      });
+        return ref.update({ content:value || '', name:actor || cur.name || 'Admin', createdAt, updatedAt:now, logs });
+      }).then(() => setTimeout(openCvNotes, 80));
     });
   };
   window.saveCvNoteImages = function(noteId){
@@ -1266,9 +1288,11 @@
       const ref = taskRef('cvNotes', noteId);
       ref.once('value').then(snap => {
         const cur = snap.val() || n;
+        const now = Date.now();
+        const createdAt = cvNoteCreatedAt(cur) || now;
         const logs = [...(cur.logs||[]), logLine('Sửa ảnh note CV', actor, `${(cur.images||[]).length} ảnh -> ${images.length} ảnh`)];
-        return ref.update({ images, name:actor || cur.name || 'Admin', at:Date.now(), logs });
-      });
+        return ref.update({ images, name:actor || cur.name || 'Admin', createdAt, updatedAt:now, logs });
+      }).then(() => setTimeout(openCvNotes, 80));
     });
   };
   window.deleteCvNoteImage = function(noteId, idx){
@@ -1279,15 +1303,17 @@
       const ref = taskRef('cvNotes', noteId);
       ref.once('value').then(snap => {
         const cur = snap.val() || n;
+        const now = Date.now();
+        const createdAt = cvNoteCreatedAt(cur) || now;
         const images = (cur.images || []).filter((_, i) => i !== idx);
         const logs = [...(cur.logs||[]), logLine('Xóa ảnh note CV', actor, `${(cur.images||[]).length} ảnh -> ${images.length} ảnh`)];
-        return ref.update({ images, name:actor || cur.name || 'Admin', at:Date.now(), logs });
+        return ref.update({ images, name:actor || cur.name || 'Admin', createdAt, updatedAt:now, logs });
       }).then(() => setTimeout(openCvNotes, 80));
     });
   };
   function ensureCvNoteHistoryModal(){
     if ($('cvNoteHistoryModal')) return;
-    document.body.insertAdjacentHTML('beforeend', `<div id="cvNoteHistoryModal" class="modal cvNoteHistoryModal"><div class="panel"><div class="panelhead"><h3>Lịch sử Note CV</h3><button class="x" onclick="closeModal('cvNoteHistoryModal')">×</button></div><div id="cvNoteHistoryBody" class="panelbody"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('cvNoteHistoryModal')">Đóng</button></div></div></div>`);
+    document.body.insertAdjacentHTML('beforeend', `<div id="cvNoteHistoryModal" class="modal cvNoteHistoryModal"><div class="panel"><div class="panelhead"><h3 id="cvNoteHistoryTitle">Lịch sử Note CV</h3><button class="x" onclick="closeModal('cvNoteHistoryModal')">×</button></div><div id="cvNoteHistoryBody" class="panelbody"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('cvNoteHistoryModal')">Đóng</button></div></div></div>`);
   }
   window.openCvNoteHistory = function(noteId){
     const n = state.cvNotes.find(x => x.id === noteId);
@@ -1295,9 +1321,22 @@
     ensureCvNoteHistoryModal();
     taskRef('cvNotes', noteId).once('value').then(snap => {
       const cur = snap.val() || n;
+      $('cvNoteHistoryTitle').textContent = 'Lịch sử Note CV';
       $('cvNoteHistoryBody').innerHTML = `<pre class="copyBox">${esc(logText(cur.logs || []))}</pre>`;
       openModal('cvNoteHistoryModal');
     });
+  };
+  window.openCvNoteAllHistory = function(){
+    ensureCvNoteHistoryModal();
+    const logs = state.cvNotes.flatMap(n => (n.logs || []).map(l => Object.assign({}, l, { noteContent: n.content || '' })))
+      .sort((a,b)=>(b.at||0)-(a.at||0));
+    const text = logs.map(l => {
+      const note = l.noteContent ? `\nNote: ${String(l.noteContent).slice(0, 120)}` : '';
+      return `${formatLogLine(l)}${note}`;
+    }).join('\n\n') || 'Chưa có lịch sử';
+    $('cvNoteHistoryTitle').textContent = 'Lịch sử tổng Note CV';
+    $('cvNoteHistoryBody').innerHTML = `<pre class="copyBox">${esc(text)}</pre>`;
+    openModal('cvNoteHistoryModal');
   };
   window.deleteCvNote = function(noteId){
     if (!requireAdmin()) return;
@@ -1863,7 +1902,7 @@
       #dailyTable th,#dailyTable td{width:auto!important}
       #dailyTable th{position:relative}
       #detailModal:has(.cvNoteTableWrap) .panel{width:min(1450px,98vw)!important}
-      .cvNoteTableWrap{padding:10px 14px;max-height:70vh;overflow:auto}.cvNoteTable{table-layout:fixed}.cvNoteTable th:nth-child(1){width:50px}.cvNoteTable th:nth-child(2){width:36%}.cvNoteTable th:nth-child(3){width:150px}.cvNoteTable th:nth-child(4){width:90px}.cvNoteTable th:nth-child(5){width:145px}.cvNoteTable th:nth-child(6){width:88px}.cvNoteTable th:nth-child(7){width:78px}.cvNoteTable td{padding:8px 10px!important;vertical-align:top}.cvNoteTable textarea{width:100%;height:52px;min-height:52px;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:vertical;font-weight:700;line-height:1.25}.cvNoteImageCell{cursor:text}.cvNoteImgs{max-height:62px;overflow:auto;margin-top:3px}.cvNoteImgs img,.cvNoteImgItem img{width:54px;height:42px;object-fit:cover;cursor:pointer}.cvNoteImgItem{display:inline-flex;align-items:center;margin:0 6px 6px 0}.cvNoteImgItem .imgDel{width:24px;height:24px;border:0;border-radius:999px;background:#dc2626;color:#fff;font-weight:900;margin-left:-8px;cursor:pointer}.cvNoteNoResult{padding:10px 14px 16px}.cvNoteHistoryModal .panel{width:min(760px,94vw)!important}.previewImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
+      .cvNoteTableWrap{padding:10px 14px;max-height:70vh;overflow:auto}.cvNoteTable{table-layout:fixed}.cvNoteTable th:nth-child(1){width:50px}.cvNoteTable th:nth-child(2){width:36%}.cvNoteTable th:nth-child(3){width:150px}.cvNoteTable th:nth-child(4){width:90px}.cvNoteTable th:nth-child(5){width:170px}.cvNoteTable th:nth-child(6){width:88px}.cvNoteTable th:nth-child(7){width:78px}.cvNoteTable td{padding:8px 10px!important;vertical-align:top}.cvNoteTable textarea{width:100%;height:auto;min-height:72px;overflow:hidden;border:1px solid #dbe3ef;border-radius:10px;padding:8px;resize:none;font-weight:700;line-height:1.3;white-space:pre-wrap}.cvNoteTime{display:grid;gap:3px;font-weight:900}.cvNoteUpdated{color:#dc2626;font-size:11px;font-weight:900}.cvNoteImageCell{cursor:text}.cvNoteImgs{max-height:62px;overflow:auto;margin-top:3px}.cvNoteImgs img,.cvNoteImgItem img{width:54px;height:42px;object-fit:cover;cursor:pointer}.cvNoteImgItem{display:inline-flex;align-items:center;margin:0 6px 6px 0}.cvNoteImgItem .imgDel{width:24px;height:24px;border:0;border-radius:999px;background:#dc2626;color:#fff;font-weight:900;margin-left:-8px;cursor:pointer}.cvNoteNoResult{padding:10px 14px 16px}.cvNoteHistoryModal .panel{width:min(760px,94vw)!important}.previewImgs img{cursor:pointer}.muted{color:#98a2b3;font-weight:800;text-align:center}
       @media(max-width:760px){
         .tkTableWrap{overflow:visible!important}
         .tkTable{display:block!important;min-width:0!important;border:0!important}
@@ -1903,6 +1942,7 @@
         .cvNoteTable td:before{content:attr(data-label);display:block;font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;margin-bottom:3px}
         .cvNoteTable td:first-child{display:none!important}
         .cvNoteTable textarea{height:auto!important;min-height:92px!important;white-space:pre-wrap!important;word-break:break-word!important}
+        .cvNoteTime{font-size:13px!important}
         .cvNoteImgs{max-height:none!important;overflow:visible!important}
         .cvNoteImgItem img{width:70px!important;height:54px!important}
       }
