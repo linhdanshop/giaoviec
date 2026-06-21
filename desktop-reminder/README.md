@@ -58,7 +58,7 @@ npm start
 
 - App ghi online vao `taskReminder/desktopClients/{deviceId}`.
 - `deviceId` la ma ngau nhien co dinh theo tung may, tranh trung ten may Windows.
-- Khi co `activeReminder` trong task hom nay, app bat popup luon noi tren cung, reo chuong 10 giay, tu dong sau 1 phut.
+- Khi co `activeReminder` trong task hom nay, app bat popup luon noi tren cung, reo chuong 10 giay, tu dong sau 15 phut.
 - App ghi lich su da hien nhac vao `taskReminder/reminderDeliveries/{date}/{reminderId}/{deviceId}`.
 - Khi mot may bam `Da nhan nhac`, app ghi ack vao task. Web va app may khac tu tat popup theo Firebase.
 - Khi co app dang online, web khong bat popup nhac de tranh trung thong bao.

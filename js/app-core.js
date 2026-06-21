@@ -7,6 +7,7 @@
   const ADMIN_MINUTES = 1440;
   const ACTOR_MINUTES = 60;
   const DEVICE_STALE_MS = 90000;
+  const REMINDER_POPUP_MS = 15 * 60 * 1000;
   const $ = id => document.getElementById(id);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -806,11 +807,11 @@
     reminderClosed(t){
       const r = t && t.activeReminder;
       if (!r) return true;
-      return t.status === 'Đã xong' || r.acknowledged || r.expired || Date.now() - (r.createdAt || 0) > 60000;
+      return t.status === 'Đã xong' || r.acknowledged || r.expired || Date.now() - (r.createdAt || 0) > REMINDER_POPUP_MS;
     },
     reminderEligible(t){
       const r = t && t.activeReminder;
-      return !!(r && t.status !== 'Đã xong' && !r.acknowledged && !r.expired && (r.type === 'manual' || !t.reminderAcked) && Date.now() - (r.createdAt || 0) <= 60000 && !state.dismissedReminders.has(r.id));
+      return !!(r && t.status !== 'Đã xong' && !r.acknowledged && !r.expired && (r.type === 'manual' || !t.reminderAcked) && Date.now() - (r.createdAt || 0) <= REMINDER_POPUP_MS && !state.dismissedReminders.has(r.id));
     },
     expireReminder(t){
       const r = t && t.activeReminder;
@@ -829,7 +830,7 @@
       }
       state.tasks.forEach(t => {
         const r = t.activeReminder;
-        if (r && !r.acknowledged && !r.expired && Date.now() - (r.createdAt || 0) > 60000) this.expireReminder(t);
+        if (r && !r.acknowledged && !r.expired && Date.now() - (r.createdAt || 0) > REMINDER_POPUP_MS) this.expireReminder(t);
       });
       const active = state.tasks
         .filter(t => this.reminderEligible(t))
@@ -1385,7 +1386,7 @@
         Tasks.expireReminder(fresh);
         closeAttentionIfAny();
       }
-    }, 60000);
+    }, REMINDER_POPUP_MS);
   }
   function closeAttentionIfAny(){
     clearTimeout(state.attentionCloseTimer);

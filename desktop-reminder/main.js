@@ -8,6 +8,7 @@ const { getDatabase, ref, onValue, onDisconnect, update, set, get } = require('f
 
 const TASK_ROOT = 'taskReminder';
 const DEVICE_STALE_MS = 90000;
+const REMINDER_POPUP_MS = 15 * 60 * 1000;
 const firebaseConfig = {
   apiKey: 'AIzaSyAolG3b4LGGu_ra74QmtAeszDfSntdazjM',
   authDomain: 'giaoviec-5ac66.firebaseapp.com',
@@ -67,7 +68,7 @@ function compactDuration(ms){
 function taskRef(...parts){ return ref(db, [TASK_ROOT].concat(parts).filter(Boolean).join('/')); }
 function reminderExpired(task){
   const reminder = (task || {}).activeReminder || {};
-  return !!reminder.expired || Date.now() - (reminder.createdAt || 0) > 60000;
+  return !!reminder.expired || Date.now() - (reminder.createdAt || 0) > REMINDER_POPUP_MS;
 }
 function reminderDone(task){
   const reminder = task && task.activeReminder;
@@ -204,7 +205,7 @@ function showReminder(task){
   win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(reminderHtml(task)));
   win.once('ready-to-show', () => {
     if (popup === win && !win.isDestroyed()) {
-      try { win.show(); } catch {}
+      try { win.show(); win.focus(); win.moveTop(); } catch {}
     }
   });
   win.on('closed', () => {
@@ -215,7 +216,7 @@ function showReminder(task){
     if (popup === win && currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) {
       expireReminder(task, reminderId).finally(closePopup);
     }
-  }, 60000);
+  }, REMINDER_POPUP_MS);
 }
 async function expireReminder(task, reminderId){
   if (!task || !reminderId) return;
