@@ -8,7 +8,7 @@ const { getDatabase, ref, onValue, onDisconnect, update, set, get } = require('f
 
 const TASK_ROOT = 'taskReminder';
 const DEVICE_STALE_MS = 90000;
-const REMINDER_POPUP_MS = 15 * 60 * 1000;
+const DEFAULT_REMINDER_POPUP_MINUTES = 15;
 const firebaseConfig = {
   apiKey: 'AIzaSyAolG3b4LGGu_ra74QmtAeszDfSntdazjM',
   authDomain: 'giaoviec-5ac66.firebaseapp.com',
@@ -27,6 +27,7 @@ let employees = [];
 let tasksUnsub = null;
 let currentDay = todayStr();
 let heartbeatTimer = null;
+let runtimeSettings = { reminderPopupMinutes: DEFAULT_REMINDER_POPUP_MINUTES };
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 const safeHost = () => (os.hostname() || 'WINDOWS').replace(/[^a-zA-Z0-9-]/g, '').slice(0, 24) || 'WINDOWS';
@@ -66,9 +67,14 @@ function compactDuration(ms){
   return `${h}h${r ? r + 'p' : ''}`;
 }
 function taskRef(...parts){ return ref(db, [TASK_ROOT].concat(parts).filter(Boolean).join('/')); }
+function reminderPopupMinutes(){
+  const raw = Number(runtimeSettings.reminderPopupMinutes || DEFAULT_REMINDER_POPUP_MINUTES);
+  return Math.max(1, Math.min(240, Number.isFinite(raw) ? raw : DEFAULT_REMINDER_POPUP_MINUTES));
+}
+function reminderPopupMs(){ return reminderPopupMinutes() * 60000; }
 function reminderExpired(task){
   const reminder = (task || {}).activeReminder || {};
-  return !!reminder.expired || Date.now() - (reminder.createdAt || 0) > REMINDER_POPUP_MS;
+  return !!reminder.expired || Date.now() - (reminder.createdAt || 0) > reminderPopupMs();
 }
 function reminderDone(task){
   const reminder = task && task.activeReminder;
@@ -144,6 +150,9 @@ function heartbeat(){
 }
 
 function listenFirebase(){
+  onValue(taskRef('settings'), snap => {
+    runtimeSettings = Object.assign({ reminderPopupMinutes: DEFAULT_REMINDER_POPUP_MINUTES }, snap.val() || {});
+  });
   onValue(taskRef('employees'), snap => { employees = listNames(snap.val()); });
   listenTasksForDay(todayStr());
   setInterval(() => {
@@ -216,7 +225,7 @@ function showReminder(task){
     if (popup === win && currentTask && currentTask.activeReminder && currentTask.activeReminder.id === reminderId) {
       expireReminder(task, reminderId).finally(closePopup);
     }
-  }, REMINDER_POPUP_MS);
+  }, reminderPopupMs());
 }
 async function expireReminder(task, reminderId){
   if (!task || !reminderId) return;

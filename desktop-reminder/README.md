@@ -17,7 +17,7 @@ Sau khi build xong, vao thu muc:
 C:\Users\Admin\Documents\GitHub\giaoviec\desktop-reminder\dist
 ```
 
-Copy file `.exe` trong thu muc `dist` sang may khac va bam cai.
+Copy file `.exe` trong thu muc `dist` sang may khac va bam cai. Neu da sua source, phai build lai file `.exe`; cai lai bang file cu trong `dist` se van chay code cu.
 
 ## Cai tren may khac
 
@@ -58,7 +58,7 @@ npm start
 
 - App ghi online vao `taskReminder/desktopClients/{deviceId}`.
 - `deviceId` la ma ngau nhien co dinh theo tung may, tranh trung ten may Windows.
-- Khi co `activeReminder` trong task hom nay, app bat popup luon noi tren cung, reo chuong 10 giay, tu dong sau 15 phut.
+- Khi co `activeReminder` trong task hom nay, app bat popup luon noi tren cung, reo chuong 10 giay, tu dong theo `taskReminder/settings/reminderPopupMinutes` tren Firebase, mac dinh 15 phut.
 - App ghi lich su da hien nhac vao `taskReminder/reminderDeliveries/{date}/{reminderId}/{deviceId}`.
 - Khi mot may bam `Da nhan nhac`, app ghi ack vao task. Web va app may khac tu tat popup theo Firebase.
 - Khi co app dang online, web khong bat popup nhac de tranh trung thong bao.

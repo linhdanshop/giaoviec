@@ -7,7 +7,7 @@
   const ADMIN_MINUTES = 1440;
   const ACTOR_MINUTES = 60;
   const DEVICE_STALE_MS = 90000;
-  const REMINDER_POPUP_MS = 15 * 60 * 1000;
+  const DEFAULT_REMINDER_POPUP_MINUTES = 15;
   const $ = id => document.getElementById(id);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -45,6 +45,7 @@
     devices: {},
     desktopClients: {},
     system: {},
+    settings: { reminderPopupMinutes: DEFAULT_REMINDER_POPUP_MINUTES },
     currentTaskRef: null,
     currentTaskCb: null,
     formMode: 'task',
@@ -87,6 +88,11 @@
   function dateLabel(v){ const p = String(v||'').split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : ''; }
   function nowIso(){ return new Date().toISOString(); }
   function minutes(ms){ return Math.max(0, Math.floor(ms / 60000)); }
+  function reminderPopupMinutes(){
+    const raw = Number(state.settings?.reminderPopupMinutes || DEFAULT_REMINDER_POPUP_MINUTES);
+    return Math.max(1, Math.min(240, Number.isFinite(raw) ? raw : DEFAULT_REMINDER_POPUP_MINUTES));
+  }
+  function reminderPopupMs(){ return reminderPopupMinutes() * 60000; }
   function compactDuration(ms){
     const m = minutes(ms);
     if (m < 1) return 'vừa xong';
@@ -439,6 +445,11 @@
       taskRef('masters').on('value', snap => { state.masters = arr(snap.val()).map(this.normMaster); renderAll(); });
       taskRef('dailyTemplates').on('value', snap => { state.dailyTemplates = arr(snap.val()).map(this.normDaily); renderAll(); });
       taskRef('system').on('value', snap => { state.system = snap.val() || {}; });
+      taskRef('settings').on('value', snap => {
+        const val = snap.val() || {};
+        if (!val.reminderPopupMinutes) taskRef('settings/reminderPopupMinutes').set(DEFAULT_REMINDER_POPUP_MINUTES).catch(()=>{});
+        state.settings = Object.assign({ reminderPopupMinutes: DEFAULT_REMINDER_POPUP_MINUTES }, val);
+      });
       taskRef('desktopClients').on('value', snap => {
         state.desktopClients = snap.val() || {};
         if (currentBrowserHasDesktopReminder()) closeAttentionIfAny();
@@ -807,11 +818,11 @@
     reminderClosed(t){
       const r = t && t.activeReminder;
       if (!r) return true;
-      return t.status === 'Đã xong' || r.acknowledged || r.expired || Date.now() - (r.createdAt || 0) > REMINDER_POPUP_MS;
+      return t.status === 'Đã xong' || r.acknowledged || r.expired || Date.now() - (r.createdAt || 0) > reminderPopupMs();
     },
     reminderEligible(t){
       const r = t && t.activeReminder;
-      return !!(r && t.status !== 'Đã xong' && !r.acknowledged && !r.expired && (r.type === 'manual' || !t.reminderAcked) && Date.now() - (r.createdAt || 0) <= REMINDER_POPUP_MS && !state.dismissedReminders.has(r.id));
+      return !!(r && t.status !== 'Đã xong' && !r.acknowledged && !r.expired && (r.type === 'manual' || !t.reminderAcked) && Date.now() - (r.createdAt || 0) <= reminderPopupMs() && !state.dismissedReminders.has(r.id));
     },
     expireReminder(t){
       const r = t && t.activeReminder;
@@ -830,7 +841,7 @@
       }
       state.tasks.forEach(t => {
         const r = t.activeReminder;
-        if (r && !r.acknowledged && !r.expired && Date.now() - (r.createdAt || 0) > REMINDER_POPUP_MS) this.expireReminder(t);
+        if (r && !r.acknowledged && !r.expired && Date.now() - (r.createdAt || 0) > reminderPopupMs()) this.expireReminder(t);
       });
       const active = state.tasks
         .filter(t => this.reminderEligible(t))
@@ -1386,7 +1397,7 @@
         Tasks.expireReminder(fresh);
         closeAttentionIfAny();
       }
-    }, REMINDER_POPUP_MS);
+    }, reminderPopupMs());
   }
   function closeAttentionIfAny(){
     clearTimeout(state.attentionCloseTimer);
@@ -1778,6 +1789,12 @@
     const rows = (state.quickLinks.length ? state.quickLinks : arr(defaultQuickLinksObj()).map(normalizeQuickLink));
     $('detailTitle').textContent = 'Cài nút chuyển hướng';
     $('detailBody').innerHTML = `<div class="quickLinkEditor">
+      <div class="appSettingRow">
+        <div><b>Thoi gian tat popup nhac</b><small>Ap dung chung cho Web va App Windows</small></div>
+        <input id="reminderPopupMinutes" type="number" min="1" max="240" value="${esc(reminderPopupMinutes())}">
+        <span>phut</span>
+        <button class="btn blue" onclick="saveReminderPopupSettings()">Luu</button>
+      </div>
       ${rows.map(l => quickLinkRowHtml(l)).join('')}
       <div class="quickLinkRow new">
         <input id="qlNewName" placeholder="Tên nút">
@@ -1788,6 +1805,15 @@
       </div>
     </div>`;
     openModal('detailModal');
+  };
+  window.saveReminderPopupSettings = function(){
+    if (!requireAdmin()) return;
+    const raw = Number($('reminderPopupMinutes')?.value);
+    const value = Math.max(1, Math.min(240, Number.isFinite(raw) ? Math.round(raw) : DEFAULT_REMINDER_POPUP_MINUTES));
+    taskRef('settings/reminderPopupMinutes').set(value).then(() => {
+      state.settings = Object.assign({}, state.settings, { reminderPopupMinutes:value });
+      showToast(`Da luu thoi gian tat popup: ${value} phut`);
+    });
   };
   function quickLinkRowHtml(l){
     return `<div class="quickLinkRow" data-id="${esc(l.id)}">
@@ -1891,6 +1917,8 @@
       .remindPlanBtn{height:30px;border:1px solid #dbe5f2;border-radius:8px;background:#fff;color:#334155;font-weight:900;padding:0 8px;cursor:pointer;max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .reminderConfigGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
       .quickLinkEditor{padding:14px;display:grid;gap:10px}
+      .appSettingRow{display:grid;grid-template-columns:minmax(220px,1fr) 110px 42px 72px;gap:8px;align-items:center;border:1px solid #dbe5f2;border-radius:12px;background:#fff7ed;padding:12px}
+      .appSettingRow small{display:block;color:#64748b;font-weight:800;margin-top:3px}.appSettingRow input{height:38px;border:1px solid #dbe5f2;border-radius:9px;padding:0 10px;font-weight:900}
       .quickLinkRow{display:grid;grid-template-columns:160px minmax(260px,1fr) 82px 98px 72px 72px;gap:8px;align-items:center;border:1px solid #dbe5f2;border-radius:12px;background:#fff;padding:10px}
       .quickLinkRow input[type="text"],.quickLinkRow input:not([type]){height:38px;border:1px solid #dbe5f2;border-radius:9px;padding:0 10px}
       .quickLinkRow label{font-weight:900;color:#334155;display:flex;gap:5px;align-items:center}
@@ -1915,6 +1943,7 @@
         .tkTable .action{justify-self:start}
         .tkStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
         .quickLinkRow{grid-template-columns:1fr!important}
+        .appSettingRow{grid-template-columns:1fr!important}
         .reminderConfigGrid{grid-template-columns:1fr!important}
         .tkHead>div{display:flex;gap:8px;flex-wrap:wrap}
         #dailyTab .section-title{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;align-items:center!important}
