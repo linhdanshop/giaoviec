@@ -1554,6 +1554,8 @@
 
   const Stock = {
     month: monthStr(),
+    day: '',
+    codeQuery: '',
     data: { diff:{}, friend:{}, customer:{} },
     friends: [],
     filter: {},
@@ -1586,6 +1588,25 @@
       ];
     },
     rows(sec){ return arr(this.data[sec] || {}).map(r => Object.assign({ id:id(), createdAt:Date.now(), code:'', qty:0, price:0, note:'', payment:'Chưa thanh toán', cut:'Chưa cắt tồn', logs:[] }, r)); },
+    rowDate(row){
+      const ts = Number(row?.createdAt || 0);
+      return ts ? todayStr(new Date(ts)) : '';
+    },
+    newCreatedAt(){
+      if (!this.day) return Date.now();
+      const now = new Date();
+      const d = new Date(this.day + 'T00:00:00');
+      d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+      return d.getTime();
+    },
+    scopedRows(sec){
+      const q = String(this.codeQuery || '').trim().toUpperCase();
+      return this.rows(sec).filter(r => {
+        if (this.day && this.rowDate(r) !== this.day) return false;
+        if (q && !String(r.code || '').toUpperCase().includes(q)) return false;
+        return true;
+      });
+    },
     calc(row, sec){
       const amount = Math.abs(Number(row.qty||0)) * Number(row.price||0);
       return sec === 'diff' && row.stockType === 'Thiếu' ? -amount : amount;
@@ -1610,7 +1631,7 @@
       return `<thead><tr>${common}<th>Khách mua</th><th>SĐT</th><th>Thành tiền</th><th>Thanh toán</th><th>Ghi chú</th><th>Trạng thái</th><th>Lịch sử</th><th>Thao tác</th></tr></thead>`;
     },
     rowHtml(sec,r){
-      const stt = this.rows(sec).findIndex(x => x.id === r.id) + 1;
+      const stt = this.scopedRows(sec).findIndex(x => x.id === r.id) + 1;
       const amt = this.calc(r, sec);
       const note = `<button class="tkNoteBtn" onclick="stockOpenNote('${sec}','${r.id}')">${esc(r.note || 'Ghi chú...')}</button>`;
       const status = `<span class="status ${r.cut==='Đã cắt tồn'?'done':'todo'}">${esc(r.cut)}</span>`;
@@ -1629,7 +1650,7 @@
       return `<tr>${base}${td('Khách mua',esc(r.customer||''))}${td('SĐT',esc(r.phone||''))}${td('Thành tiền',amountHtml)}${td('Thanh toán',esc(r.payment))}${td('Ghi chú',note)}${td('Trạng thái',status)}${td('Lịch sử',`<button class="more" onclick="stockHistory('${sec}','${r.id}')">${(r.logs||[]).length} dòng</button>`)}${td('Thao tác',menu)}</tr>`;
     },
     statsHtml(sec){
-      const rows = this.rows(sec);
+      const rows = this.scopedRows(sec);
       const filt = this.filter[sec] || 'all';
       const btn = (key,label,count,cls='') => `<button class="tkStat ${cls} ${filt===key?'active':''}" onclick="stockSetFilter('${sec}','${key}')"><b>${count}</b><span>${label}</span></button>`;
       if (sec === 'diff') {
@@ -1648,7 +1669,7 @@
     },
     filteredRows(sec){
       const f = this.filter[sec] || 'all';
-      let rows = this.rows(sec).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      let rows = this.scopedRows(sec).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
       if (f === 'all') return rows;
       if (f.startsWith('friend:')) return rows.filter(r => r.friend === f.slice(7));
       if (f === 'Thiếu' || f === 'Dư') return rows.filter(r => r.stockType === f);
@@ -1669,14 +1690,26 @@
       const div = document.createElement('div');
       div.id = 'tonKhoTab';
       div.className = 'hidden';
-      div.innerHTML = `<div class="section-title"><h2>📦 Tồn Kho</h2><span class="hint">Dữ liệu tách riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><label class="stockMonthBox"><span>Tháng</span><input id="stockMonth" type="month" value="${Stock.month}" onchange="stockChangeMonth(this.value)"></label><button class="btn gray" onclick="stockTotalHistory()">Lịch sử tổng</button></div><div id="stockSections" class="tkGrid"></div>`;
+      div.innerHTML = `<div class="section-title"><h2>📦 Tồn Kho</h2><span class="hint">Dữ liệu tách riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><label class="stockMonthBox"><span>Tháng</span><input id="stockMonth" type="month" value="${Stock.month}" onchange="stockChangeMonth(this.value)"></label><label class="stockMonthBox"><span>Ngày</span><input id="stockDay" type="date" value="${Stock.day || ''}" onchange="stockChangeDay(this.value)"></label><button class="btn gray" onclick="stockTotalHistory()">Lịch sử tổng</button><input id="stockCodeSearch" class="stockSearchInput" value="${esc(Stock.codeQuery || '')}" placeholder="Tìm mã SP..." oninput="stockSearchCode(this.value)"></div><div id="stockSections" class="tkGrid"></div>`;
       document.querySelector('.wrap')?.appendChild(div);
     }
     if (!$('tkStyleCore')) {
-      document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px;align-items:center}.stockMonthBox{display:inline-flex;align-items:center;gap:8px;border:1px solid #dbe5f2;background:#fff;border-radius:12px;padding:7px 10px;font-weight:900}.stockMonthBox span{color:#64748b;font-size:12px;text-transform:uppercase}.stockMonthBox input{height:32px;border:0;font-weight:900;background:transparent}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkToolbar{justify-content:space-between}.tkStats{grid-template-columns:repeat(2,minmax(0,1fr))}.tkHead{align-items:flex-start;flex-direction:column}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection{padding:9px}.tkTableWrap{overflow:visible}.tkTable{display:block;min-width:0;border:0}.tkTable thead{display:none}.tkTable tbody{display:block}.tkTable tr{display:block;background:#fff;border:1px solid #dbe5f2;border-radius:14px;margin:10px 0;padding:10px}.tkTable td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:center;border:0;padding:6px 0}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}}</style>`);
+      document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.stockMonthBox{display:inline-flex;align-items:center;gap:8px;border:1px solid #dbe5f2;background:#fff;border-radius:12px;padding:7px 10px;font-weight:900}.stockMonthBox span{color:#64748b;font-size:12px;text-transform:uppercase}.stockMonthBox input{height:32px;border:0;font-weight:900;background:transparent}.stockSearchInput{height:46px;border:1px solid #dbe5f2;border-radius:12px;padding:0 12px;font-weight:900;min-width:220px}.tkHistoryTools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.tkHistoryTools input{height:42px;border:1px solid #dbe5f2;border-radius:10px;padding:0 12px;font-weight:800;min-width:260px}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkToolbar{justify-content:flex-start}.stockMonthBox,.stockSearchInput{width:100%;min-width:0}.tkStats{grid-template-columns:repeat(2,minmax(0,1fr))}.tkHead{align-items:flex-start;flex-direction:column}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection{padding:9px}.tkTableWrap{overflow:visible}.tkTable{display:block;min-width:0;border:0}.tkTable thead{display:none}.tkTable tbody{display:block}.tkTable tr{display:block;background:#fff;border:1px solid #dbe5f2;border-radius:14px;margin:10px 0;padding:10px}.tkTable td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:center;border:0;padding:6px 0}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}}</style>`);
     }
   }
-  window.stockChangeMonth = function(m){ Stock.month = m; Stock.filter = {}; Stock.bind(); };
+  window.stockChangeMonth = function(m){ Stock.month = m; Stock.day = ''; Stock.filter = {}; Stock.bind(); if ($('stockDay')) $('stockDay').value = ''; };
+  window.stockChangeDay = function(d){
+    Stock.day = d || '';
+    Stock.filter = {};
+    if (Stock.day && Stock.day.slice(0,7) !== Stock.month) {
+      Stock.month = Stock.day.slice(0,7);
+      if ($('stockMonth')) $('stockMonth').value = Stock.month;
+      Stock.bind();
+      return;
+    }
+    Stock.render();
+  };
+  window.stockSearchCode = function(q){ Stock.codeQuery = q || ''; Stock.render(); };
   window.stockSetFilter = function(sec,key){ Stock.filter[sec] = key; Stock.render(); };
   window.stockToggleExpand = function(sec){ Stock.expanded[sec] = !Stock.expanded[sec]; Stock.render(); };
   window.stockOpenForm = function(sec,rowId){
@@ -1694,7 +1727,7 @@
       if (old.id && !window.roleAdmin() && old.cut === 'Đã cắt tồn') return showToast('Dòng đã cắt tồn, nhân viên không được sửa');
       const item = Object.assign({}, old, {
         id: oldId,
-        createdAt: old.createdAt || Date.now(),
+        createdAt: old.createdAt || Stock.newCreatedAt(),
         code: $('stkCode').value.trim().toUpperCase(),
         qty: Number($('stkQty').value || 0),
         price: Number($('stkPrice').value || 0),
@@ -1745,13 +1778,40 @@
     $('detailBody').innerHTML = `<pre class="copyBox">${esc(logText(row?.logs||[]))}</pre>`;
     openModal('detailModal');
   };
+  function stockTotalHistoryItems(query=''){
+    const q = String(query || '').trim().toUpperCase();
+    const items = Stock.sections().flatMap(sec => Stock.rows(sec.id).flatMap(r => (r.logs || []).map(l => {
+      const line = `${new Date(l.at || Date.now()).toLocaleString('vi-VN')} - ${sec.title || '-'} - ${r.code || '-'} - ${l.actor || '-'} - ${l.action || ''}${l.detail ? ': ' + l.detail : ''}`;
+      return { at:l.at || 0, line };
+    })));
+    return items
+      .filter(x => !q || x.line.toUpperCase().includes(q))
+      .sort((a,b)=>(b.at||0)-(a.at||0));
+  }
+  window.stockRenderTotalHistory = function(query=''){
+    const el = $('stockHistoryText');
+    if (!el) return;
+    const items = stockTotalHistoryItems(query);
+    el.textContent = items.map(x => x.line).join('\n') || 'Chưa có lịch sử tồn kho';
+  };
   window.stockTotalHistory = function(){
-    const logs = Stock.sections().flatMap(sec => Stock.rows(sec.id).flatMap(r => (r.logs || []).map(l => Object.assign({ section:sec.title, code:r.code }, l))));
-    logs.sort((a,b)=>(b.at||0)-(a.at||0));
-    const text = logs.map(l => `${new Date(l.at || Date.now()).toLocaleString('vi-VN')} - ${l.section || '-'} - ${l.code || '-'} - ${l.actor || '-'} - ${l.action || ''}${l.detail ? ': ' + l.detail : ''}`).join('\n') || 'Chưa có lịch sử tồn kho';
     $('detailTitle').textContent = 'Lịch sử tổng tồn kho';
-    $('detailBody').innerHTML = `<pre class="copyBox">${esc(text)}</pre>`;
+    $('detailBody').innerHTML = `<div class="tkHistoryTools"><input id="stockHistorySearch" placeholder="Tìm lịch sử tồn kho..." oninput="stockRenderTotalHistory(this.value)">${window.roleAdmin()?`<button class="btn red" onclick="stockClearMonthHistory()">Xóa lịch sử tháng ${esc(Stock.month)}</button>`:''}</div><pre id="stockHistoryText" class="copyBox"></pre>`;
     openModal('detailModal');
+    stockRenderTotalHistory();
+  };
+  window.stockClearMonthHistory = function(){
+    if (!requireAdmin()) return;
+    if (!confirm(`Xóa toàn bộ lịch sử tồn kho tháng ${Stock.month}? Dữ liệu dòng vẫn giữ nguyên.`)) return;
+    const updates = {};
+    Stock.sections().forEach(sec => Stock.rows(sec.id).forEach(r => {
+      if ((r.logs || []).length) updates[`${sec.id}/${r.id}/logs`] = null;
+    }));
+    if (!Object.keys(updates).length) return showToast('Tháng này chưa có lịch sử');
+    stockRef('months', Stock.month).update(updates).then(() => {
+      showToast('Đã xóa lịch sử tháng');
+      stockRenderTotalHistory($('stockHistorySearch')?.value || '');
+    });
   };
   window.stockOpenFriends = function(){
     $('detailTitle').textContent = 'Danh sách người quen';

@@ -683,7 +683,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if($('dkInputModal'))return;
     document.body.insertAdjacentHTML('beforeend',
       '<div id="dkInputModal" class="modal"><div class="panel" style="width:min(620px,94vw)"><div class="panelhead"><h3 id="dkInputTitle">Thêm mã vận đơn</h3><button class="x" onclick="closeModal(\'dkInputModal\')">×</button></div><div class="form"><div class="full"><label>Dán mã vận đơn</label><textarea id="dkBulkInput" style="min-height:180px" placeholder="Dán nhiều mã, mỗi mã cách nhau bằng khoảng trắng hoặc xuống dòng"></textarea><div class="dkModalHint">Hệ thống tự tách mã theo khoảng trắng, xuống dòng, dấu phẩy. Mã trùng sẽ tự bỏ qua.</div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'dkInputModal\')">Đóng</button><button class="btn blue" onclick="dkSaveInput()">Lưu mã</button></div></div></div>'+
-      '<div id="dkHistoryModal" class="modal"><div class="panel" style="width:min(720px,94vw)"><div class="panelhead"><h3>Lịch sử Đồng Kiểm</h3><button class="x" onclick="closeModal(\'dkHistoryModal\')">×</button></div><div id="dkHistoryBody" style="padding:14px"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'dkHistoryModal\')">Đóng</button></div></div></div>'
+      '<div id="dkHistoryModal" class="modal"><div class="panel" style="width:min(720px,94vw)"><div class="panelhead"><h3>Lịch sử tổng Đồng Kiểm</h3><button class="x" onclick="closeModal(\'dkHistoryModal\')">×</button></div><div id="dkHistoryBody" style="padding:14px"></div><div class="panelfoot"><button class="btn gray" onclick="closeModal(\'dkHistoryModal\')">Đóng</button></div></div></div>'
     );
   }
   function sectionBy(id){return SECTIONS.find(s=>s.id===id)}
@@ -801,10 +801,27 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(ref)ref.once('value').then(snap=>render(scanDays(snap.val()||{},q)));
     else render(scanDays(JSON.parse(localStorage.getItem('dongKiemDays')||'{}'),q));
   };
+  function dkHistoryItems(query){
+    const q=String(query||'').trim().toLowerCase();
+    const items=[];
+    Object.keys(allDaysCache||{}).forEach(date=>{
+      const d=normalize(allDaysCache[date]);
+      (d.logs||[]).forEach(line=>{
+        const text=date+' - '+line;
+        if(!q||text.toLowerCase().includes(q))items.push(text);
+      });
+    });
+    return items.reverse();
+  }
+  window.dkRenderHistory=function(query){
+    const items=dkHistoryItems(query);
+    const list=$('dkHistoryList');
+    if(list)list.innerHTML=items.length?items.map(x=>'<div class="dkHistoryItem">'+esc(x)+'</div>').join(''):'<div class="dkSearchBox">Chưa có lịch sử thao tác.</div>';
+  };
   window.dkOpenHistory=function(){
     ensureStarted();
-    const logs=(dayData.logs||[]).slice().reverse();
-    $('dkHistoryBody').innerHTML=logs.length?'<div class="dkHistoryList">'+logs.map(x=>'<div class="dkHistoryItem">'+esc(x)+'</div>').join('')+'</div>':'<div class="dkSearchBox">Chưa có lịch sử thao tác ngày này.</div>';
+    $('dkHistoryBody').innerHTML='<div class="dkSearchBox" style="margin-bottom:10px"><input id="dkHistorySearch" placeholder="Tìm lịch sử Đồng Kiểm..." oninput="dkRenderHistory(this.value)" style="width:100%;height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-weight:800"></div><div id="dkHistoryList" class="dkHistoryList"></div>';
+    dkRenderHistory('');
     openModal('dkHistoryModal');
   };
   const oldSwitch=window.switchTab;
