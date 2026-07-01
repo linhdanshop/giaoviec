@@ -1554,7 +1554,8 @@
 
   const Stock = {
     month: monthStr(),
-    day: '',
+    dateFrom: '',
+    dateTo: '',
     codeQuery: '',
     data: { diff:{}, friend:{}, customer:{} },
     friends: [],
@@ -1593,17 +1594,13 @@
       return ts ? todayStr(new Date(ts)) : '';
     },
     newCreatedAt(){
-      if (!this.day) return Date.now();
-      const now = new Date();
-      const d = new Date(this.day + 'T00:00:00');
-      d.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
-      return d.getTime();
+      return Date.now();
     },
     scopedRows(sec){
-      const q = String(this.codeQuery || '').trim().toUpperCase();
       return this.rows(sec).filter(r => {
-        if (this.day && this.rowDate(r) !== this.day) return false;
-        if (q && !String(r.code || '').toUpperCase().includes(q)) return false;
+        const d = this.rowDate(r);
+        if (this.dateFrom && d < this.dateFrom) return false;
+        if (this.dateTo && d > this.dateTo) return false;
         return true;
       });
     },
@@ -1622,7 +1619,7 @@
       const rows = this.filteredRows(sec.id);
       const limit = 6;
       const shown = this.expanded[sec.id] ? rows : rows.slice(0, limit);
-      return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>limit?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
+      return `<div class="tkSection"><div class="tkHead"><h3>${esc(sec.title)}</h3><div><button class="btn blue" onclick="stockOpenForm('${sec.id}')">+ Thêm mới</button><button class="btn gray" onclick="stockExportExcel('${sec.id}')">Xuất Excel</button>${sec.id==='friend'?'<button class="btn gray" onclick="stockOpenFriends()">Danh sách người quen</button>':''}</div></div>${this.statsHtml(sec.id)}<div class="tkTableWrap"><table class="tkTable">${this.headHtml(sec.id)}<tbody>${shown.map(r=>this.rowHtml(sec.id,r)).join('') || '<tr><td colspan="12" class="dkNoRows">Không có</td></tr>'}</tbody></table></div>${rows.length>limit?`<button class="more" onclick="stockToggleExpand('${sec.id}')">${this.expanded[sec.id]?'Thu gọn':'Xem thêm'}</button>`:''}</div>`;
     },
     headHtml(sec){
       const common = '<th>STT</th><th>Ngày lập</th><th>Mã SP</th><th>SL</th><th>Giá bán</th>';
@@ -1690,26 +1687,117 @@
       const div = document.createElement('div');
       div.id = 'tonKhoTab';
       div.className = 'hidden';
-      div.innerHTML = `<div class="section-title"><h2>📦 Tồn Kho</h2><span class="hint">Dữ liệu tách riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><label class="stockMonthBox"><span>Tháng</span><input id="stockMonth" type="month" value="${Stock.month}" onchange="stockChangeMonth(this.value)"></label><label class="stockMonthBox"><span>Ngày</span><input id="stockDay" type="date" value="${Stock.day || ''}" onchange="stockChangeDay(this.value)"></label><button class="btn gray" onclick="stockTotalHistory()">Lịch sử tổng</button><input id="stockCodeSearch" class="stockSearchInput" value="${esc(Stock.codeQuery || '')}" placeholder="Tìm mã SP..." oninput="stockSearchCode(this.value)"></div><div id="stockSections" class="tkGrid"></div>`;
+      const [stockYear, stockMonthNo] = Stock.month.split('-').map(Number);
+      const stockMinDate = `${Stock.month}-01`;
+      const stockMaxDate = todayStr(new Date(stockYear, stockMonthNo, 0));
+      div.innerHTML = `<div class="section-title"><h2>📦 Tồn Kho</h2><span class="hint">Dữ liệu tách riêng theo tháng trong /tonKho</span></div><div class="card tkToolbar"><label class="stockMonthBox"><span>Tháng</span><input id="stockMonth" type="month" value="${Stock.month}" onchange="stockChangeMonth(this.value)"></label><label class="stockMonthBox"><span>Từ ngày</span><input id="stockDateFrom" type="date" min="${stockMinDate}" max="${stockMaxDate}" value="${Stock.dateFrom || ''}" onchange="stockChangeDateRange()"></label><label class="stockMonthBox"><span>Đến ngày</span><input id="stockDateTo" type="date" min="${stockMinDate}" max="${stockMaxDate}" value="${Stock.dateTo || ''}" onchange="stockChangeDateRange()"></label><button class="btn gray" onclick="stockTotalHistory()">Lịch sử tổng</button><div class="stockCodeSearchBox"><input id="stockCodeSearch" class="stockSearchInput" value="${esc(Stock.codeQuery || '')}" placeholder="Tìm mã SP..." onkeydown="if(event.key==='Enter')stockOpenCodeSearch()"><button class="btn blue" onclick="stockOpenCodeSearch()">Tìm mã SP</button></div></div><div id="stockSections" class="tkGrid"></div>`;
       document.querySelector('.wrap')?.appendChild(div);
     }
     if (!$('tkStyleCore')) {
       document.head.insertAdjacentHTML('beforeend', `<style id="tkStyleCore">.tkToolbar{padding:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.stockMonthBox{display:inline-flex;align-items:center;gap:8px;border:1px solid #dbe5f2;background:#fff;border-radius:12px;padding:7px 10px;font-weight:900}.stockMonthBox span{color:#64748b;font-size:12px;text-transform:uppercase}.stockMonthBox input{height:32px;border:0;font-weight:900;background:transparent}.stockSearchInput{height:46px;border:1px solid #dbe5f2;border-radius:12px;padding:0 12px;font-weight:900;min-width:220px}.tkHistoryTools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.tkHistoryTools input{height:42px;border:1px solid #dbe5f2;border-radius:10px;padding:0 12px;font-weight:800;min-width:260px}.tkGrid{display:grid;gap:14px}.tkSection{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 10px 28px #0f172a10;overflow:visible}.tkHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.tkHead h3{margin:0}.tkStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.tkStat{border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:9px;text-align:left;font-weight:900;cursor:pointer}.tkStat b{display:block;font-size:20px}.tkStat span{color:#64748b;font-size:12px}.tkStat.active{outline:2px solid #2563eb;background:#eff6ff}.tkStat.ok{background:#ecfdf3}.tkStat.warn{background:#fff7ed}.tkStat.money{background:#f5f3ff}.tkTableWrap{overflow-x:auto;overflow-y:visible}.tkTable{width:100%;min-width:1180px;border-collapse:collapse}.tkTable th{background:#eef4fb;text-align:left;padding:9px;border-bottom:1px solid #cbd5e1}.tkTable td{padding:8px;border-bottom:1px solid #e7edf5;vertical-align:middle}.tkCode{font-weight:900}.tkNeg{color:#dc2626;font-weight:900}.tkPos{color:#15803d;font-weight:900}.tkNoteBtn{max-width:220px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dbe5f2;background:#fff;border-radius:8px;padding:7px 9px;font-weight:800;cursor:pointer}.tkFriendItem{display:grid;grid-template-columns:1fr 80px;gap:8px;margin:8px 0}@media(max-width:760px){.tkToolbar{justify-content:flex-start}.stockMonthBox,.stockSearchInput{width:100%;min-width:0}.tkStats{grid-template-columns:repeat(2,minmax(0,1fr))}.tkHead{align-items:flex-start;flex-direction:column}.tkHead>div{display:flex;gap:8px;flex-wrap:wrap}.tkSection{padding:9px}.tkTableWrap{overflow:visible}.tkTable{display:block;min-width:0;border:0}.tkTable thead{display:none}.tkTable tbody{display:block}.tkTable tr{display:block;background:#fff;border:1px solid #dbe5f2;border-radius:14px;margin:10px 0;padding:10px}.tkTable td{display:grid;grid-template-columns:92px minmax(0,1fr);gap:10px;align-items:center;border:0;padding:6px 0}.tkTable td:before{content:attr(data-label);font-weight:900;color:#64748b;font-size:12px;text-transform:uppercase}}</style>`);
     }
-  }
-  window.stockChangeMonth = function(m){ Stock.month = m; Stock.day = ''; Stock.filter = {}; Stock.bind(); if ($('stockDay')) $('stockDay').value = ''; };
-  window.stockChangeDay = function(d){
-    Stock.day = d || '';
-    Stock.filter = {};
-    if (Stock.day && Stock.day.slice(0,7) !== Stock.month) {
-      Stock.month = Stock.day.slice(0,7);
-      if ($('stockMonth')) $('stockMonth').value = Stock.month;
-      Stock.bind();
-      return;
+    if (!$('tkFeatureStyle')) {
+      document.head.insertAdjacentHTML('beforeend', `<style id="tkFeatureStyle">.stockCodeSearchBox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.stockCodeResult{display:grid;gap:12px}.stockCodeMonth{border:1px solid #dbe5f2;border-radius:12px;overflow:hidden;background:#fff}.stockCodeMonth h4{margin:0;padding:10px 12px;background:#eef4fb}.stockCodeMonth table{width:100%;border-collapse:collapse}.stockCodeMonth th,.stockCodeMonth td{padding:8px;border-bottom:1px solid #e7edf5;text-align:left}.stockCodeMonths{margin-bottom:10px;padding:10px 12px;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;font-weight:900}@media(max-width:760px){.stockCodeSearchBox{width:100%}.stockCodeSearchBox .btn{width:100%}.stockCodeMonth{overflow-x:auto}.stockCodeMonth table{min-width:760px}}</style>`);
     }
+  }
+  function stockMonthBounds(){
+    const [y,m] = Stock.month.split('-').map(Number);
+    return { min:`${Stock.month}-01`, max:todayStr(new Date(y, m, 0)) };
+  }
+  function stockSyncDateControls(){
+    const b = stockMonthBounds();
+    const from = $('stockDateFrom');
+    const to = $('stockDateTo');
+    if (from) { from.min = b.min; from.max = b.max; from.value = Stock.dateFrom || ''; }
+    if (to) { to.min = b.min; to.max = b.max; to.value = Stock.dateTo || ''; }
+  }
+  window.stockChangeMonth = function(m){ Stock.month = m; Stock.dateFrom = ''; Stock.dateTo = ''; Stock.filter = {}; stockSyncDateControls(); Stock.bind(); };
+  window.stockChangeDateRange = function(){
+    Stock.dateFrom = $('stockDateFrom')?.value || '';
+    Stock.dateTo = $('stockDateTo')?.value || '';
+    if (Stock.dateFrom && Stock.dateTo && Stock.dateFrom > Stock.dateTo) {
+      const tmp = Stock.dateFrom;
+      Stock.dateFrom = Stock.dateTo;
+      Stock.dateTo = tmp;
+      if ($('stockDateFrom')) $('stockDateFrom').value = Stock.dateFrom;
+      if ($('stockDateTo')) $('stockDateTo').value = Stock.dateTo;
+    }
+    Stock.filter = {};
     Stock.render();
   };
-  window.stockSearchCode = function(q){ Stock.codeQuery = q || ''; Stock.render(); };
+  function stockSection(sec){ return Stock.sections().find(s => s.id === sec) || { id:sec, title:sec }; }
+  function stockRangeText(){
+    if (Stock.dateFrom && Stock.dateTo) return `${Stock.dateFrom} đến ${Stock.dateTo}`;
+    if (Stock.dateFrom) return `từ ${Stock.dateFrom}`;
+    if (Stock.dateTo) return `đến ${Stock.dateTo}`;
+    return `tháng ${Stock.month}`;
+  }
+  function stockExportRows(sec){
+    const rows = Stock.filteredRows(sec);
+    const toDate = r => new Date(r.createdAt || Date.now()).toLocaleDateString('vi-VN');
+    const base = (r,i) => [i+1, toDate(r), r.code || '', r.qty || 0, money(r.price)];
+    if (sec === 'diff') return {
+      headers:['STT','Ngày lập','Mã SP','SL','Giá bán','Tồn kho','Thành tiền','Ghi chú','Trạng thái'],
+      rows: rows.map((r,i) => [...base(r,i), r.stockType || 'Thiếu', money(Stock.calc(r,sec)), r.note || '', r.cut || ''])
+    };
+    if (sec === 'friend') return {
+      headers:['STT','Ngày lập','Mã SP','SL','Giá bán','Người quen','Thành tiền','Thanh toán','Ghi chú','Trạng thái'],
+      rows: rows.map((r,i) => [...base(r,i), r.friend || '', money(Stock.calc(r,sec)), r.payment || '', r.note || '', r.cut || ''])
+    };
+    return {
+      headers:['STT','Ngày lập','Mã SP','SL','Giá bán','Khách mua','SĐT','Thành tiền','Thanh toán','Ghi chú','Trạng thái'],
+      rows: rows.map((r,i) => [...base(r,i), r.customer || '', r.phone || '', money(Stock.calc(r,sec)), r.payment || '', r.note || '', r.cut || ''])
+    };
+  }
+  window.stockExportExcel = function(sec){
+    const s = stockSection(sec);
+    const data = stockExportRows(sec);
+    const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><table border="1"><caption>${esc(s.title)} - ${esc(stockRangeText())}</caption><thead><tr>${data.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${data.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+    const blob = new Blob(['\ufeff', html], { type:'application/vnd.ms-excel;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${sec}_${Stock.month}.xls`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  function stockCodeResultRows(months, query){
+    const q = String(query || '').trim().toUpperCase();
+    const out = [];
+    Object.entries(months || {}).forEach(([month, data]) => {
+      Stock.sections().forEach(sec => {
+        arr((data || {})[sec.id] || {}).forEach(r => {
+          if (!String(r.code || '').toUpperCase().includes(q)) return;
+          out.push({ month, section:sec.title, sec:sec.id, row:r });
+        });
+      });
+    });
+    return out.sort((a,b) => String(b.month).localeCompare(String(a.month)) || ((b.row.createdAt||0)-(a.row.createdAt||0)));
+  }
+  function stockCodeResultHtml(rows, query){
+    if (!rows.length) return `<div class="dkSearchBox"><b>${esc(query)}</b>: không tìm thấy phát sinh trong dữ liệu tồn kho.</div>`;
+    const groups = {};
+    rows.forEach(x => { (groups[x.month] ||= []).push(x); });
+    const summary = Object.entries(groups).map(([m,items]) => `${m} (${items.length})`).join(', ');
+    return `<div class="stockCodeMonths">Có trong tháng: ${esc(summary)}</div><div class="stockCodeResult">${Object.entries(groups).map(([m,items]) => `<div class="stockCodeMonth"><h4>Tháng ${esc(m)} (${items.length})</h4><table><thead><tr><th>Ngày</th><th>Phần</th><th>Mã SP</th><th>SL</th><th>Giá</th><th>Thành tiền</th><th>Thông tin</th><th>Ghi chú</th><th>Trạng thái</th></tr></thead><tbody>${items.map(x => {
+      const r = x.row;
+      const info = x.sec === 'diff' ? (r.stockType || '') : (x.sec === 'friend' ? (r.friend || '') : [r.customer, r.phone].filter(Boolean).join(' - '));
+      return `<tr><td>${esc(new Date(r.createdAt || Date.now()).toLocaleDateString('vi-VN'))}</td><td>${esc(x.section)}</td><td><b>${esc(r.code || '')}</b></td><td>${esc(r.qty || 0)}</td><td>${esc(money(r.price))}</td><td>${esc(money(Stock.calc(r,x.sec)))}</td><td>${esc(info)}</td><td>${esc(r.note || '')}</td><td>${esc(r.cut || '')}</td></tr>`;
+    }).join('')}</tbody></table></div>`).join('')}</div>`;
+  }
+  window.stockOpenCodeSearch = function(){
+    const q = ($('stockCodeSearch')?.value || '').trim().toUpperCase();
+    Stock.codeQuery = q;
+    if (!q) return showToast('Nhập mã SP cần tìm');
+    $('detailTitle').textContent = `Tìm mã SP: ${q}`;
+    $('detailBody').innerHTML = '<div class="dkSearchBox">Đang tìm mã sản phẩm...</div>';
+    openModal('detailModal');
+    stockRef('months').once('value').then(snap => {
+      const rows = stockCodeResultRows(snap.val() || {}, q);
+      $('detailBody').innerHTML = stockCodeResultHtml(rows, q);
+    }).catch(err => {
+      $('detailBody').innerHTML = `<div class="dkSearchBox">Không đọc được dữ liệu tìm kiếm: ${esc(err.message || err)}</div>`;
+    });
+  };
   window.stockSetFilter = function(sec,key){ Stock.filter[sec] = key; Stock.render(); };
   window.stockToggleExpand = function(sec){ Stock.expanded[sec] = !Stock.expanded[sec]; Stock.render(); };
   window.stockOpenForm = function(sec,rowId){
@@ -1795,21 +1883,22 @@
     el.textContent = items.map(x => x.line).join('\n') || 'Chưa có lịch sử tồn kho';
   };
   window.stockTotalHistory = function(){
-    $('detailTitle').textContent = 'Lịch sử tổng tồn kho';
+    $('detailTitle').textContent = `Lịch sử tổng tồn kho tháng ${Stock.month}`;
     $('detailBody').innerHTML = `<div class="tkHistoryTools"><input id="stockHistorySearch" placeholder="Tìm lịch sử tồn kho..." oninput="stockRenderTotalHistory(this.value)">${window.roleAdmin()?`<button class="btn red" onclick="stockClearMonthHistory()">Xóa lịch sử tháng ${esc(Stock.month)}</button>`:''}</div><pre id="stockHistoryText" class="copyBox"></pre>`;
     openModal('detailModal');
     stockRenderTotalHistory();
   };
   window.stockClearMonthHistory = function(){
     if (!requireAdmin()) return;
-    if (!confirm(`Xóa toàn bộ lịch sử tồn kho tháng ${Stock.month}? Dữ liệu dòng vẫn giữ nguyên.`)) return;
+    const month = Stock.month;
+    if (!confirm(`Xóa toàn bộ lịch sử tồn kho tháng ${month}? Dữ liệu dòng vẫn giữ nguyên.`)) return;
     const updates = {};
     Stock.sections().forEach(sec => Stock.rows(sec.id).forEach(r => {
       if ((r.logs || []).length) updates[`${sec.id}/${r.id}/logs`] = null;
     }));
-    if (!Object.keys(updates).length) return showToast('Tháng này chưa có lịch sử');
-    stockRef('months', Stock.month).update(updates).then(() => {
-      showToast('Đã xóa lịch sử tháng');
+    if (!Object.keys(updates).length) return showToast(`Tháng ${month} chưa có lịch sử`);
+    stockRef('months', month).update(updates).then(() => {
+      showToast(`Đã xóa lịch sử tồn kho tháng ${month}`);
       stockRenderTotalHistory($('stockHistorySearch')?.value || '');
     });
   };
