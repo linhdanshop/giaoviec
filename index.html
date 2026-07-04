@@ -283,8 +283,9 @@
   <select id="role" class="hidden"><option>Admin</option><option>Nhân viên</option></select>
   <select id="currentEmp" class="hidden"></select>
   <div id="operatorBar" class="operatorBar">Nhân viên: Chưa chọn nhân viên thao tác</div>
+  <button id="chooseActorBtn" class="topMiniBtn employeeOnly" onclick="chooseEmployeeActor()">Chọn nhân viên</button>
   <button id="adminTestNotify" class="topMiniBtn adminOnly" onclick="toggleAdminNotifyTest()">🔔 Test nhắc: Tắt</button>
-  <button class="topMiniBtn" onclick="logoutUser()">Đăng xuất</button>
+  <button id="logoutBtn" class="topMiniBtn" onclick="logoutUser()">Thoát Gmail</button>
 </div>
 </div>
 <div class="wrap">
@@ -365,14 +366,15 @@
 <div id="masterModal" class="modal"><div class="panel"><div class="panelhead"><h3>Thêm mẫu công việc</h3><button class="x" onclick="closeModal('masterModal')">×</button></div><div class="form"><input type="hidden" id="msId"><div class="full"><label>Tên CV</label><input id="msTitle"></div><div><label>Nhân viên mặc định</label><select id="msEmp"></select></div><div><label>Giờ mặc định</label><input id="msTime" type="time"></div><div class="full"><label>Nội dung mẫu</label><textarea id="msContent"></textarea></div><div class="full"><label>Ghi chú mẫu</label><textarea id="msNote"></textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('masterModal')">Đóng</button><button class="btn blue" onclick="saveMaster()">Lưu mẫu</button></div></div></div>
 
 
-<div id="actorModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Bạn là ai đang thao tác?</h3></div><div class="form"><div class="full"><label>Chọn người thao tác</label><select id="actorSelect"></select></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('actorModal')">Đóng</button><button class="btn blue" onclick="confirmActor()">Xác nhận</button></div></div></div>
-<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Tích chọn Admin hoặc tên nhân viên. Nhân viên vẫn xem được tất cả việc; chỉ khác quyền thao tác.</small></div></div></div></div>
+<div id="actorModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Bạn là ai đang thao tác?</h3></div><div class="form"><div id="actorChoiceMount" class="full"></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('actorModal')">Đóng</button></div></div></div>
+<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Đăng nhập bằng Gmail được cấp quyền. Nhân viên vẫn xem được tất cả việc; khi thao tác sẽ chọn tên nhân viên.</small></div></div></div></div>
 <div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div class="imageStage"><img id="bigImage" src=""></div></div></div>
 
 
 <div id="attentionModal" class="modal"><div class="panel attentionPanel"><div class="attentionHead"><h3>🔔 NHẮC VIỆC</h3><button class="x" onclick="closeAttention()">×</button></div><div id="attentionBody" class="attentionBody"></div><div class="attentionFoot"><button class="btn gray" onclick="closeAttention()">Để sau</button><button class="btn orange" onclick="attentionAck()">Đã nhận nhắc</button></div></div></div>
 <div id="toast" class="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 
