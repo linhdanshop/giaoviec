@@ -279,10 +279,7 @@
     if (!box) return;
     box.innerHTML = `
       <button type="button" class="loginChoice admin" onclick="loginWithGoogle()">Đăng nhập Google</button>
-      <div class="full" style="color:#667085;font-weight:800;line-height:1.45">
-        Admin: kythuatlado@gmail.com, tranvanan180393@gmail.com<br>
-        Nhân viên: shoplinhdan2026@gmail.com
-      </div>`;
+      `;
   }
   function applyGoogleUser(user, allowCreate){
     state.googleAuthReady = true;
