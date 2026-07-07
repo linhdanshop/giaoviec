@@ -269,12 +269,7 @@
     const locked = waitingGoogleAuth ? false : !isLogged();
     document.body.classList.toggle('authLocked', locked);
   
-    if (waitingGoogleAuth) {
-      closeLoginModalHard();
-    } else if (locked) {
-      const login = $('loginModal');
-      if (login && !login.classList.contains('open')) openModal('loginModal');
-    } else {
+    if (waitingGoogleAuth || !locked) {
       closeLoginModalHard();
     }   
     const bar = $('operatorBar');
@@ -598,7 +593,9 @@
         renderQuickLinks();
       });
       this.listenDate(state.date);
-      setInterval(() => updateAuthUi(), 15000);
+      setInterval(() => {
+        if (isLogged()) updateAuthUi();
+      }, 15000);
       setInterval(() => this.midnightCheck(), 15000);
       setInterval(() => this.reminderTick(), 3000);
     },
