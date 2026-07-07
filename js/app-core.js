@@ -2267,7 +2267,6 @@
     Device.bind();
     Tasks.init();
     Stock.init();
-    if (!isLogged()) openModal('loginModal');
     setDateButtonActive('Hôm nay');
     updateAuthUi();
     renderAll();
