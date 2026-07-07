@@ -316,7 +316,7 @@
       return;
     }
     const sameValid = isValidSession(auth.session) && auth.session.email === email && auth.session.mode === mode;
-    const canCreateSession = allowCreate || googleAuth?.currentUser?.uid === user.uid;
+    const canCreateSession = allowCreate || !!user?.uid;
     if (!sameValid && !canCreateSession) {
       clearLocalAuth();
       googleAuth?.signOut?.().catch(()=>{});
