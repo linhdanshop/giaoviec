@@ -147,7 +147,6 @@
   function openModal(id){
     const el = $(id);
     if (!el) return;
-    el.style.removeProperty('display');
     el.style.setProperty('z-index', String(++modalZ), 'important');
     el.classList.add('open');
   }
@@ -159,14 +158,6 @@
     }
     if (id === 'attentionModal') stopSound();
   }
-  function closeLoginModalHard(){
-    const el = $('loginModal');
-    if (!el) return;
-    el.classList.remove('open');
-    el.style.removeProperty('z-index');
-    el.style.setProperty('display', 'none', 'important');
-  }
-  
   function closeTopModalByEsc(){
     const openModals = $$('.modal.open')
       .filter(el => !(el.id === 'loginModal' && document.body.classList.contains('authLocked')));
@@ -265,13 +256,8 @@
     return 'Nhân viên: Chưa chọn nhân viên thao tác';
   }
   function updateAuthUi(){
-    const waitingGoogleAuth = !!googleAuth && !state.googleAuthReady;
-    const locked = waitingGoogleAuth ? false : !isLogged();
+    const locked = !isLogged();
     document.body.classList.toggle('authLocked', locked);
-  
-    if (waitingGoogleAuth || !locked) {
-      closeLoginModalHard();
-    }   
     const bar = $('operatorBar');
     if (bar) bar.textContent = locked ? 'Chưa đăng nhập Gmail' : sessionRemainText();
     $$('.adminOnly').forEach(el => el.classList.toggle('hidden', !window.roleAdmin()));
@@ -293,37 +279,24 @@
     if (!box) return;
     box.innerHTML = `
       <button type="button" class="loginChoice admin" onclick="loginWithGoogle()">Đăng nhập Google</button>
-      `;
+      <div class="full" style="color:#667085;font-weight:800;line-height:1.45">
+        Admin: kythuatlado@gmail.com, tranvanan180393@gmail.com<br>
+        Nhân viên: shoplinhdan2026@gmail.com
+      </div>`;
   }
   function applyGoogleUser(user, allowCreate){
     state.googleAuthReady = true;
-    user = user || googleAuth?.currentUser || null;
-  
-    const loginPendingNow = googleLoginPending || sessionStorage.getItem('giaoviec.googleLoginPending') === '1';
-  
+    sessionStorage.removeItem('giaoviec.googleLoginPending');
+    googleLoginPending = false;
     if (!user) {
-      if (isValidSession(auth.session)) {
-        updateAuthUi();
-        renderAll();
-        return;
-      }
-  
-      if (loginPendingNow) {
-        updateAuthUi();
-        return;
-      }
-  
       clearLocalAuth();
       updateAuthUi();
+      openModal('loginModal');
       return;
     }
-  
     const email = normalizeEmail(user.email);
     const mode = googleRole(email);
-  
     if (!mode) {
-      googleLoginPending = false;
-      sessionStorage.removeItem('giaoviec.googleLoginPending');
       clearLocalAuth();
       googleAuth?.signOut?.().catch(()=>{});
       showToast(`Gmail ${email || 'này'} không có quyền truy cập`);
@@ -331,20 +304,14 @@
       openModal('loginModal');
       return;
     }
-  
     const sameValid = isValidSession(auth.session) && auth.session.email === email && auth.session.mode === mode;
-    const canCreateSession = allowCreate || loginPendingNow || !!user?.uid;
-  
-    if (!sameValid && !canCreateSession) {
-      googleLoginPending = false;
-      sessionStorage.removeItem('giaoviec.googleLoginPending');
+    if (!sameValid && !allowCreate) {
       clearLocalAuth();
       googleAuth?.signOut?.().catch(()=>{});
       updateAuthUi();
       openModal('loginModal');
       return;
     }
-  
     if (!sameValid) {
       auth.session = {
         provider: 'google',
@@ -356,14 +323,34 @@
       auth.actor = null;
       persistSession();
     }
-  
-    googleLoginPending = false;
-    sessionStorage.removeItem('giaoviec.googleLoginPending');
-  
-    closeLoginModalHard();
+    closeModal('loginModal');
     updateAuthUi();
     renderAll();
   }
+  window.loginWithGoogle = async function(){
+    if (!googleAuth || !firebase.auth?.GoogleAuthProvider) return showToast('Firebase Auth chưa sẵn sàng');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    googleLoginPending = true;
+    sessionStorage.setItem('giaoviec.googleLoginPending', '1');
+    try {
+      await googleAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      const result = await googleAuth.signInWithPopup(provider);
+      applyGoogleUser(result.user, true);
+    } catch (err) {
+      if (err && ['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'].includes(err.code)) {
+        try {
+          await googleAuth.signInWithRedirect(provider);
+          return;
+        } catch (redirectErr) {
+          showToast(redirectErr.message || 'Không đăng nhập Google được');
+        }
+      } else if (err?.code !== 'auth/popup-closed-by-user') {
+        showToast(err.message || 'Không đăng nhập Google được');
+      }
+      googleLoginPending = false;
+      sessionStorage.removeItem('giaoviec.googleLoginPending');
+    }
   };
   window.loginAsAdmin = window.loginWithGoogle;
   window.loginAsEmployeeMode = window.loginWithGoogle;
@@ -588,9 +575,7 @@
         renderQuickLinks();
       });
       this.listenDate(state.date);
-      setInterval(() => {
-        if (isLogged()) updateAuthUi();
-      }, 15000);
+      setInterval(() => updateAuthUi(), 15000);
       setInterval(() => this.midnightCheck(), 15000);
       setInterval(() => this.reminderTick(), 3000);
     },
@@ -2259,6 +2244,7 @@
     Device.bind();
     Tasks.init();
     Stock.init();
+    if (!isLogged()) openModal('loginModal');
     setDateButtonActive('Hôm nay');
     updateAuthUi();
     renderAll();
