@@ -367,7 +367,7 @@
 
 
 <div id="actorModal" class="modal"><div class="panel" style="width:min(520px,94vw)"><div class="panelhead"><h3>Bạn là ai đang thao tác?</h3></div><div class="form"><div id="actorChoiceMount" class="full"></div><div class="full"><small style="color:#667085">Tên này sẽ áp dụng trong 1 tiếng cho các thao tác ghi chú, báo cáo, đổi trạng thái trên máy này.</small></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('actorModal')">Đóng</button></div></div></div>
-<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div></div></div></div>
+<div id="loginModal" class="modal"><div class="panel" style="width:min(560px,94vw)"><div class="panelhead"><h3>Chọn người dùng máy này</h3></div><div class="form"><div class="full"><label>Chọn người dùng</label><div id="loginChoices" class="loginGrid"></div></div><div class="full" style="display:none"><button class="btn blue" onclick="loginConfirm()">Vào phần mềm</button></div><div class="full"><small style="color:#667085">Đăng nhập bằng Gmail được cấp quyền. Nhân viên vẫn xem được tất cả việc; khi thao tác sẽ chọn tên nhân viên.</small></div></div></div></div>
 <div id="imageModal" class="modal imageViewer"><div class="panel"><div class="panelhead"><h3 id="imageTitle">Xem ảnh</h3><div class="galleryNav"><button onclick="prevImage()">‹</button><span id="imageCounter" class="imageCounter">1/1</span><button onclick="nextImage()">›</button><button class="x" onclick="closeModal('imageModal')">×</button></div></div><div class="imageStage"><img id="bigImage" src=""></div></div></div>
 
 
@@ -498,7 +498,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 </style>
 
 
-<script src="js/app-core.js?v=loginfix1005"></script>
+<script src="js/app-core.js"></script>
 <script id="DONG_KIEM_MODULE_20260613">
 (function(){
   const ROOT='dongKiem';
