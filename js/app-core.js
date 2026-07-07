@@ -158,6 +158,13 @@
     }
     if (id === 'attentionModal') stopSound();
   }
+  function closeLoginModalHard(){
+    const el = $('loginModal');
+    if (!el) return;
+    el.classList.remove('open');
+    el.style.removeProperty('z-index');
+  }
+  
   function closeTopModalByEsc(){
     const openModals = $$('.modal.open')
       .filter(el => !(el.id === 'loginModal' && document.body.classList.contains('authLocked')));
@@ -258,6 +265,13 @@
   function updateAuthUi(){
     const locked = !isLogged();
     document.body.classList.toggle('authLocked', locked);
+  
+    if (locked) {
+      const login = $('loginModal');
+      if (login && !login.classList.contains('open')) openModal('loginModal');
+    } else {
+      closeLoginModalHard();
+    }    
     const bar = $('operatorBar');
     if (bar) bar.textContent = locked ? 'Chưa đăng nhập Gmail' : sessionRemainText();
     $$('.adminOnly').forEach(el => el.classList.toggle('hidden', !window.roleAdmin()));
@@ -302,7 +316,8 @@
       return;
     }
     const sameValid = isValidSession(auth.session) && auth.session.email === email && auth.session.mode === mode;
-    if (!sameValid && !allowCreate) {
+    const canCreateSession = allowCreate || googleAuth?.currentUser?.uid === user.uid;
+    if (!sameValid && !canCreateSession) {
       clearLocalAuth();
       googleAuth?.signOut?.().catch(()=>{});
       updateAuthUi();
