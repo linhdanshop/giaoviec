@@ -60,6 +60,7 @@
     soundStopper: null,
     quickLinks: [],
     googleAuthReady: false,
+    dataStarted: false,
     adminNotifyOn: localStorage.getItem('giaoviec.adminNotify') === '1'
   };
 
@@ -278,11 +279,14 @@
     const box = $('loginChoices');
     if (!box) return;
     box.innerHTML = `
-      <button type="button" class="loginChoice admin" onclick="loginWithGoogle()">Đăng nhập Google</button>
-      <div class="full" style="color:#667085;font-weight:800;line-height:1.45">
-        Admin: kythuatlado@gmail.com, tranvanan180393@gmail.com<br>
-        Nhân viên: shoplinhdan2026@gmail.com
-      </div>`;
+      <button type="button" class="loginChoice admin" onclick="loginWithGoogle()">Đăng nhập Google</button>`;
+  }
+  function startDataAfterAuth(){
+    if (state.dataStarted || !isLogged()) return;
+    state.dataStarted = true;
+    Device.bind();
+    Tasks.init();
+    Stock.init();
   }
   function applyGoogleUser(user, allowCreate){
     state.googleAuthReady = true;
@@ -305,13 +309,6 @@
       return;
     }
     const sameValid = isValidSession(auth.session) && auth.session.email === email && auth.session.mode === mode;
-    if (!sameValid && !allowCreate) {
-      clearLocalAuth();
-      googleAuth?.signOut?.().catch(()=>{});
-      updateAuthUi();
-      openModal('loginModal');
-      return;
-    }
     if (!sameValid) {
       auth.session = {
         provider: 'google',
@@ -325,6 +322,7 @@
     }
     closeModal('loginModal');
     updateAuthUi();
+    startDataAfterAuth();
     renderAll();
   }
   window.loginWithGoogle = async function(){
@@ -2241,13 +2239,11 @@
   function init(){
     ensureHeaderTools();
     bindGoogleAuth();
-    Device.bind();
-    Tasks.init();
-    Stock.init();
     if (!isLogged()) openModal('loginModal');
     setDateButtonActive('Hôm nay');
     updateAuthUi();
-    renderAll();
+    startDataAfterAuth();
+    if (state.dataStarted) renderAll();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
