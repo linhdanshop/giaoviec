@@ -70,6 +70,7 @@
   };
   let modalZ = 6000;
   let googleLoginPending = sessionStorage.getItem('giaoviec.googleLoginPending') === '1';
+  const GOOGLE_PENDING_KEY = 'giaoviec.googleLoginPendingAt';
 
   window.APP_ROOTS = Object.assign(window.APP_ROOTS || {}, {
     taskReminder: TASK_ROOT,
@@ -213,6 +214,24 @@
   }
 
   function normalizeEmail(email){ return String(email || '').trim().toLowerCase(); }
+  function isMobileAuthBrowser(){
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  }
+  function setGoogleLoginPending(active){
+    googleLoginPending = !!active;
+    if (active) {
+      sessionStorage.setItem('giaoviec.googleLoginPending', '1');
+      localStorage.setItem(GOOGLE_PENDING_KEY, String(Date.now()));
+    } else {
+      sessionStorage.removeItem('giaoviec.googleLoginPending');
+      localStorage.removeItem(GOOGLE_PENDING_KEY);
+    }
+  }
+  function isGoogleLoginPending(){
+    if (googleLoginPending || sessionStorage.getItem('giaoviec.googleLoginPending') === '1') return true;
+    const at = Number(localStorage.getItem(GOOGLE_PENDING_KEY) || 0);
+    return at > 0 && Date.now() - at < 10 * 60 * 1000;
+  }
   function googleRole(email){
     const e = normalizeEmail(email);
     if (ADMIN_EMAILS.has(e)) return 'admin';
@@ -290,14 +309,15 @@
   }
   function applyGoogleUser(user, allowCreate){
     state.googleAuthReady = true;
-    sessionStorage.removeItem('giaoviec.googleLoginPending');
-    googleLoginPending = false;
     if (!user) {
+      if (isGoogleLoginPending() && allowCreate !== false) return;
+      setGoogleLoginPending(false);
       clearLocalAuth();
       updateAuthUi();
       openModal('loginModal');
       return;
     }
+    setGoogleLoginPending(false);
     const email = normalizeEmail(user.email);
     const mode = googleRole(email);
     if (!mode) {
@@ -329,10 +349,13 @@
     if (!googleAuth || !firebase.auth?.GoogleAuthProvider) return showToast('Firebase Auth chưa sẵn sàng');
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    googleLoginPending = true;
-    sessionStorage.setItem('giaoviec.googleLoginPending', '1');
+    setGoogleLoginPending(true);
     try {
       await googleAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      if (isMobileAuthBrowser()) {
+        await googleAuth.signInWithRedirect(provider);
+        return;
+      }
       const result = await googleAuth.signInWithPopup(provider);
       applyGoogleUser(result.user, true);
     } catch (err) {
@@ -346,8 +369,7 @@
       } else if (err?.code !== 'auth/popup-closed-by-user') {
         showToast(err.message || 'Không đăng nhập Google được');
       }
-      googleLoginPending = false;
-      sessionStorage.removeItem('giaoviec.googleLoginPending');
+      setGoogleLoginPending(false);
     }
   };
   window.loginAsAdmin = window.loginWithGoogle;
@@ -409,16 +431,21 @@
       clearLocalAuth();
       return;
     }
+    let redirectChecked = false;
     googleAuth.onAuthStateChanged(user => {
-      const allowCreate = googleLoginPending || sessionStorage.getItem('giaoviec.googleLoginPending') === '1';
-      applyGoogleUser(user, allowCreate);
+      if (!user && isGoogleLoginPending() && !redirectChecked) return;
+      applyGoogleUser(user, isGoogleLoginPending());
     });
     googleAuth.getRedirectResult?.().then(result => {
+      redirectChecked = true;
       if (result?.user) applyGoogleUser(result.user, true);
+      else if (googleAuth.currentUser) applyGoogleUser(googleAuth.currentUser, true);
+      else if (isGoogleLoginPending()) applyGoogleUser(null, false);
     }).catch(err => {
       if (err?.message) showToast(err.message);
-      googleLoginPending = false;
-      sessionStorage.removeItem('giaoviec.googleLoginPending');
+      setGoogleLoginPending(false);
+      redirectChecked = true;
+      applyGoogleUser(googleAuth.currentUser || null, false);
     });
   }
 

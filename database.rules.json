@@ -1,6 +1,27 @@
 {
   "rules": {
-    ".read": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')",
-    ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')"
+    ".read": false,
+    ".write": false,
+    "taskReminder": {
+      ".read": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com' || auth.token.firebase.sign_in_provider == 'anonymous')",
+      ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')",
+      "tasks": {
+        ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com' || auth.token.firebase.sign_in_provider == 'anonymous')"
+      },
+      "reminderDeliveries": {
+        ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com' || auth.token.firebase.sign_in_provider == 'anonymous')"
+      },
+      "desktopClients": {
+        ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com' || auth.token.firebase.sign_in_provider == 'anonymous')"
+      }
+    },
+    "dongKiem": {
+      ".read": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')",
+      ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')"
+    },
+    "tonKho": {
+      ".read": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')",
+      ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')"
+    }
   }
 }

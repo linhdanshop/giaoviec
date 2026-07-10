@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { initializeApp } = require('firebase/app');
+const { getAuth, signInAnonymously } = require('firebase/auth');
 const { getDatabase, ref, onValue, onDisconnect, update, set, get } = require('firebase/database');
 
 const TASK_ROOT = 'taskReminder';
@@ -20,6 +21,7 @@ const firebaseConfig = {
 };
 
 let db;
+let fbAuth;
 let tray;
 let popup;
 let currentTask = null;
@@ -324,16 +326,27 @@ ipcMain.on('ack-reminder', async (_ev, actor) => {
   closePopup();
 });
 
-app.whenReady().then(() => {
+async function initFirebase(){
+  const fbApp = initializeApp(firebaseConfig);
+  db = getDatabase(fbApp);
+  fbAuth = getAuth(fbApp);
+  await signInAnonymously(fbAuth);
+}
+
+app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   if (process.platform === 'win32') {
     app.setLoginItemSettings({ openAtLogin: true, path: process.execPath });
   }
-  initializeApp(firebaseConfig);
-  db = getDatabase();
   createTray();
-  heartbeat();
-  listenFirebase();
+  try {
+    await initFirebase();
+    heartbeat();
+    listenFirebase();
+  } catch (err) {
+    console.error('Firebase anonymous auth failed:', err && (err.code || err.message || err));
+    tray?.setToolTip('Nhắc Việc Shop - cần bật Anonymous Auth trong Firebase');
+  }
 });
 app.on('window-all-closed', () => {});
 app.on('before-quit', () => {
