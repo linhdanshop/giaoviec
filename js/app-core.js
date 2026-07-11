@@ -351,15 +351,10 @@
     provider.setCustomParameters({ prompt: 'select_account' });
     setGoogleLoginPending(true);
     try {
-      await googleAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      if (isMobileAuthBrowser()) {
-        await googleAuth.signInWithRedirect(provider);
-        return;
-      }
       const result = await googleAuth.signInWithPopup(provider);
       applyGoogleUser(result.user, true);
     } catch (err) {
-      if (err && ['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'].includes(err.code)) {
+      if (err && ['auth/popup-blocked','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'].includes(err.code) && !isMobileAuthBrowser()) {
         try {
           await googleAuth.signInWithRedirect(provider);
           return;
@@ -431,6 +426,7 @@
       clearLocalAuth();
       return;
     }
+    googleAuth.setPersistence?.(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
     let redirectChecked = false;
     googleAuth.onAuthStateChanged(user => {
       if (!user && isGoogleLoginPending() && !redirectChecked) return;
