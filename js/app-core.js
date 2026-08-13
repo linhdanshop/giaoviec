@@ -1814,8 +1814,10 @@
       tab.dataset.tab = 'tonKho';
       tab.textContent = 'Tồn Kho';
       tab.onclick = () => switchTab('tonKho');
-      const anchor = document.querySelector('.tab[data-tab="dvvc"]') || document.querySelector('.tab[data-tab="dongKiem"]');
+      const dvvcTab = document.querySelector('.tab[data-tab="dvvc"]');
+      const anchor = document.querySelector('.tab[data-tab="dongKiem"]');
       anchor ? anchor.insertAdjacentElement('afterend', tab) : document.querySelector('.tabs')?.appendChild(tab);
+      if (dvvcTab) tab.insertAdjacentElement('afterend', dvvcTab);
       const div = document.createElement('div');
       div.id = 'tonKhoTab';
       div.className = 'hidden';

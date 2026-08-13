@@ -295,7 +295,7 @@
     <button class="tab" data-tab="master" onclick="switchTab('master')">CV mẫu</button>
     <button class="tab" data-tab="devices" onclick="switchTab('devices')">Thiết bị online</button>
     <button class="tab" data-tab="dongKiem" onclick="switchTab('dongKiem')">Đồng Kiểm</button>
-    <button class="tab" data-tab="dvvc" onclick="switchTab('dvvc')">ĐVVC</button>
+    <button class="tab" data-tab="dvvc" onclick="switchTab('dvvc')">Đơn Giao</button>
     <div class="topFilters" id="empChips"></div>
   </div>
 
@@ -359,7 +359,7 @@
   </div>
   <div id="dvvcTab" class="hidden">
     <div class="section-title">
-      <h2>🚚 ĐVVC</h2>
+      <h2>🚚 Đơn Giao</h2>
       <span class="hint">Dữ liệu lưu riêng theo tháng trong /dvvc</span>
     </div>
     <div id="dvvcMount"></div>
@@ -629,9 +629,9 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       <button class="btn blue" onclick="dvvcOpenForm()">+ Thêm mới</button>
     </div>
     <div class="card dvvcBox">
-      <div class="section-title" style="margin:0 0 8px"><h2>Danh sách ĐVVC - ${esc(monthText(state.month))}</h2>${isAdmin()?'<button class="btn gray" onclick="dvvcOpenStatusSettings()">Trạng thái</button>':''}</div>
+      <div class="section-title" style="margin:0 0 8px"><h2>Danh sách Đơn Giao - ${esc(monthText(state.month))}</h2>${isAdmin()?'<button class="btn gray" onclick="dvvcOpenStatusSettings()">Trạng thái</button>':''}</div>
       ${statsHtml()}
-      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="10" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu ĐVVC trong tháng này</td></tr>'}</tbody></table></div>
+      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="10" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu Đơn Giao trong tháng này</td></tr>'}</tbody></table></div>
     </div>`;
   }
   function statsHtml(){
@@ -680,7 +680,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const r=old||normalizeRow('',{date:todayStr(),createdAt:Date.now(),updatedAt:Date.now()});
     const statusOpts=allStatuses(r.status).map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('');
     const situationOpts=SITUATIONS.map(s=>`<option ${r.situation===s?'selected':''}>${esc(s)}</option>`).join('');
-    setDetail(old?'Sửa đơn ĐVVC':'Thêm mới ĐVVC',`<div class="form">
+    setDetail(old?'Sửa Đơn Giao':'Thêm mới Đơn Giao',`<div class="form">
       <input id="dvvcEditId" type="hidden" value="${esc(r.id)}">
       <div><label>Ngày</label><input id="dvvcDate" type="date" value="${esc(r.date)}"></div>
       <div><label>Mã Vận đơn</label><input id="dvvcCode" value="${esc(r.code)}" placeholder="VD: 802796719255"></div>
@@ -717,7 +717,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const saves=[];
       if(old&&oldMonth!==targetMonth)saves.push(rowRef(oldMonth,old.id).remove());
       saves.push(rowRef(targetMonth,next.id).set(next));
-      Promise.all(saves).then(()=>{closeModal('detailModal'); if(targetMonth!==state.month)listenMonth(targetMonth); toast('Đã lưu ĐVVC')});
+      Promise.all(saves).then(()=>{closeModal('detailModal'); if(targetMonth!==state.month)listenMonth(targetMonth); toast('Đã lưu Đơn Giao')});
     });
   };
   window.dvvcQuickSave=function(rowId,field,value){
@@ -767,19 +767,20 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const logs=[];
     state.rows.forEach(r=>list(r.logs).forEach(l=>logs.push({...l,code:r.code})));
     logs.sort((a,b)=>(b.at||0)-(a.at||0));
-    setDetail('Lịch sử tổng ĐVVC '+monthText(state.month),`<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - <b>${esc(l.code)}</b> - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử.'}</div>`);
+    setDetail('Lịch sử tổng Đơn Giao '+monthText(state.month),`<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - <b>${esc(l.code)}</b> - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử.'}</div>`);
   };
   window.dvvcOpenStatusSettings=function(){
     ensureStarted();
     if(!isAdmin())return toast('Chỉ Admin được sửa danh sách trạng thái');
     const lines=allStatuses().map((s,i)=>`<div class="dvvcStatusLine"><input id="dvvcStatus_${i}" value="${esc(s)}"><button class="btn red" onclick="this.closest('.dvvcStatusLine').remove()">Xóa</button></div>`).join('');
-    setDetail('Tùy chỉnh trạng thái ĐVVC',`<div class="form"><div class="full dvvcStatusEditor" id="dvvcStatusEditor">${lines}</div><div class="full"><button class="btn gray" onclick="dvvcAddStatusLine()">+ Thêm trạng thái</button></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveStatuses()">Lưu</button></div>`);
+    setDetail('Tùy chỉnh trạng thái Đơn Giao',`<div class="form"><div class="full dvvcStatusEditor" id="dvvcStatusEditor">${lines}</div><div class="full"><button class="btn gray" onclick="dvvcAddStatusLine()">+ Thêm trạng thái</button></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveStatuses()">Lưu</button></div>`);
   };
   window.dvvcAddStatusLine=function(){
     const box=$('dvvcStatusEditor'); if(!box)return;
     box.insertAdjacentHTML('beforeend',`<div class="dvvcStatusLine"><input value=""><button class="btn red" onclick="this.closest('.dvvcStatusLine').remove()">Xóa</button></div>`);
   };
   window.dvvcSaveStatuses=function(){
+    if(!isAdmin())return toast('Chỉ Admin được cấu hình trạng thái');
     const arr=uniq(Array.from(document.querySelectorAll('#dvvcStatusEditor input')).map(i=>i.value));
     if(!arr.length)return toast('Phải có ít nhất 1 trạng thái');
     ref('statuses').set(arr).then(()=>{closeModal('detailModal');toast('Đã lưu trạng thái')});
