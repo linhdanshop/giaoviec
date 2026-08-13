@@ -26,6 +26,7 @@
       },
       "months": {
         "$month": {
+          ".read": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')",
           "rows": {
             "$row": {
               ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com') && (newData.exists() || auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com')"

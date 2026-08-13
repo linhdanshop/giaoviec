@@ -77,7 +77,7 @@
     tonKho: STOCK_ROOT
   });
   window.rootRef = (...parts) => db.ref(parts.filter(Boolean).join('/'));
-  window.roleAdmin = () => state.googleAuthReady && isValidSession(auth.session, 'admin');
+  window.roleAdmin = () => state.googleAuthReady && !!googleAuth?.currentUser && isValidSession(auth.session, 'admin');
   window.showToast = showToast;
   window.openModal = openModal;
   window.closeModal = closeModal;
@@ -261,7 +261,7 @@
   }
   function isLogged(){
     cleanSession();
-    return state.googleAuthReady && isValidSession(auth.session);
+    return state.googleAuthReady && !!googleAuth?.currentUser && isValidSession(auth.session);
   }
   function currentActorName(){
     cleanSession();
