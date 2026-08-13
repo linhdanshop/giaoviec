@@ -1115,12 +1115,13 @@
   window.render = function(){ const d = $('fDate')?.value || state.date; if (d !== state.date) Tasks.listenDate(d); else renderAll(); };
   window.switchTab = function(tab){
     state.tab = tab;
-    ['today','daily','master','devices','dongKiem','tonKho'].forEach(t => {
+    ['today','daily','master','devices','dongKiem','dvvc','tonKho'].forEach(t => {
       const el = $(t + 'Tab');
       if (el) el.classList.toggle('hidden', t !== tab);
     });
     $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     if (tab === 'devices') Device.render();
+    if (tab === 'dvvc') window.DVVC?.render?.();
     if (tab === 'tonKho') Stock.render();
   };
   window.toggleMenu = function(ev, btn){
@@ -1813,8 +1814,8 @@
       tab.dataset.tab = 'tonKho';
       tab.textContent = 'Tồn Kho';
       tab.onclick = () => switchTab('tonKho');
-      const dk = document.querySelector('.tab[data-tab="dongKiem"]');
-      dk ? dk.insertAdjacentElement('afterend', tab) : document.querySelector('.tabs')?.appendChild(tab);
+      const anchor = document.querySelector('.tab[data-tab="dvvc"]') || document.querySelector('.tab[data-tab="dongKiem"]');
+      anchor ? anchor.insertAdjacentElement('afterend', tab) : document.querySelector('.tabs')?.appendChild(tab);
       const div = document.createElement('div');
       div.id = 'tonKhoTab';
       div.className = 'hidden';

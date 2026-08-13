@@ -295,6 +295,7 @@
     <button class="tab" data-tab="master" onclick="switchTab('master')">CV mẫu</button>
     <button class="tab" data-tab="devices" onclick="switchTab('devices')">Thiết bị online</button>
     <button class="tab" data-tab="dongKiem" onclick="switchTab('dongKiem')">Đồng Kiểm</button>
+    <button class="tab" data-tab="dvvc" onclick="switchTab('dvvc')">ĐVVC</button>
     <div class="topFilters" id="empChips"></div>
   </div>
 
@@ -355,6 +356,13 @@
     </div>
     <div id="dkSearchResult" class="dkSearchResult"></div>
     <div id="dkSections" class="dkGrid"></div>
+  </div>
+  <div id="dvvcTab" class="hidden">
+    <div class="section-title">
+      <h2>🚚 ĐVVC</h2>
+      <span class="hint">Dữ liệu lưu riêng theo tháng trong /dvvc</span>
+    </div>
+    <div id="dvvcMount"></div>
   </div>
 </div>
 
@@ -499,6 +507,319 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
 
 
 <script src="js/app-core.js"></script>
+<script id="DVVC_MODULE_20260814">
+(function(){
+  const ROOT='dvvc';
+  const DEFAULT_STATUSES=['Thiếu đơn G1P','Thiếu đồ','Chưa trả ship','Thất lạc đơn','Giao thiếu đồ','Chưa trả hàng','Khác'];
+  const SITUATIONS=['Chưa xử lý','Đã xử lý'];
+  window.APP_ROOTS=window.APP_ROOTS||{};
+  window.APP_ROOTS.dvvc=window.APP_ROOTS.dvvc||ROOT;
+  const state={started:false,month:monthStr(),rows:[],statuses:DEFAULT_STATUSES.slice(),filterStatus:'Tất cả',filterSituation:'Tất cả',query:'',rowRef:null,rowCb:null,statusRef:null,statusCb:null};
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
+  const isAdmin=()=>typeof roleAdmin==='function'&&roleAdmin();
+  const askActor=cb=>{ if(isAdmin()) return cb('Admin'); if(typeof withActor==='function') return withActor(cb); cb('Nhân viên'); };
+  const ref=(...parts)=>typeof rootRef==='function'?rootRef(ROOT,...parts):null;
+  function monthStr(d=new Date()){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)}
+  function todayStr(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
+  function monthText(m){const [y,mo]=String(m||'').split('-');return mo&&y?'Tháng '+Number(mo)+'/'+y:m}
+  function dateText(v){const p=String(v||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v}
+  function timeText(ts){return ts?new Date(ts).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'}):''}
+  function money(v){const n=Number(String(v??'').replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0}
+  function moneyText(v){return money(v).toLocaleString('vi-VN')}
+  function list(v){return Array.isArray(v)?v:(v&&typeof v==='object'?Object.values(v):[])}
+  function uniq(arr){return Array.from(new Set(arr.map(x=>String(x||'').trim()).filter(Boolean)))}
+  function short(v,len=70){v=String(v||'').trim();return v.length>len?v.slice(0,len)+'...':v}
+  function allStatuses(extra){
+    return uniq([...(state.statuses||[]),...(extra?[extra]:[]),...DEFAULT_STATUSES]);
+  }
+  function normalizeRow(id,r){
+    r=r||{};
+    return {
+      id:id||r.id||('dvvc_'+Date.now()),
+      date:r.date||todayStr(),
+      code:String(r.code||'').trim(),
+      status:r.status||DEFAULT_STATUSES[0],
+      amount:money(r.amount),
+      orderNote:String(r.orderNote||''),
+      situation:r.situation||SITUATIONS[0],
+      processNote:String(r.processNote||''),
+      createdAt:Number(r.createdAt||Date.now()),
+      updatedAt:Number(r.updatedAt||r.createdAt||Date.now()),
+      logs:list(r.logs)
+    };
+  }
+  function logLine(actor,action){return {at:Date.now(),actor:actor||'Hệ thống',action:String(action||'')}}
+  function rowRef(month,id){return ref('months',month,'rows',id)}
+  function monthRowsRef(month){return ref('months',month,'rows')}
+  function currentMonthOf(row){return String(row.date||todayStr()).slice(0,7)}
+  function filteredRows(){
+    let rows=state.rows.slice();
+    const q=String(state.query||'').trim().toLowerCase();
+    if(q)rows=rows.filter(r=>[r.code,r.status,r.orderNote,r.situation,r.processNote].join(' ').toLowerCase().includes(q));
+    if(state.filterStatus!=='Tất cả')rows=rows.filter(r=>r.status===state.filterStatus);
+    if(state.filterSituation!=='Tất cả')rows=rows.filter(r=>r.situation===state.filterSituation);
+    return rows.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  }
+  function listenMonth(month){
+    state.month=month||monthStr();
+    if(state.rowRef&&state.rowCb)state.rowRef.off('value',state.rowCb);
+    state.rowRef=monthRowsRef(state.month);
+    if(!state.rowRef){render();return}
+    state.rowCb=snap=>{
+      const v=snap.val()||{};
+      state.rows=Object.keys(v).map(id=>normalizeRow(id,v[id])).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      render();
+    };
+    state.rowRef.on('value',state.rowCb);
+  }
+  function listenStatuses(){
+    state.statusRef=ref('statuses');
+    if(!state.statusRef)return;
+    state.statusCb=snap=>{
+      const v=snap.val();
+      const arr=Array.isArray(v)?v:(v&&Array.isArray(v.items)?v.items:list(v));
+      state.statuses=uniq(arr.length?arr:DEFAULT_STATUSES);
+      render();
+    };
+    state.statusRef.on('value',state.statusCb);
+  }
+  function ensureStyle(){
+    if($('dvvcStyle'))return;
+    document.head.insertAdjacentHTML('beforeend',`<style id="dvvcStyle">
+      .dvvcToolbar{padding:12px;display:grid;grid-template-columns:170px minmax(220px,1fr) 150px 150px 110px 120px 120px;gap:10px;align-items:end;margin-bottom:12px}
+      .dvvcToolbar input,.dvvcToolbar select{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;font-weight:800}
+      .dvvcStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
+      .dvvcStat{border:1px solid #dbe5f2;border-radius:12px;background:#fff;padding:10px;cursor:pointer;font-weight:900}
+      .dvvcStat b{display:block;font-size:20px;color:#0f172a}.dvvcStat span{color:#64748b;font-size:12px}.dvvcStat strong{display:block;margin-top:4px;color:#15803d}
+      .dvvcStat.active{outline:2px solid #2563eb;background:#eff6ff}.dvvcStat.total{background:#eef6ff}.dvvcStat.money{background:#f5f3ff}
+      .dvvcBox{padding:12px}.dvvcTableWrap{overflow:auto}.dvvcTable{width:100%;min-width:1180px;border-collapse:collapse}
+      .dvvcTable th{background:#eef4fb;text-align:left;padding:10px;border-bottom:1px solid #cbd5e1;white-space:nowrap}
+      .dvvcTable td{padding:9px;border-bottom:1px solid #e7edf5;vertical-align:middle}.dvvcTable tr:hover td{background:#f8fbff}
+      .dvvcCode{font-weight:1000;color:#0f172a}.dvvcMoney{font-weight:900;text-align:right;white-space:nowrap}.dvvcSelect{height:36px;border:1px solid #dbe5f2;border-radius:9px;padding:0 8px;background:#fff;font-weight:800;max-width:180px}
+      .dvvcNoteBtn{width:100%;max-width:240px;border:1px solid #dbe5f2;background:#fff;border-radius:9px;padding:8px 10px;text-align:left;font-weight:800;cursor:pointer;white-space:pre-wrap;word-break:break-word;line-height:1.35;max-height:56px;overflow:hidden}
+      .dvvcNoteBtn.empty{color:#94a3b8}.dvvcActions{display:flex;gap:6px;align-items:center}.dvvcMiniBtn{height:34px;border:0;border-radius:9px;padding:0 10px;font-weight:900;cursor:pointer}.dvvcMiniBtn.edit{background:#e9eef6}.dvvcMiniBtn.del{background:#dc2626;color:#fff}
+      .dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
+      .dvvcStatusEditor{display:grid;gap:8px}.dvvcStatusLine{display:grid;grid-template-columns:1fr 76px;gap:8px}.dvvcStatusLine input{height:40px;border:1px solid #dbe5f2;border-radius:10px;padding:0 10px;font-weight:800}.dvvcSearchResult{display:grid;gap:10px}.dvvcSearchMonth{border:1px solid #dbe5f2;border-radius:12px;overflow:hidden}.dvvcSearchMonth h4{margin:0;padding:10px 12px;background:#eef4fb}.dvvcSearchMonth table{width:100%;border-collapse:collapse}.dvvcSearchMonth th,.dvvcSearchMonth td{padding:8px;border-bottom:1px solid #e7edf5;text-align:left}
+      @media(max-width:900px){.dvvcToolbar{grid-template-columns:1fr 1fr}.dvvcToolbar .btn{height:42px}.dvvcStats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:760px){.dvvcToolbar{grid-template-columns:1fr}.dvvcBox{padding:9px}.dvvcTableWrap{overflow:visible}.dvvcTable{display:block;min-width:0}.dvvcTable thead{display:none}.dvvcTable tbody{display:block}.dvvcTable tr{display:block;border:1px solid #dbe5f2;border-radius:14px;background:#fff;margin:10px 0;padding:10px}.dvvcTable td{display:grid;grid-template-columns:108px minmax(0,1fr);gap:10px;border:0;padding:6px 0}.dvvcTable td:before{content:attr(data-label);font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900}.dvvcNoteBtn{max-width:none}.dvvcSelect{max-width:none;width:100%}.dvvcActions{justify-content:flex-start}.dvvcSearchMonth{overflow:auto}.dvvcSearchMonth table{min-width:760px}}
+    </style>`);
+  }
+  function ensureStarted(){
+    if(state.started)return;
+    state.started=true;
+    ensureStyle();
+    listenStatuses();
+    listenMonth(state.month);
+  }
+  function render(){
+    ensureStyle();
+    const mount=$('dvvcMount'); if(!mount)return;
+    const statusOptions=['Tất cả',...allStatuses()].map(s=>`<option ${state.filterStatus===s?'selected':''}>${esc(s)}</option>`).join('');
+    const situationOptions=['Tất cả',...SITUATIONS].map(s=>`<option ${state.filterSituation===s?'selected':''}>${esc(s)}</option>`).join('');
+    const rows=filteredRows();
+    mount.innerHTML=`<div class="card dvvcToolbar">
+      <input id="dvvcMonth" type="month" value="${esc(state.month)}" onchange="dvvcChangeMonth(this.value)">
+      <input id="dvvcQuery" value="${esc(state.query)}" placeholder="Tìm mã vận đơn..." oninput="dvvcRememberQuery(this.value)" onkeydown="if(event.key==='Enter')dvvcSearchAllMonths()">
+      <select onchange="dvvcSetStatusFilter(this.value)">${statusOptions}</select>
+      <select onchange="dvvcSetSituationFilter(this.value)">${situationOptions}</select>
+      <button class="btn blue" onclick="dvvcSearchAllMonths()">Tìm đơn</button>
+      <button class="btn gray" onclick="dvvcOpenHistoryTotal()">Lịch sử tổng</button>
+      <button class="btn blue" onclick="dvvcOpenForm()">+ Thêm mới</button>
+    </div>
+    <div class="card dvvcBox">
+      <div class="section-title" style="margin:0 0 8px"><h2>Danh sách ĐVVC - ${esc(monthText(state.month))}</h2>${isAdmin()?'<button class="btn gray" onclick="dvvcOpenStatusSettings()">Trạng thái</button>':''}</div>
+      ${statsHtml()}
+      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="10" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu ĐVVC trong tháng này</td></tr>'}</tbody></table></div>
+    </div>`;
+  }
+  function statsHtml(){
+    const rows=state.rows;
+    const groups={};
+    rows.forEach(r=>{const k=r.status||'Khác';groups[k]=groups[k]||{count:0,sum:0};groups[k].count++;groups[k].sum+=money(r.amount)});
+    const totalSum=rows.reduce((s,r)=>s+money(r.amount),0);
+    const cards=[`<div class="dvvcStat total ${state.filterStatus==='Tất cả'?'active':''}" onclick="dvvcSetStatusFilter('Tất cả')"><b>${rows.length}</b><span>Tổng đơn</span><strong>${moneyText(totalSum)}</strong></div>`];
+    Object.keys(groups).sort((a,b)=>groups[b].sum-groups[a].sum).forEach(k=>{
+      cards.push(`<div class="dvvcStat money ${state.filterStatus===k?'active':''}" onclick="dvvcSetStatusFilter('${esc(k)}')"><b>${esc(k)}</b><span>${groups[k].count} đơn</span><strong>${moneyText(groups[k].sum)}</strong></div>`);
+    });
+    return `<div class="dvvcStats">${cards.join('')}</div>`;
+  }
+  function rowHtml(r,stt){
+    const statusOpts=allStatuses(r.status).map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('');
+    const situationOpts=SITUATIONS.map(s=>`<option ${r.situation===s?'selected':''}>${esc(s)}</option>`).join('');
+    return `<tr>
+      <td data-label="STT">${stt}</td>
+      <td data-label="Ngày">${esc(dateText(r.date))}</td>
+      <td data-label="Mã Vận đơn" class="dvvcCode">${esc(r.code)}</td>
+      <td data-label="Trạng thái"><select class="dvvcSelect" onchange="dvvcQuickSave('${esc(r.id)}','status',this.value)">${statusOpts}</select></td>
+      <td data-label="Tiền Cần Xử Lý" class="dvvcMoney">${moneyText(r.amount)}</td>
+      <td data-label="Ghi chú đơn"><button class="dvvcNoteBtn ${r.orderNote?'':'empty'}" onclick="dvvcOpenNote('${esc(r.id)}','orderNote')">${esc(r.orderNote||'Ghi chú...')}</button></td>
+      <td data-label="Tình trạng"><select class="dvvcSelect" onchange="dvvcQuickSave('${esc(r.id)}','situation',this.value)">${situationOpts}</select></td>
+      <td data-label="Ghi chú xử lý"><button class="dvvcNoteBtn ${r.processNote?'':'empty'}" onclick="dvvcOpenNote('${esc(r.id)}','processNote')">${esc(r.processNote||'Ghi chú...')}</button></td>
+      <td data-label="Lịch sử"><button class="more" onclick="dvvcOpenRowHistory('${esc(r.id)}')">${r.logs.length||0} dòng</button></td>
+      <td data-label="Thao tác"><div class="dvvcActions"><button class="dvvcMiniBtn edit" onclick="dvvcOpenForm('${esc(r.id)}')">Sửa</button>${isAdmin()?`<button class="dvvcMiniBtn del" onclick="dvvcDeleteRow('${esc(r.id)}')">Xóa</button>`:''}</div></td>
+    </tr>`;
+  }
+  function getRow(id){return state.rows.find(r=>r.id===id)}
+  function setDetail(title,html){
+    const t=$('detailTitle'), b=$('detailBody');
+    if(!t||!b)return;
+    t.textContent=title;
+    b.innerHTML=html;
+    openModal('detailModal');
+  }
+  window.dvvcChangeMonth=function(v){ if(!v)return; listenMonth(v); };
+  window.dvvcRememberQuery=function(v){ state.query=v||''; };
+  window.dvvcSetQuery=function(v){ state.query=v||''; render(); };
+  window.dvvcSetStatusFilter=function(v){ state.filterStatus=v||'Tất cả'; render(); };
+  window.dvvcSetSituationFilter=function(v){ state.filterSituation=v||'Tất cả'; render(); };
+  window.dvvcOpenForm=function(rowId){
+    ensureStarted();
+    const old=rowId?getRow(rowId):null;
+    const r=old||normalizeRow('',{date:todayStr(),createdAt:Date.now(),updatedAt:Date.now()});
+    const statusOpts=allStatuses(r.status).map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('');
+    const situationOpts=SITUATIONS.map(s=>`<option ${r.situation===s?'selected':''}>${esc(s)}</option>`).join('');
+    setDetail(old?'Sửa đơn ĐVVC':'Thêm mới ĐVVC',`<div class="form">
+      <input id="dvvcEditId" type="hidden" value="${esc(r.id)}">
+      <div><label>Ngày</label><input id="dvvcDate" type="date" value="${esc(r.date)}"></div>
+      <div><label>Mã Vận đơn</label><input id="dvvcCode" value="${esc(r.code)}" placeholder="VD: 802796719255"></div>
+      <div><label>Trạng thái</label><select id="dvvcStatus">${statusOpts}</select></div>
+      <div><label>Tiền Cần Xử Lý</label><input id="dvvcAmount" value="${esc(r.amount?moneyText(r.amount):'')}" placeholder="100.000"></div>
+      <div><label>Tình trạng</label><select id="dvvcSituation">${situationOpts}</select></div>
+      <div class="full"><label>Ghi chú đơn</label><textarea id="dvvcOrderNote" style="min-height:90px">${esc(r.orderNote)}</textarea></div>
+      <div class="full"><label>Ghi chú xử lý</label><textarea id="dvvcProcessNote" style="min-height:90px">${esc(r.processNote)}</textarea></div>
+    </div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveForm('${esc(rowId||'')}')">Lưu</button></div>`);
+  };
+  window.dvvcSaveForm=function(rowId){
+    ensureStarted();
+    const old=rowId?getRow(rowId):null;
+    const date=($('dvvcDate')?.value||todayStr()).trim();
+    const code=($('dvvcCode')?.value||'').trim();
+    if(!code)return toast('Nhập mã vận đơn');
+    const next=normalizeRow(old?.id||('dvvc_'+Date.now()+'_'+Math.random().toString(16).slice(2)),{
+      date,code,
+      status:$('dvvcStatus')?.value||DEFAULT_STATUSES[0],
+      amount:money($('dvvcAmount')?.value),
+      situation:$('dvvcSituation')?.value||SITUATIONS[0],
+      orderNote:$('dvvcOrderNote')?.value||'',
+      processNote:$('dvvcProcessNote')?.value||'',
+      createdAt:old?.createdAt||Date.now(),
+      updatedAt:Date.now(),
+      logs:old?.logs||[]
+    });
+    askActor(actor=>{
+      const action=old?`sửa đơn ${code}: trạng thái ${old.status||''} -> ${next.status}, tình trạng ${old.situation||''} -> ${next.situation}, tiền ${moneyText(old.amount)} -> ${moneyText(next.amount)}`:`thêm đơn ${code}`;
+      next.logs=[...(next.logs||[]),logLine(actor,action)].slice(-300);
+    const targetMonth=currentMonthOf(next);
+    const oldMonth=old?currentMonthOf(old):targetMonth;
+    if(old&&oldMonth!==targetMonth&&!isAdmin())return toast('Nhân viên không được chuyển tháng của đơn; nhờ Admin chỉnh ngày.');
+    const saves=[];
+      if(old&&oldMonth!==targetMonth)saves.push(rowRef(oldMonth,old.id).remove());
+      saves.push(rowRef(targetMonth,next.id).set(next));
+      Promise.all(saves).then(()=>{closeModal('detailModal'); if(targetMonth!==state.month)listenMonth(targetMonth); toast('Đã lưu ĐVVC')});
+    });
+  };
+  window.dvvcQuickSave=function(rowId,field,value){
+    ensureStarted();
+    const old=getRow(rowId); if(!old)return;
+    if(old[field]===value)return;
+    const next={...old,[field]:value,updatedAt:Date.now(),logs:[...(old.logs||[])]};
+    askActor(actor=>{
+      next.logs.push(logLine(actor,`cập nhật ${field==='status'?'trạng thái':'tình trạng'} đơn ${old.code}: ${old[field]||''} -> ${value}`));
+      rowRef(currentMonthOf(old),old.id).set(next);
+    });
+  };
+  window.dvvcOpenNote=function(rowId,field){
+    ensureStarted();
+    const r=getRow(rowId); if(!r)return;
+    const label=field==='orderNote'?'Ghi chú đơn':'Ghi chú xử lý';
+    setDetail(label+' '+r.code,`<div class="form"><div class="full"><textarea id="dvvcNoteText" style="min-height:180px">${esc(r[field]||'')}</textarea></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveNote('${esc(rowId)}','${field}')">Lưu</button></div>`);
+  };
+  window.dvvcSaveNote=function(rowId,field){
+    ensureStarted();
+    const old=getRow(rowId); if(!old)return;
+    const nextText=($('dvvcNoteText')?.value||'').trim();
+    askActor(actor=>{
+      const next={...old,[field]:nextText,updatedAt:Date.now(),logs:[...(old.logs||[])]};
+      next.logs.push(logLine(actor,`cập nhật ${field==='orderNote'?'ghi chú đơn':'ghi chú xử lý'} ${old.code}: ${short(old[field])} -> ${short(nextText)}`));
+      rowRef(currentMonthOf(old),old.id).set(next).then(()=>{closeModal('detailModal');toast('Đã lưu ghi chú')});
+    });
+  };
+  window.dvvcDeleteRow=function(rowId){
+    ensureStarted();
+    if(!isAdmin())return toast('Chỉ Admin được xóa dòng ĐVVC');
+    const r=getRow(rowId); if(!r)return;
+    if(!confirm('Xóa đơn '+r.code+'?'))return;
+    rowRef(currentMonthOf(r),r.id).remove().then(()=>toast('Đã xóa dòng'));
+  };
+  function logHtml(logs){
+    logs=list(logs).sort((a,b)=>(b.at||0)-(a.at||0));
+    return logs.length?`<div class="dvvcHistoryList">${logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - ${esc(l.actor||'')}</br>${esc(l.action||l)}</div>`).join('')}</div>`:'<div class="copyBox">Chưa có lịch sử.</div>';
+  }
+  window.dvvcOpenRowHistory=function(rowId){
+    ensureStarted();
+    const r=getRow(rowId); if(!r)return;
+    setDetail('Lịch sử đơn '+r.code,logHtml(r.logs));
+  };
+  window.dvvcOpenHistoryTotal=function(){
+    ensureStarted();
+    const logs=[];
+    state.rows.forEach(r=>list(r.logs).forEach(l=>logs.push({...l,code:r.code})));
+    logs.sort((a,b)=>(b.at||0)-(a.at||0));
+    setDetail('Lịch sử tổng ĐVVC '+monthText(state.month),`<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - <b>${esc(l.code)}</b> - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử.'}</div>`);
+  };
+  window.dvvcOpenStatusSettings=function(){
+    ensureStarted();
+    if(!isAdmin())return toast('Chỉ Admin được sửa danh sách trạng thái');
+    const lines=allStatuses().map((s,i)=>`<div class="dvvcStatusLine"><input id="dvvcStatus_${i}" value="${esc(s)}"><button class="btn red" onclick="this.closest('.dvvcStatusLine').remove()">Xóa</button></div>`).join('');
+    setDetail('Tùy chỉnh trạng thái ĐVVC',`<div class="form"><div class="full dvvcStatusEditor" id="dvvcStatusEditor">${lines}</div><div class="full"><button class="btn gray" onclick="dvvcAddStatusLine()">+ Thêm trạng thái</button></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveStatuses()">Lưu</button></div>`);
+  };
+  window.dvvcAddStatusLine=function(){
+    const box=$('dvvcStatusEditor'); if(!box)return;
+    box.insertAdjacentHTML('beforeend',`<div class="dvvcStatusLine"><input value=""><button class="btn red" onclick="this.closest('.dvvcStatusLine').remove()">Xóa</button></div>`);
+  };
+  window.dvvcSaveStatuses=function(){
+    const arr=uniq(Array.from(document.querySelectorAll('#dvvcStatusEditor input')).map(i=>i.value));
+    if(!arr.length)return toast('Phải có ít nhất 1 trạng thái');
+    ref('statuses').set(arr).then(()=>{closeModal('detailModal');toast('Đã lưu trạng thái')});
+  };
+  window.dvvcSearchAllMonths=function(){
+    ensureStarted();
+    const q=String($('dvvcQuery')?.value||state.query||'').trim();
+    if(!q)return toast('Nhập mã vận đơn cần tìm');
+    const monthsRef=ref('months');
+    setDetail('Tìm đơn '+q,'<div class="copyBox">Đang tìm...</div>');
+    monthsRef.once('value').then(snap=>{
+      const months=snap.val()||{}, results=[];
+      Object.keys(months).forEach(m=>{
+        const rows=months[m]?.rows||{};
+        Object.keys(rows).forEach(id=>{
+          const r=normalizeRow(id,rows[id]);
+          if(String(r.code||'').includes(q))results.push({month:m,row:r});
+        });
+      });
+      const byMonth={};
+      results.forEach(x=>{byMonth[x.month]=byMonth[x.month]||[];byMonth[x.month].push(x.row)});
+      const html=results.length?`<div class="dvvcSearchResult">${Object.keys(byMonth).sort().reverse().map(m=>`<div class="dvvcSearchMonth"><h4>${esc(monthText(m))} (${byMonth[m].length})</h4><table><thead><tr><th>Ngày</th><th>Mã vận đơn</th><th>Trạng thái</th><th>Tiền</th><th>Tình trạng</th></tr></thead><tbody>${byMonth[m].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(r=>`<tr><td>${esc(dateText(r.date))}</td><td><b>${esc(r.code)}</b></td><td>${esc(r.status)}</td><td>${moneyText(r.amount)}</td><td>${esc(r.situation)}</td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`:`<div class="copyBox">Không tìm thấy mã ${esc(q)}.</div>`;
+      setDetail('Tìm đơn '+q,html);
+    });
+  };
+  const previousSwitch=window.switchTab;
+  window.switchTab=function(tab){
+    if(tab==='dvvc'){
+      ['today','daily','master','devices','dongKiem','tonKho'].forEach(t=>{const el=$(t+'Tab');if(el)el.classList.add('hidden')});
+      const el=$('dvvcTab'); if(el)el.classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+      ensureStarted(); render(); return;
+    }
+    if(typeof previousSwitch==='function')previousSwitch(tab);
+    const el=$('dvvcTab'); if(el)el.classList.add('hidden');
+    const btn=document.querySelector('.tab[data-tab="dvvc"]'); if(btn)btn.classList.remove('active');
+  };
+  window.DVVC={render:()=>{ensureStarted();render()}};
+})();
+</script>
 <script id="DONG_KIEM_MODULE_20260613">
 (function(){
   const ROOT='dongKiem';
@@ -829,7 +1150,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const oldSwitch=window.switchTab;
   window.switchTab=function(t){
     if(t==='dongKiem'){
-      ['today','daily','master','devices','tonKho'].forEach(x=>{const el=$(x+'Tab');if(el)el.classList.add('hidden')});
+      ['today','daily','master','devices','dvvc','tonKho'].forEach(x=>{const el=$(x+'Tab');if(el)el.classList.add('hidden')});
       const dk=$('dongKiemTab'); if(dk)dk.classList.remove('hidden');
       document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
       ensureStarted(); renderDongKiem(); return;
