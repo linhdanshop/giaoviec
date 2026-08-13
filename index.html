@@ -521,6 +521,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const isAdmin=()=>typeof roleAdmin==='function'&&roleAdmin();
   const askActor=cb=>{ if(isAdmin()) return cb('Admin'); if(typeof withActor==='function') return withActor(cb); cb('Nhân viên'); };
   const ref=(...parts)=>typeof rootRef==='function'?rootRef(ROOT,...parts):null;
+  function fail(action,err){
+    console.error('[DonGiao]',action,err);
+    toast(action+' lỗi: '+(err?.message||err?.code||err||'không rõ nguyên nhân'));
+  }
   function monthStr(d=new Date()){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)}
   function todayStr(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
   function monthText(m){const [y,mo]=String(m||'').split('-');return mo&&y?'Tháng '+Number(mo)+'/'+y:m}
@@ -717,7 +721,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const saves=[];
       if(old&&oldMonth!==targetMonth)saves.push(rowRef(oldMonth,old.id).remove());
       saves.push(rowRef(targetMonth,next.id).set(next));
-      Promise.all(saves).then(()=>{closeModal('detailModal'); if(targetMonth!==state.month)listenMonth(targetMonth); toast('Đã lưu Đơn Giao')});
+      Promise.all(saves).then(()=>{closeModal('detailModal'); if(targetMonth!==state.month)listenMonth(targetMonth); toast('Đã lưu Đơn Giao')}).catch(err=>fail('Lưu Đơn Giao',err));
     });
   };
   window.dvvcQuickSave=function(rowId,field,value){
@@ -727,7 +731,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const next={...old,[field]:value,updatedAt:Date.now(),logs:[...(old.logs||[])]};
     askActor(actor=>{
       next.logs.push(logLine(actor,`cập nhật ${field==='status'?'trạng thái':'tình trạng'} đơn ${old.code}: ${old[field]||''} -> ${value}`));
-      rowRef(currentMonthOf(old),old.id).set(next);
+      rowRef(currentMonthOf(old),old.id).set(next).catch(err=>fail('Cập nhật Đơn Giao',err));
     });
   };
   window.dvvcOpenNote=function(rowId,field){
@@ -743,7 +747,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     askActor(actor=>{
       const next={...old,[field]:nextText,updatedAt:Date.now(),logs:[...(old.logs||[])]};
       next.logs.push(logLine(actor,`cập nhật ${field==='orderNote'?'ghi chú đơn':'ghi chú xử lý'} ${old.code}: ${short(old[field])} -> ${short(nextText)}`));
-      rowRef(currentMonthOf(old),old.id).set(next).then(()=>{closeModal('detailModal');toast('Đã lưu ghi chú')});
+      rowRef(currentMonthOf(old),old.id).set(next).then(()=>{closeModal('detailModal');toast('Đã lưu ghi chú')}).catch(err=>fail('Lưu ghi chú Đơn Giao',err));
     });
   };
   window.dvvcDeleteRow=function(rowId){
@@ -751,7 +755,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(!isAdmin())return toast('Chỉ Admin được xóa dòng ĐVVC');
     const r=getRow(rowId); if(!r)return;
     if(!confirm('Xóa đơn '+r.code+'?'))return;
-    rowRef(currentMonthOf(r),r.id).remove().then(()=>toast('Đã xóa dòng'));
+      rowRef(currentMonthOf(r),r.id).remove().then(()=>toast('Đã xóa dòng')).catch(err=>fail('Xóa Đơn Giao',err));
   };
   function logHtml(logs){
     logs=list(logs).sort((a,b)=>(b.at||0)-(a.at||0));
@@ -783,7 +787,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(!isAdmin())return toast('Chỉ Admin được cấu hình trạng thái');
     const arr=uniq(Array.from(document.querySelectorAll('#dvvcStatusEditor input')).map(i=>i.value));
     if(!arr.length)return toast('Phải có ít nhất 1 trạng thái');
-    ref('statuses').set(arr).then(()=>{closeModal('detailModal');toast('Đã lưu trạng thái')});
+    ref('statuses').set(arr).then(()=>{closeModal('detailModal');toast('Đã lưu trạng thái')}).catch(err=>fail('Lưu trạng thái Đơn Giao',err));
   };
   window.dvvcSearchAllMonths=function(){
     ensureStarted();
