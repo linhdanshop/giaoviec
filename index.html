@@ -586,9 +586,13 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     return {...log,code:String(row?.code||'').trim(),rowId:row?.id||'',month:currentMonthOf(row||{})};
   }
   function totalHistoryRef(month){return ref('history',month)}
-  function saveTotalLog(month,log){
+  function saveTotalLog(month,log,required){
     const h=totalHistoryRef(month);
-    return h?h.push(log).catch(err=>console.warn('[DonGiao history]',err)):Promise.resolve();
+    if(!h){
+      return required?Promise.reject(new Error('Khong mo duoc nhanh lich su tong')):Promise.resolve();
+    }
+    const p=h.push(log);
+    return required?p:p.catch(err=>console.warn('[DonGiao history]',err));
   }
   function rowRef(month,id){return ref('months',month,'rows',id)}
   function monthRowsRef(month){return ref('months',month,'rows')}
@@ -649,10 +653,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       .dvvcNoteBtn{width:100%;max-width:240px;border:1px solid #dbe5f2;background:#fff;border-radius:9px;padding:8px 10px;text-align:left;font-weight:800;cursor:pointer;white-space:pre-wrap;word-break:break-word;line-height:1.35;max-height:56px;overflow:hidden}
       .dvvcStatusSelect{font-weight:1000}.dvvcStatusName{display:block;font-weight:1000;line-height:1.15}.dvvcImageBtn{border:0;border-radius:999px;background:#eef2ff;color:#1d4ed8;padding:7px 10px;font-weight:1000;cursor:pointer;white-space:nowrap}.dvvcImageBtn.empty{background:#f1f5f9;color:#64748b}.dvvcImgItem{display:inline-flex;align-items:center;margin:0 8px 8px 0}.dvvcImgItem img{width:82px;height:62px;object-fit:cover;border:1px solid #dbe5f2;border-radius:9px;cursor:pointer}.dvvcImgDel{width:26px;height:26px;border:0;border-radius:999px;background:#dc2626;color:#fff;font-weight:1000;margin-left:-10px;cursor:pointer}.dvvcImagePreview{min-height:48px}
       .dvvcNoteBtn.empty{color:#94a3b8}.dvvcActions{display:flex;gap:6px;align-items:center}.dvvcMiniBtn{height:34px;border:0;border-radius:9px;padding:0 10px;font-weight:900;cursor:pointer}.dvvcMiniBtn.edit{background:#e9eef6}.dvvcMiniBtn.del{background:#dc2626;color:#fff}
-      .dvvcHistorySearch{margin:0 0 10px}.dvvcHistorySearch input{width:100%;height:42px;border:1px solid #dbe5f2;border-radius:10px;padding:0 12px;font-weight:800}.dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
+      .dvvcHistoryTools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin:0 0 10px}.dvvcHistorySearch{margin:0}.dvvcHistorySearch input{width:100%;height:42px;border:1px solid #dbe5f2;border-radius:10px;padding:0 12px;font-weight:800}.dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
       .dvvcStatusEditor{display:grid;gap:8px}.dvvcStatusLine{display:grid;grid-template-columns:1fr 76px;gap:8px}.dvvcStatusLine input{height:40px;border:1px solid #dbe5f2;border-radius:10px;padding:0 10px;font-weight:800}.dvvcSearchResult{display:grid;gap:10px}.dvvcSearchMonth{border:1px solid #dbe5f2;border-radius:12px;overflow:hidden}.dvvcSearchMonth h4{margin:0;padding:10px 12px;background:#eef4fb}.dvvcSearchMonth table{width:100%;border-collapse:collapse}.dvvcSearchMonth th,.dvvcSearchMonth td{padding:8px;border-bottom:1px solid #e7edf5;text-align:left}
       @media(max-width:900px){.dvvcToolbar{grid-template-columns:1fr 1fr}.dvvcToolbar .btn{height:42px}.dvvcStats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:760px){.dvvcToolbar{grid-template-columns:1fr}.dvvcBox{padding:9px}.dvvcTableWrap{overflow:visible}.dvvcTable{display:block;min-width:0}.dvvcTable thead{display:none}.dvvcTable tbody{display:block}.dvvcTable tr{display:block;border:1px solid #dbe5f2;border-radius:14px;background:#fff;margin:10px 0;padding:10px}.dvvcTable td{display:grid;grid-template-columns:108px minmax(0,1fr);gap:10px;border:0;padding:6px 0}.dvvcTable td:before{content:attr(data-label);font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900}.dvvcNoteBtn{max-width:none}.dvvcSelect{max-width:none;width:100%}.dvvcActions{justify-content:flex-start}.dvvcSearchMonth{overflow:auto}.dvvcSearchMonth table{min-width:760px}}
+      @media(max-width:760px){.dvvcToolbar{grid-template-columns:1fr}.dvvcBox{padding:9px}.dvvcTableWrap{overflow:visible}.dvvcTable{display:block;min-width:0}.dvvcTable thead{display:none}.dvvcTable tbody{display:block}.dvvcTable tr{display:block;border:1px solid #dbe5f2;border-radius:14px;background:#fff;margin:10px 0;padding:10px}.dvvcTable td{display:grid;grid-template-columns:108px minmax(0,1fr);gap:10px;border:0;padding:6px 0}.dvvcTable td:before{content:attr(data-label);font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900}.dvvcNoteBtn{max-width:none}.dvvcSelect{max-width:none;width:100%}.dvvcActions{justify-content:flex-start}.dvvcSearchMonth{overflow:auto}.dvvcSearchMonth table{min-width:760px}.dvvcHistoryTools{grid-template-columns:1fr}}
     </style>`);
   }
   function ensureStarted(){
@@ -840,7 +844,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     askActor(actor=>{
       const month=currentMonthOf(r);
       const log=logLine(actor,`xóa dòng đơn ${r.code}: trạng thái ${r.status||''}, tình trạng ${r.situation||''}, tiền ${moneyText(r.amount)}`);
-      Promise.all([saveTotalLog(month,totalLog(r,log)),rowRef(month,r.id).remove()]).then(()=>toast('Đã xóa dòng')).catch(err=>fail('Xóa Đơn Vấn Đề',err));
+      saveTotalLog(month,totalLog(r,log),true)
+        .then(()=>rowRef(month,r.id).remove())
+        .then(()=>toast('Đã xóa dòng'))
+        .catch(err=>fail('Xóa Đơn Vấn Đề',err));
     });
   };
   function logHtml(logs){
@@ -866,13 +873,22 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     });
     return Array.from(map.values()).sort((a,b)=>(b.at||0)-(a.at||0));
   }
+  function loadTotalHistory(month){
+    const rowLogs=totalHistoryFromRows();
+    return totalHistoryRef(month).once('value').then(snap=>{
+      const saved=list(snap.val());
+      const cleared=saved.some(l=>l&&l.cleared);
+      state.totalLogs=mergeTotalLogs(saved,cleared?[]:rowLogs);
+      return state.totalLogs;
+    });
+  }
   function totalHistoryHtml(query){
     const q=String(query||'').trim().toLowerCase();
     const logs=list(state.totalLogs).filter(l=>{
       if(!q)return true;
       return [l.code,l.actor,l.action].join(' ').toLowerCase().includes(q);
     });
-    return `<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - <b>${esc(l.code||'')}</b> - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử phù hợp.'}</div>`;
+    return `<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b>${l.code?` - <b>${esc(l.code)}</b>`:''} - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử phù hợp.'}</div>`;
   }
   window.dvvcFilterHistoryTotal=function(v){
     const box=$('dvvcHistoryTotalBox'); if(box)box.innerHTML=totalHistoryHtml(v);
@@ -880,12 +896,27 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   window.dvvcOpenHistoryTotal=function(){
     ensureStarted();
     setDetail('Lịch sử tổng Đơn Vấn Đề '+monthText(state.month),'<div class="copyBox">Đang tải lịch sử...</div>');
-    const rowLogs=totalHistoryFromRows();
-    totalHistoryRef(state.month).once('value').then(snap=>{
-      state.totalLogs=mergeTotalLogs(list(snap.val()),rowLogs);
-      setDetail('Lịch sử tổng Đơn Vấn Đề '+monthText(state.month),`<div class="dvvcHistorySearch"><input id="dvvcHistorySearch" placeholder="Tìm mã vận đơn đã thao tác..." oninput="dvvcFilterHistoryTotal(this.value)"></div><div id="dvvcHistoryTotalBox">${totalHistoryHtml('')}</div>`);
+    loadTotalHistory(state.month).then(()=>{
+      const clearBtn=isAdmin()?`<button class="btn red" onclick="dvvcDeleteHistoryMonth()">Xóa lịch sử tháng</button>`:'';
+      setDetail('Lịch sử tổng Đơn Vấn Đề '+monthText(state.month),`<div class="dvvcHistoryTools"><div class="dvvcHistorySearch"><input id="dvvcHistorySearch" placeholder="Tìm mã vận đơn đã thao tác..." oninput="dvvcFilterHistoryTotal(this.value)"></div>${clearBtn}</div><div id="dvvcHistoryTotalBox">${totalHistoryHtml('')}</div>`);
       setTimeout(()=>$('dvvcHistorySearch')?.focus(),0);
     }).catch(err=>fail('Tải lịch sử tổng Đơn Vấn Đề',err));
+  };
+  window.dvvcDeleteHistoryMonth=function(){
+    ensureStarted();
+    if(!isAdmin())return toast('Chỉ Admin được xóa lịch sử tháng');
+    const month=state.month;
+    if(!confirm('Xóa toàn bộ lịch sử tổng Đơn Vấn Đề '+monthText(month)+'?'))return;
+    askActor(actor=>{
+      const h=totalHistoryRef(month);
+      if(!h)return toast('Không mở được nhánh lịch sử tổng');
+      const marker={at:Date.now(),actor:actor||'Admin',action:'xóa lịch sử tổng tháng '+monthText(month),code:'',month,cleared:true};
+      h.set({__cleared:marker}).then(()=>{
+        state.totalLogs=[marker];
+        dvvcFilterHistoryTotal($('dvvcHistorySearch')?.value||'');
+        toast('Đã xóa lịch sử tháng '+monthText(month));
+      }).catch(err=>fail('Xóa lịch sử tổng Đơn Vấn Đề',err));
+    });
   };
   window.dvvcOpenStatusSettings=function(){
     ensureStarted();

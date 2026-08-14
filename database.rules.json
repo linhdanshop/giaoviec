@@ -26,7 +26,11 @@
       },
       "history": {
         "$month": {
-          ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')"
+          ".read": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')",
+          ".write": "auth != null && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com')",
+          "$log": {
+            ".write": "auth != null && newData.exists() && (auth.token.email == 'kythuatlado@gmail.com' || auth.token.email == 'tranvanan180393@gmail.com' || auth.token.email == 'shoplinhdan2026@gmail.com')"
+          }
         }
       },
       "months": {
