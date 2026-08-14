@@ -536,7 +536,8 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function uniq(arr){return Array.from(new Set(arr.map(x=>String(x||'').trim()).filter(Boolean)))}
   function short(v,len=70){v=String(v||'').trim();return v.length>len?v.slice(0,len)+'...':v}
   function allStatuses(extra){
-    return uniq([...(state.statuses||[]),...(extra?[extra]:[]),...DEFAULT_STATUSES]);
+    const base=(state.statuses&&state.statuses.length)?state.statuses:DEFAULT_STATUSES;
+    return uniq([...base,...(extra?[extra]:[])]);
   }
   const STATUS_TONES=[
     {fg:'#b45309',bg:'#fff7ed',bd:'#fdba74'},
@@ -609,6 +610,34 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const target=String(code||'').trim();
     return state.rows.find(r=>r.id!==ignoreId&&r.code===target&&currentMonthOf(r)===(month||state.month));
   }
+  function findExistingByCodeAllMonths(code,ignoreId){
+    const target=String(code||'').trim();
+    if(!target)return Promise.resolve(null);
+    const monthsRef=ref('months');
+    if(!monthsRef)return Promise.resolve(null);
+    return monthsRef.once('value').then(snap=>{
+      const months=snap.val()||{};
+      const keys=Object.keys(months).sort().reverse();
+      for(const m of keys){
+        const rows=months[m]?.rows||{};
+        for(const id of Object.keys(rows)){
+          if(id===ignoreId)continue;
+          const r=normalizeRow(id,rows[id]);
+          if(r.code===target)return {month:m,row:r};
+        }
+      }
+      return null;
+    });
+  }
+  function showDuplicateCode(code,dup){
+    const month=dup?.month||state.month;
+    alert('Mã vận đơn '+code+' đã tồn tại ở '+monthText(month)+'. Web sẽ chuyển đến tháng chứa đơn đó.');
+    closeModal('detailModal');
+    state.query=code;
+    state.filterStatus='Tất cả';
+    state.filterSituation='Tất cả';
+    listenMonth(month);
+  }
   function setSaving(on){
     state.saving=!!on;
     const btn=$('dvvcSaveBtn');
@@ -649,6 +678,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       .dvvcBox{padding:12px}.dvvcTableWrap{overflow:auto}.dvvcTable{width:100%;min-width:1260px;border-collapse:collapse}
       .dvvcTable th{background:#eef4fb;text-align:left;padding:10px;border-bottom:1px solid #cbd5e1;white-space:nowrap}
       .dvvcTable td{padding:9px;border-bottom:1px solid #e7edf5;vertical-align:middle}.dvvcTable tr:hover td{background:#f8fbff}
+      .dvvcTable tr.dvvcDoneRow td{background:#fffbe6}.dvvcTable tr.dvvcDoneRow:hover td{background:#fef3c7}
       .dvvcCode{font-weight:1000;color:#0f172a}.dvvcMoney{font-weight:900;text-align:right;white-space:nowrap}.dvvcSelect{height:36px;border:1px solid #dbe5f2;border-radius:9px;padding:0 8px;background:#fff;font-weight:800;max-width:180px}
       .dvvcNoteBtn{width:100%;max-width:240px;border:1px solid #dbe5f2;background:#fff;border-radius:9px;padding:8px 10px;text-align:left;font-weight:800;cursor:pointer;white-space:pre-wrap;word-break:break-word;line-height:1.35;max-height:56px;overflow:hidden}
       .dvvcStatusSelect{font-weight:1000}.dvvcStatusName{display:block;font-weight:1000;line-height:1.15}.dvvcImageBtn{border:0;border-radius:999px;background:#eef2ff;color:#1d4ed8;padding:7px 10px;font-weight:1000;cursor:pointer;white-space:nowrap}.dvvcImageBtn.empty{background:#f1f5f9;color:#64748b}.dvvcImgItem{display:inline-flex;align-items:center;margin:0 8px 8px 0}.dvvcImgItem img{width:82px;height:62px;object-fit:cover;border:1px solid #dbe5f2;border-radius:9px;cursor:pointer}.dvvcImgDel{width:26px;height:26px;border:0;border-radius:999px;background:#dc2626;color:#fff;font-weight:1000;margin-left:-10px;cursor:pointer}.dvvcImagePreview{min-height:48px}
@@ -656,7 +686,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       .dvvcHistoryTools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin:0 0 10px}.dvvcHistorySearch{margin:0}.dvvcHistorySearch input{width:100%;height:42px;border:1px solid #dbe5f2;border-radius:10px;padding:0 12px;font-weight:800}.dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
       .dvvcStatusEditor{display:grid;gap:8px}.dvvcStatusLine{display:grid;grid-template-columns:1fr 76px;gap:8px}.dvvcStatusLine input{height:40px;border:1px solid #dbe5f2;border-radius:10px;padding:0 10px;font-weight:800}.dvvcSearchResult{display:grid;gap:10px}.dvvcSearchMonth{border:1px solid #dbe5f2;border-radius:12px;overflow:hidden}.dvvcSearchMonth h4{margin:0;padding:10px 12px;background:#eef4fb}.dvvcSearchMonth table{width:100%;border-collapse:collapse}.dvvcSearchMonth th,.dvvcSearchMonth td{padding:8px;border-bottom:1px solid #e7edf5;text-align:left}
       @media(max-width:900px){.dvvcToolbar{grid-template-columns:1fr 1fr}.dvvcToolbar .btn{height:42px}.dvvcStats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(max-width:760px){.dvvcToolbar{grid-template-columns:1fr}.dvvcBox{padding:9px}.dvvcTableWrap{overflow:visible}.dvvcTable{display:block;min-width:0}.dvvcTable thead{display:none}.dvvcTable tbody{display:block}.dvvcTable tr{display:block;border:1px solid #dbe5f2;border-radius:14px;background:#fff;margin:10px 0;padding:10px}.dvvcTable td{display:grid;grid-template-columns:108px minmax(0,1fr);gap:10px;border:0;padding:6px 0}.dvvcTable td:before{content:attr(data-label);font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900}.dvvcNoteBtn{max-width:none}.dvvcSelect{max-width:none;width:100%}.dvvcActions{justify-content:flex-start}.dvvcSearchMonth{overflow:auto}.dvvcSearchMonth table{min-width:760px}.dvvcHistoryTools{grid-template-columns:1fr}}
+      @media(max-width:760px){.dvvcToolbar{grid-template-columns:1fr}.dvvcBox{padding:9px}.dvvcTableWrap{overflow:visible}.dvvcTable{display:block;min-width:0}.dvvcTable thead{display:none}.dvvcTable tbody{display:block}.dvvcTable tr{display:block;border:1px solid #dbe5f2;border-radius:14px;background:#fff;margin:10px 0;padding:10px}.dvvcTable tr.dvvcDoneRow{background:#fffbe6}.dvvcTable td{display:grid;grid-template-columns:108px minmax(0,1fr);gap:10px;border:0;padding:6px 0}.dvvcTable td:before{content:attr(data-label);font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900}.dvvcNoteBtn{max-width:none}.dvvcSelect{max-width:none;width:100%}.dvvcActions{justify-content:flex-start}.dvvcSearchMonth{overflow:auto}.dvvcSearchMonth table{min-width:760px}.dvvcHistoryTools{grid-template-columns:1fr}}
     </style>`);
   }
   function ensureStarted(){
@@ -703,7 +733,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const statusOpts=allStatuses(r.status).map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('');
     const situationOpts=SITUATIONS.map(s=>`<option ${r.situation===s?'selected':''}>${esc(s)}</option>`).join('');
     const images=list(r.images);
-    return `<tr>
+    return `<tr class="${r.situation===SITUATIONS[1]?'dvvcDoneRow':''}">
       <td data-label="STT">${stt}</td>
       <td data-label="Ngày">${esc(dateText(r.date))}</td>
       <td data-label="Mã Vận đơn" class="dvvcCode">${esc(r.code)}</td>
@@ -755,9 +785,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const date=($('dvvcDate')?.value||todayStr()).trim();
     const code=($('dvvcCode')?.value||'').trim();
     if(!code)return toast('Nhập mã vận đơn');
-    const targetMonth=String(date).slice(0,7);
-    const duplicate=!old?findExistingByCode(code,targetMonth):null;
-    const base=old||duplicate;
+    const base=old||null;
     const next=normalizeRow(base?.id||('dvvc_'+Date.now()+'_'+Math.random().toString(16).slice(2)),{
       date,code,
       status:$('dvvcStatus')?.value||DEFAULT_STATUSES[0],
@@ -770,9 +798,14 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       updatedAt:Date.now(),
       logs:base?.logs||[]
     });
-    askActor(actor=>{
-      if(state.saving)return;
-      setSaving(true);
+    setSaving(true);
+    findExistingByCodeAllMonths(code,base?.id).then(duplicate=>{
+      if(duplicate){
+        setSaving(false);
+        showDuplicateCode(code,duplicate);
+        return;
+      }
+      askActor(actor=>{
       const action=base?`sửa đơn ${code}: trạng thái ${base.status||''} -> ${next.status}, tình trạng ${base.situation||''} -> ${next.situation}, tiền ${moneyText(base.amount)} -> ${moneyText(next.amount)}, ảnh ${list(base.images).length} -> ${list(next.images).length}`:`thêm đơn ${code}`;
       const log=logLine(actor,action);
       next.logs=[...(next.logs||[]),log].slice(-300);
@@ -786,9 +819,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
         saveTotalLog(targetMonth,totalLog(next,log));
         closeModal('detailModal');
         if(targetMonth!==state.month)listenMonth(targetMonth);
-        toast(duplicate?'Mã vận đơn đã có, đã cập nhật dòng hiện có':'Đã lưu Đơn Vấn Đề');
+        toast('Đã lưu Đơn Vấn Đề');
       }).catch(err=>fail('Lưu Đơn Vấn Đề',err)).finally(()=>setSaving(false));
-    });
+      });
+    }).catch(err=>{setSaving(false);fail('Kiểm tra trùng mã vận đơn',err);});
   };
   window.dvvcQuickSave=function(rowId,field,value){
     ensureStarted();
@@ -989,7 +1023,13 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(!isAdmin())return toast('Chỉ Admin được cấu hình trạng thái');
     const arr=uniq(Array.from(document.querySelectorAll('#dvvcStatusEditor input')).map(i=>i.value));
     if(!arr.length)return toast('Phải có ít nhất 1 trạng thái');
-    ref('statuses').set(arr).then(()=>{closeModal('detailModal');toast('Đã lưu trạng thái')}).catch(err=>fail('Lưu trạng thái Đơn Vấn Đề',err));
+    ref('statuses').set({items:arr}).then(()=>{
+      state.statuses=arr;
+      if(!allStatuses().includes(state.filterStatus))state.filterStatus='Tất cả';
+      closeModal('detailModal');
+      render();
+      toast('Đã lưu trạng thái');
+    }).catch(err=>fail('Lưu trạng thái Đơn Vấn Đề',err));
   };
   window.dvvcSearchAllMonths=function(){
     ensureStarted();
