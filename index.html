@@ -538,6 +538,32 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function allStatuses(extra){
     return uniq([...(state.statuses||[]),...(extra?[extra]:[]),...DEFAULT_STATUSES]);
   }
+  const STATUS_TONES=[
+    {fg:'#b45309',bg:'#fff7ed',bd:'#fdba74'},
+    {fg:'#dc2626',bg:'#fef2f2',bd:'#fecaca'},
+    {fg:'#2563eb',bg:'#eff6ff',bd:'#bfdbfe'},
+    {fg:'#15803d',bg:'#f0fdf4',bd:'#bbf7d0'},
+    {fg:'#7c3aed',bg:'#f5f3ff',bd:'#ddd6fe'},
+    {fg:'#be185d',bg:'#fdf2f8',bd:'#fbcfe8'},
+    {fg:'#0f766e',bg:'#f0fdfa',bd:'#99f6e4'},
+    {fg:'#475569',bg:'#f8fafc',bd:'#cbd5e1'}
+  ];
+  function statusTone(text){
+    const s=String(text||'');
+    let n=0; for(let i=0;i<s.length;i++)n=(n+s.charCodeAt(i)*(i+1))%STATUS_TONES.length;
+    return STATUS_TONES[n]||STATUS_TONES[0];
+  }
+  function statusTextStyle(text){const t=statusTone(text);return `color:${t.fg};background:${t.bg};border-color:${t.bd}`;}
+  function statusCardStyle(text){const t=statusTone(text);return `background:${t.bg};border-color:${t.bd}`;}
+  function imagesFromPreview(previewId){
+    return Array.from(($(previewId)?.querySelectorAll('img')||[])).map(img=>img.src).filter(Boolean);
+  }
+  function previewImageHtml(previewId,src){
+    return `<span class="dvvcImgItem"><img src="${esc(src)}" onclick="event.stopPropagation();openPreviewImages('${esc(previewId)}')"><button type="button" class="dvvcImgDel" onclick="event.stopPropagation();this.closest('.dvvcImgItem').remove()">×</button></span>`;
+  }
+  function previewImagesHtml(previewId,images){
+    return list(images).map(src=>previewImageHtml(previewId,src)).join('');
+  }
   function normalizeRow(id,r){
     r=r||{};
     return {
@@ -549,6 +575,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       orderNote:String(r.orderNote||''),
       situation:r.situation||SITUATIONS[0],
       processNote:String(r.processNote||''),
+      images:list(r.images),
       createdAt:Number(r.createdAt||Date.now()),
       updatedAt:Number(r.updatedAt||r.createdAt||Date.now()),
       logs:list(r.logs)
@@ -598,11 +625,12 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       .dvvcStat{border:1px solid #dbe5f2;border-radius:12px;background:#fff;padding:10px;cursor:pointer;font-weight:900}
       .dvvcStat b{display:block;font-size:20px;color:#0f172a}.dvvcStat span{color:#64748b;font-size:12px}.dvvcStat strong{display:block;margin-top:4px;color:#15803d}
       .dvvcStat.active{outline:2px solid #2563eb;background:#eff6ff}.dvvcStat.total{background:#eef6ff}.dvvcStat.money{background:#f5f3ff}
-      .dvvcBox{padding:12px}.dvvcTableWrap{overflow:auto}.dvvcTable{width:100%;min-width:1180px;border-collapse:collapse}
+      .dvvcBox{padding:12px}.dvvcTableWrap{overflow:auto}.dvvcTable{width:100%;min-width:1260px;border-collapse:collapse}
       .dvvcTable th{background:#eef4fb;text-align:left;padding:10px;border-bottom:1px solid #cbd5e1;white-space:nowrap}
       .dvvcTable td{padding:9px;border-bottom:1px solid #e7edf5;vertical-align:middle}.dvvcTable tr:hover td{background:#f8fbff}
       .dvvcCode{font-weight:1000;color:#0f172a}.dvvcMoney{font-weight:900;text-align:right;white-space:nowrap}.dvvcSelect{height:36px;border:1px solid #dbe5f2;border-radius:9px;padding:0 8px;background:#fff;font-weight:800;max-width:180px}
       .dvvcNoteBtn{width:100%;max-width:240px;border:1px solid #dbe5f2;background:#fff;border-radius:9px;padding:8px 10px;text-align:left;font-weight:800;cursor:pointer;white-space:pre-wrap;word-break:break-word;line-height:1.35;max-height:56px;overflow:hidden}
+      .dvvcStatusSelect{font-weight:1000}.dvvcStatusName{display:block;font-weight:1000;line-height:1.15}.dvvcImageBtn{border:0;border-radius:999px;background:#eef2ff;color:#1d4ed8;padding:7px 10px;font-weight:1000;cursor:pointer;white-space:nowrap}.dvvcImageBtn.empty{background:#f1f5f9;color:#64748b}.dvvcImgItem{display:inline-flex;align-items:center;margin:0 8px 8px 0}.dvvcImgItem img{width:82px;height:62px;object-fit:cover;border:1px solid #dbe5f2;border-radius:9px;cursor:pointer}.dvvcImgDel{width:26px;height:26px;border:0;border-radius:999px;background:#dc2626;color:#fff;font-weight:1000;margin-left:-10px;cursor:pointer}.dvvcImagePreview{min-height:48px}
       .dvvcNoteBtn.empty{color:#94a3b8}.dvvcActions{display:flex;gap:6px;align-items:center}.dvvcMiniBtn{height:34px;border:0;border-radius:9px;padding:0 10px;font-weight:900;cursor:pointer}.dvvcMiniBtn.edit{background:#e9eef6}.dvvcMiniBtn.del{background:#dc2626;color:#fff}
       .dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
       .dvvcStatusEditor{display:grid;gap:8px}.dvvcStatusLine{display:grid;grid-template-columns:1fr 76px;gap:8px}.dvvcStatusLine input{height:40px;border:1px solid #dbe5f2;border-radius:10px;padding:0 10px;font-weight:800}.dvvcSearchResult{display:grid;gap:10px}.dvvcSearchMonth{border:1px solid #dbe5f2;border-radius:12px;overflow:hidden}.dvvcSearchMonth h4{margin:0;padding:10px 12px;background:#eef4fb}.dvvcSearchMonth table{width:100%;border-collapse:collapse}.dvvcSearchMonth th,.dvvcSearchMonth td{padding:8px;border-bottom:1px solid #e7edf5;text-align:left}
@@ -635,7 +663,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     <div class="card dvvcBox">
       <div class="section-title" style="margin:0 0 8px"><h2>Danh sách Đơn Vấn Đề - ${esc(monthText(state.month))}</h2>${isAdmin()?'<button class="btn gray" onclick="dvvcOpenStatusSettings()">Trạng thái</button>':''}</div>
       ${statsHtml()}
-      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="10" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu Đơn Vấn Đề trong tháng này</td></tr>'}</tbody></table></div>
+      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Ảnh</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="11" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu Đơn Vấn Đề trong tháng này</td></tr>'}</tbody></table></div>
     </div>`;
   }
   function statsHtml(){
@@ -645,18 +673,20 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const totalSum=rows.reduce((s,r)=>s+money(r.amount),0);
     const cards=[`<div class="dvvcStat total ${state.filterStatus==='Tất cả'?'active':''}" onclick="dvvcSetStatusFilter('Tất cả')"><b>${rows.length}</b><span>Tổng đơn</span><strong>${moneyText(totalSum)}</strong></div>`];
     Object.keys(groups).sort((a,b)=>groups[b].sum-groups[a].sum).forEach(k=>{
-      cards.push(`<div class="dvvcStat money ${state.filterStatus===k?'active':''}" onclick="dvvcSetStatusFilter('${esc(k)}')"><b>${esc(k)}</b><span>${groups[k].count} đơn</span><strong>${moneyText(groups[k].sum)}</strong></div>`);
+      cards.push(`<div class="dvvcStat money ${state.filterStatus===k?'active':''}" style="${statusCardStyle(k)}" onclick="dvvcSetStatusFilter('${esc(k)}')"><b style="color:${statusTone(k).fg}">${esc(k)}</b><span>${groups[k].count} đơn</span><strong>${moneyText(groups[k].sum)}</strong></div>`);
     });
     return `<div class="dvvcStats">${cards.join('')}</div>`;
   }
   function rowHtml(r,stt){
     const statusOpts=allStatuses(r.status).map(s=>`<option ${r.status===s?'selected':''}>${esc(s)}</option>`).join('');
     const situationOpts=SITUATIONS.map(s=>`<option ${r.situation===s?'selected':''}>${esc(s)}</option>`).join('');
+    const images=list(r.images);
     return `<tr>
       <td data-label="STT">${stt}</td>
       <td data-label="Ngày">${esc(dateText(r.date))}</td>
       <td data-label="Mã Vận đơn" class="dvvcCode">${esc(r.code)}</td>
-      <td data-label="Trạng thái"><select class="dvvcSelect" onchange="dvvcQuickSave('${esc(r.id)}','status',this.value)">${statusOpts}</select></td>
+      <td data-label="Ảnh"><button class="dvvcImageBtn ${images.length?'':'empty'}" onclick="dvvcOpenImages('${esc(r.id)}')">${images.length?'📷 '+images.length+' ảnh':'Thêm ảnh'}</button></td>
+      <td data-label="Trạng thái"><select class="dvvcSelect dvvcStatusSelect" style="${statusTextStyle(r.status)}" onchange="dvvcQuickSave('${esc(r.id)}','status',this.value)">${statusOpts}</select></td>
       <td data-label="Tiền Cần Xử Lý" class="dvvcMoney">${moneyText(r.amount)}</td>
       <td data-label="Ghi chú đơn"><button class="dvvcNoteBtn ${r.orderNote?'':'empty'}" onclick="dvvcOpenNote('${esc(r.id)}','orderNote')">${esc(r.orderNote||'Ghi chú...')}</button></td>
       <td data-label="Tình trạng"><select class="dvvcSelect" onchange="dvvcQuickSave('${esc(r.id)}','situation',this.value)">${situationOpts}</select></td>
@@ -691,6 +721,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       <div><label>Trạng thái</label><select id="dvvcStatus">${statusOpts}</select></div>
       <div><label>Tiền Cần Xử Lý</label><input id="dvvcAmount" value="${esc(r.amount?moneyText(r.amount):'')}" placeholder="100.000"></div>
       <div><label>Tình trạng</label><select id="dvvcSituation">${situationOpts}</select></div>
+      <div class="full"><label>Ảnh dòng</label><div class="pastebox">Ctrl+V ảnh vào popup này để thêm nhanh</div><div id="dvvcImagePreview" class="previewImgs dvvcImagePreview">${previewImagesHtml('dvvcImagePreview',r.images)}</div></div>
       <div class="full"><label>Ghi chú đơn</label><textarea id="dvvcOrderNote" style="min-height:90px">${esc(r.orderNote)}</textarea></div>
       <div class="full"><label>Ghi chú xử lý</label><textarea id="dvvcProcessNote" style="min-height:90px">${esc(r.processNote)}</textarea></div>
     </div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveForm('${esc(rowId||'')}')">Lưu</button></div>`);
@@ -708,12 +739,13 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       situation:$('dvvcSituation')?.value||SITUATIONS[0],
       orderNote:$('dvvcOrderNote')?.value||'',
       processNote:$('dvvcProcessNote')?.value||'',
+      images:imagesFromPreview('dvvcImagePreview'),
       createdAt:old?.createdAt||Date.now(),
       updatedAt:Date.now(),
       logs:old?.logs||[]
     });
     askActor(actor=>{
-      const action=old?`sửa đơn ${code}: trạng thái ${old.status||''} -> ${next.status}, tình trạng ${old.situation||''} -> ${next.situation}, tiền ${moneyText(old.amount)} -> ${moneyText(next.amount)}`:`thêm đơn ${code}`;
+      const action=old?`sửa đơn ${code}: trạng thái ${old.status||''} -> ${next.status}, tình trạng ${old.situation||''} -> ${next.situation}, tiền ${moneyText(old.amount)} -> ${moneyText(next.amount)}, ảnh ${list(old.images).length} -> ${list(next.images).length}`:`thêm đơn ${code}`;
       next.logs=[...(next.logs||[]),logLine(actor,action)].slice(-300);
     const targetMonth=currentMonthOf(next);
     const oldMonth=old?currentMonthOf(old):targetMonth;
@@ -732,6 +764,21 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     askActor(actor=>{
       next.logs.push(logLine(actor,`cập nhật ${field==='status'?'trạng thái':'tình trạng'} đơn ${old.code}: ${old[field]||''} -> ${value}`));
       rowRef(currentMonthOf(old),old.id).set(next).catch(err=>fail('Cập nhật Đơn Vấn Đề',err));
+    });
+  };
+  window.dvvcOpenImages=function(rowId){
+    ensureStarted();
+    const r=getRow(rowId); if(!r)return;
+    setDetail('Ảnh đơn '+r.code,`<div class="form"><div class="full"><div class="pastebox">Ctrl+V ảnh vào popup này để thêm nhanh. Bấm ảnh để xem lớn.</div><div id="dvvcRowImagePreview" class="previewImgs dvvcImagePreview">${previewImagesHtml('dvvcRowImagePreview',r.images)}</div></div></div><div class="panelfoot"><button class="btn gray" onclick="closeModal('detailModal')">Đóng</button><button class="btn blue" onclick="dvvcSaveImages('${esc(rowId)}')">Lưu ảnh</button></div>`);
+  };
+  window.dvvcSaveImages=function(rowId){
+    ensureStarted();
+    const old=getRow(rowId); if(!old)return;
+    const images=imagesFromPreview('dvvcRowImagePreview');
+    askActor(actor=>{
+      const next={...old,images,updatedAt:Date.now(),logs:[...(old.logs||[])]};
+      next.logs.push(logLine(actor,`cập nhật ảnh đơn ${old.code}: ${list(old.images).length} ảnh -> ${images.length} ảnh`));
+      rowRef(currentMonthOf(old),old.id).set(next).then(()=>{closeModal('detailModal');toast('Đã lưu ảnh')}).catch(err=>fail('Lưu ảnh Đơn Vấn Đề',err));
     });
   };
   window.dvvcOpenNote=function(rowId,field){
