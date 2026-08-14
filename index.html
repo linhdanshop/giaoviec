@@ -514,7 +514,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const SITUATIONS=['Chưa xử lý','Đã xử lý'];
   window.APP_ROOTS=window.APP_ROOTS||{};
   window.APP_ROOTS.dvvc=window.APP_ROOTS.dvvc||ROOT;
-  const state={started:false,month:monthStr(),rows:[],statuses:DEFAULT_STATUSES.slice(),filterStatus:'Tất cả',filterSituation:'Tất cả',query:'',rowRef:null,rowCb:null,statusRef:null,statusCb:null};
+  const state={started:false,month:monthStr(),rows:[],statuses:DEFAULT_STATUSES.slice(),filterStatus:'Tất cả',filterSituation:'Tất cả',query:'',totalLogs:[],rowRef:null,rowCb:null,statusRef:null,statusCb:null};
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
@@ -559,7 +559,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     return Array.from(($(previewId)?.querySelectorAll('img')||[])).map(img=>img.src).filter(Boolean);
   }
   function previewImageHtml(previewId,src){
-    return `<span class="dvvcImgItem"><img src="${esc(src)}" onclick="event.stopPropagation();openPreviewImages('${esc(previewId)}')"><button type="button" class="dvvcImgDel" onclick="event.stopPropagation();this.closest('.dvvcImgItem').remove()">×</button></span>`;
+    return `<span class="dvvcImgItem"><img src="${esc(src)}" onclick="event.stopPropagation();openPreviewImages('${esc(previewId)}')"><button type="button" class="dvvcImgDel" onclick="event.stopPropagation();if(confirm('Xóa ảnh này?'))this.closest('.dvvcImgItem').remove()">×</button></span>`;
   }
   function previewImagesHtml(previewId,images){
     return list(images).map(src=>previewImageHtml(previewId,src)).join('');
@@ -582,6 +582,14 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     };
   }
   function logLine(actor,action){return {at:Date.now(),actor:actor||'Hệ thống',action:String(action||'')}}
+  function totalLog(row,log){
+    return {...log,code:String(row?.code||'').trim(),rowId:row?.id||'',month:currentMonthOf(row||{})};
+  }
+  function totalHistoryRef(month){return ref('history',month)}
+  function saveTotalLog(month,log){
+    const h=totalHistoryRef(month);
+    return h?h.push(log).catch(err=>console.warn('[DonGiao history]',err)):Promise.resolve();
+  }
   function rowRef(month,id){return ref('months',month,'rows',id)}
   function monthRowsRef(month){return ref('months',month,'rows')}
   function currentMonthOf(row){return String(row.date||todayStr()).slice(0,7)}
@@ -632,7 +640,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       .dvvcNoteBtn{width:100%;max-width:240px;border:1px solid #dbe5f2;background:#fff;border-radius:9px;padding:8px 10px;text-align:left;font-weight:800;cursor:pointer;white-space:pre-wrap;word-break:break-word;line-height:1.35;max-height:56px;overflow:hidden}
       .dvvcStatusSelect{font-weight:1000}.dvvcStatusName{display:block;font-weight:1000;line-height:1.15}.dvvcImageBtn{border:0;border-radius:999px;background:#eef2ff;color:#1d4ed8;padding:7px 10px;font-weight:1000;cursor:pointer;white-space:nowrap}.dvvcImageBtn.empty{background:#f1f5f9;color:#64748b}.dvvcImgItem{display:inline-flex;align-items:center;margin:0 8px 8px 0}.dvvcImgItem img{width:82px;height:62px;object-fit:cover;border:1px solid #dbe5f2;border-radius:9px;cursor:pointer}.dvvcImgDel{width:26px;height:26px;border:0;border-radius:999px;background:#dc2626;color:#fff;font-weight:1000;margin-left:-10px;cursor:pointer}.dvvcImagePreview{min-height:48px}
       .dvvcNoteBtn.empty{color:#94a3b8}.dvvcActions{display:flex;gap:6px;align-items:center}.dvvcMiniBtn{height:34px;border:0;border-radius:9px;padding:0 10px;font-weight:900;cursor:pointer}.dvvcMiniBtn.edit{background:#e9eef6}.dvvcMiniBtn.del{background:#dc2626;color:#fff}
-      .dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
+      .dvvcHistorySearch{margin:0 0 10px}.dvvcHistorySearch input{width:100%;height:42px;border:1px solid #dbe5f2;border-radius:10px;padding:0 12px;font-weight:800}.dvvcHistoryList{max-height:430px;overflow:auto;border:1px solid #dbe5f2;border-radius:10px;background:#f8fafc;padding:8px}.dvvcHistoryItem{padding:8px 10px;border-bottom:1px solid #e5edf7;font-weight:750;line-height:1.45}.dvvcHistoryItem:last-child{border-bottom:0}
       .dvvcStatusEditor{display:grid;gap:8px}.dvvcStatusLine{display:grid;grid-template-columns:1fr 76px;gap:8px}.dvvcStatusLine input{height:40px;border:1px solid #dbe5f2;border-radius:10px;padding:0 10px;font-weight:800}.dvvcSearchResult{display:grid;gap:10px}.dvvcSearchMonth{border:1px solid #dbe5f2;border-radius:12px;overflow:hidden}.dvvcSearchMonth h4{margin:0;padding:10px 12px;background:#eef4fb}.dvvcSearchMonth table{width:100%;border-collapse:collapse}.dvvcSearchMonth th,.dvvcSearchMonth td{padding:8px;border-bottom:1px solid #e7edf5;text-align:left}
       @media(max-width:900px){.dvvcToolbar{grid-template-columns:1fr 1fr}.dvvcToolbar .btn{height:42px}.dvvcStats{grid-template-columns:repeat(2,minmax(0,1fr))}}
       @media(max-width:760px){.dvvcToolbar{grid-template-columns:1fr}.dvvcBox{padding:9px}.dvvcTableWrap{overflow:visible}.dvvcTable{display:block;min-width:0}.dvvcTable thead{display:none}.dvvcTable tbody{display:block}.dvvcTable tr{display:block;border:1px solid #dbe5f2;border-radius:14px;background:#fff;margin:10px 0;padding:10px}.dvvcTable td{display:grid;grid-template-columns:108px minmax(0,1fr);gap:10px;border:0;padding:6px 0}.dvvcTable td:before{content:attr(data-label);font-size:12px;text-transform:uppercase;color:#64748b;font-weight:900}.dvvcNoteBtn{max-width:none}.dvvcSelect{max-width:none;width:100%}.dvvcActions{justify-content:flex-start}.dvvcSearchMonth{overflow:auto}.dvvcSearchMonth table{min-width:760px}}
@@ -746,13 +754,15 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     });
     askActor(actor=>{
       const action=old?`sửa đơn ${code}: trạng thái ${old.status||''} -> ${next.status}, tình trạng ${old.situation||''} -> ${next.situation}, tiền ${moneyText(old.amount)} -> ${moneyText(next.amount)}, ảnh ${list(old.images).length} -> ${list(next.images).length}`:`thêm đơn ${code}`;
-      next.logs=[...(next.logs||[]),logLine(actor,action)].slice(-300);
+      const log=logLine(actor,action);
+      next.logs=[...(next.logs||[]),log].slice(-300);
     const targetMonth=currentMonthOf(next);
     const oldMonth=old?currentMonthOf(old):targetMonth;
     if(old&&oldMonth!==targetMonth&&!isAdmin())return toast('Nhân viên không được chuyển tháng của đơn; nhờ Admin chỉnh ngày.');
     const saves=[];
       if(old&&oldMonth!==targetMonth)saves.push(rowRef(oldMonth,old.id).remove());
       saves.push(rowRef(targetMonth,next.id).set(next));
+      saves.push(saveTotalLog(targetMonth,totalLog(next,log)));
       Promise.all(saves).then(()=>{closeModal('detailModal'); if(targetMonth!==state.month)listenMonth(targetMonth); toast('Đã lưu Đơn Vấn Đề')}).catch(err=>fail('Lưu Đơn Vấn Đề',err));
     });
   };
@@ -762,8 +772,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(old[field]===value)return;
     const next={...old,[field]:value,updatedAt:Date.now(),logs:[...(old.logs||[])]};
     askActor(actor=>{
-      next.logs.push(logLine(actor,`cập nhật ${field==='status'?'trạng thái':'tình trạng'} đơn ${old.code}: ${old[field]||''} -> ${value}`));
-      rowRef(currentMonthOf(old),old.id).set(next).catch(err=>fail('Cập nhật Đơn Vấn Đề',err));
+      const log=logLine(actor,`cập nhật ${field==='status'?'trạng thái':'tình trạng'} đơn ${old.code}: ${old[field]||''} -> ${value}`);
+      next.logs.push(log);
+      const month=currentMonthOf(old);
+      Promise.all([rowRef(month,old.id).set(next),saveTotalLog(month,totalLog(next,log))]).catch(err=>fail('Cập nhật Đơn Vấn Đề',err));
     });
   };
   window.dvvcOpenImages=function(rowId){
@@ -777,8 +789,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const images=imagesFromPreview('dvvcRowImagePreview');
     askActor(actor=>{
       const next={...old,images,updatedAt:Date.now(),logs:[...(old.logs||[])]};
-      next.logs.push(logLine(actor,`cập nhật ảnh đơn ${old.code}: ${list(old.images).length} ảnh -> ${images.length} ảnh`));
-      rowRef(currentMonthOf(old),old.id).set(next).then(()=>{closeModal('detailModal');toast('Đã lưu ảnh')}).catch(err=>fail('Lưu ảnh Đơn Vấn Đề',err));
+      const log=logLine(actor,`cập nhật ảnh đơn ${old.code}: ${list(old.images).length} ảnh -> ${images.length} ảnh`);
+      next.logs.push(log);
+      const month=currentMonthOf(old);
+      Promise.all([rowRef(month,old.id).set(next),saveTotalLog(month,totalLog(next,log))]).then(()=>{closeModal('detailModal');toast('Đã lưu ảnh')}).catch(err=>fail('Lưu ảnh Đơn Vấn Đề',err));
     });
   };
   window.dvvcOpenNote=function(rowId,field){
@@ -793,8 +807,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const nextText=($('dvvcNoteText')?.value||'').trim();
     askActor(actor=>{
       const next={...old,[field]:nextText,updatedAt:Date.now(),logs:[...(old.logs||[])]};
-      next.logs.push(logLine(actor,`cập nhật ${field==='orderNote'?'ghi chú đơn':'ghi chú xử lý'} ${old.code}: ${short(old[field])} -> ${short(nextText)}`));
-      rowRef(currentMonthOf(old),old.id).set(next).then(()=>{closeModal('detailModal');toast('Đã lưu ghi chú')}).catch(err=>fail('Lưu ghi chú Đơn Vấn Đề',err));
+      const log=logLine(actor,`cập nhật ${field==='orderNote'?'ghi chú đơn':'ghi chú xử lý'} ${old.code}: ${short(old[field])} -> ${short(nextText)}`);
+      next.logs.push(log);
+      const month=currentMonthOf(old);
+      Promise.all([rowRef(month,old.id).set(next),saveTotalLog(month,totalLog(next,log))]).then(()=>{closeModal('detailModal');toast('Đã lưu ghi chú')}).catch(err=>fail('Lưu ghi chú Đơn Vấn Đề',err));
     });
   };
   window.dvvcDeleteRow=function(rowId){
@@ -802,7 +818,11 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     if(!isAdmin())return toast('Chỉ Admin được xóa dòng Đơn Vấn Đề');
     const r=getRow(rowId); if(!r)return;
     if(!confirm('Xóa đơn '+r.code+'?'))return;
-      rowRef(currentMonthOf(r),r.id).remove().then(()=>toast('Đã xóa dòng')).catch(err=>fail('Xóa Đơn Vấn Đề',err));
+    askActor(actor=>{
+      const month=currentMonthOf(r);
+      const log=logLine(actor,`xóa dòng đơn ${r.code}: trạng thái ${r.status||''}, tình trạng ${r.situation||''}, tiền ${moneyText(r.amount)}`);
+      Promise.all([saveTotalLog(month,totalLog(r,log)),rowRef(month,r.id).remove()]).then(()=>toast('Đã xóa dòng')).catch(err=>fail('Xóa Đơn Vấn Đề',err));
+    });
   };
   function logHtml(logs){
     logs=list(logs).sort((a,b)=>(b.at||0)-(a.at||0));
@@ -813,12 +833,40 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const r=getRow(rowId); if(!r)return;
     setDetail('Lịch sử đơn '+r.code,logHtml(r.logs));
   };
+  function totalHistoryFromRows(){
+    const logs=[];
+    state.rows.forEach(r=>list(r.logs).forEach(l=>logs.push(totalLog(r,l))));
+    return logs;
+  }
+  function mergeTotalLogs(saved,rowLogs){
+    const map=new Map();
+    [...list(saved),...list(rowLogs)].forEach(l=>{
+      const log={...l,code:String(l.code||'').trim()};
+      const key=[log.at||'',log.code||'',log.actor||'',log.action||''].join('|');
+      if(key.trim())map.set(key,log);
+    });
+    return Array.from(map.values()).sort((a,b)=>(b.at||0)-(a.at||0));
+  }
+  function totalHistoryHtml(query){
+    const q=String(query||'').trim().toLowerCase();
+    const logs=list(state.totalLogs).filter(l=>{
+      if(!q)return true;
+      return [l.code,l.actor,l.action].join(' ').toLowerCase().includes(q);
+    });
+    return `<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - <b>${esc(l.code||'')}</b> - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử phù hợp.'}</div>`;
+  }
+  window.dvvcFilterHistoryTotal=function(v){
+    const box=$('dvvcHistoryTotalBox'); if(box)box.innerHTML=totalHistoryHtml(v);
+  };
   window.dvvcOpenHistoryTotal=function(){
     ensureStarted();
-    const logs=[];
-    state.rows.forEach(r=>list(r.logs).forEach(l=>logs.push({...l,code:r.code})));
-    logs.sort((a,b)=>(b.at||0)-(a.at||0));
-    setDetail('Lịch sử tổng Đơn Vấn Đề '+monthText(state.month),`<div class="dvvcHistoryList">${logs.length?logs.map(l=>`<div class="dvvcHistoryItem"><b>${esc(timeText(l.at))}</b> - <b>${esc(l.code)}</b> - ${esc(l.actor||'')}</br>${esc(l.action||'')}</div>`).join(''):'Chưa có lịch sử.'}</div>`);
+    setDetail('Lịch sử tổng Đơn Vấn Đề '+monthText(state.month),'<div class="copyBox">Đang tải lịch sử...</div>');
+    const rowLogs=totalHistoryFromRows();
+    totalHistoryRef(state.month).once('value').then(snap=>{
+      state.totalLogs=mergeTotalLogs(list(snap.val()),rowLogs);
+      setDetail('Lịch sử tổng Đơn Vấn Đề '+monthText(state.month),`<div class="dvvcHistorySearch"><input id="dvvcHistorySearch" placeholder="Tìm mã vận đơn đã thao tác..." oninput="dvvcFilterHistoryTotal(this.value)"></div><div id="dvvcHistoryTotalBox">${totalHistoryHtml('')}</div>`);
+      setTimeout(()=>$('dvvcHistorySearch')?.focus(),0);
+    }).catch(err=>fail('Tải lịch sử tổng Đơn Vấn Đề',err));
   };
   window.dvvcOpenStatusSettings=function(){
     ensureStarted();
