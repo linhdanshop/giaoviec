@@ -640,7 +640,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function ensureStyle(){
     if($('dvvcStyle'))return;
     document.head.insertAdjacentHTML('beforeend',`<style id="dvvcStyle">
-      .dvvcToolbar{padding:12px;display:grid;grid-template-columns:170px minmax(220px,1fr) 150px 150px 110px 120px 120px;gap:10px;align-items:end;margin-bottom:12px}
+      .dvvcToolbar{padding:12px;display:grid;grid-template-columns:170px minmax(220px,1fr) 150px 150px 110px 120px 110px 120px;gap:10px;align-items:end;margin-bottom:12px}
       .dvvcToolbar input,.dvvcToolbar select{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;font-weight:800}
       .dvvcStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
       .dvvcStat{border:1px solid #dbe5f2;border-radius:12px;background:#fff;padding:10px;cursor:pointer;font-weight:900}
@@ -679,6 +679,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       <select onchange="dvvcSetSituationFilter(this.value)">${situationOptions}</select>
       <button class="btn blue" onclick="dvvcSearchAllMonths()">Tìm đơn</button>
       <button class="btn gray" onclick="dvvcOpenHistoryTotal()">Lịch sử tổng</button>
+      <button class="btn gray" onclick="dvvcExportExcel()">Xuất Excel</button>
       <button class="btn blue" onclick="dvvcOpenForm()">+ Thêm mới</button>
     </div>
     <div class="card dvvcBox">
@@ -917,6 +918,62 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
         toast('Đã xóa lịch sử tháng '+monthText(month));
       }).catch(err=>fail('Xóa lịch sử tổng Đơn Vấn Đề',err));
     });
+  };
+  function excelEsc(v){
+    return esc(v).replace(/\r?\n/g,'<br>');
+  }
+  window.dvvcExportExcel=function(){
+    ensureStarted();
+    const rows=filteredRows();
+    if(!rows.length)return toast('Không có dữ liệu Đơn Vấn Đề để xuất');
+    const title='Danh sách Đơn Vấn Đề - '+monthText(state.month);
+    const total=rows.reduce((s,r)=>s+money(r.amount),0);
+    const filterText=[
+      state.filterStatus&&state.filterStatus!=='Tất cả'?'Trạng thái: '+state.filterStatus:'',
+      state.filterSituation&&state.filterSituation!=='Tất cả'?'Tình trạng: '+state.filterSituation:'',
+      state.query?'Tìm kiếm: '+state.query:''
+    ].filter(Boolean).join(' | ')||'Tất cả';
+    const bodyRows=rows.map((r,i)=>`<tr>
+      <td>${rows.length-i}</td>
+      <td>${excelEsc(dateText(r.date))}</td>
+      <td class="text">${excelEsc(r.code)}</td>
+      <td>${list(r.images).length}</td>
+      <td>${excelEsc(r.status)}</td>
+      <td class="money">${money(r.amount)}</td>
+      <td>${excelEsc(r.orderNote)}</td>
+      <td>${excelEsc(r.situation)}</td>
+      <td>${excelEsc(r.processNote)}</td>
+      <td>${list(r.logs).length}</td>
+    </tr>`).join('');
+    const html=`<!doctype html><html><head><meta charset="utf-8">
+      <style>
+        body{font-family:Arial,sans-serif}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #999;padding:6px;vertical-align:top}
+        th{background:#eaf2ff;font-weight:700}
+        .text{mso-number-format:"\\@";white-space:nowrap}
+        .money{mso-number-format:"#,##0";text-align:right}
+        .meta td{border:0;padding:3px 0}
+      </style></head><body>
+      <h2>${excelEsc(title)}</h2>
+      <table class="meta">
+        <tr><td><b>Bộ lọc:</b> ${excelEsc(filterText)}</td></tr>
+        <tr><td><b>Tổng dòng:</b> ${rows.length}</td></tr>
+        <tr><td><b>Tổng tiền:</b> ${moneyText(total)}</td></tr>
+        <tr><td><b>Thời gian xuất:</b> ${excelEsc(new Date().toLocaleString('vi-VN'))}</td></tr>
+      </table>
+      <table>
+        <thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Số ảnh</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th></tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table></body></html>`;
+    const blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='don-van-de-'+state.month+'.xls';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+    toast('Đã xuất Excel Đơn Vấn Đề');
   };
   window.dvvcOpenStatusSettings=function(){
     ensureStarted();
