@@ -514,7 +514,7 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   const SITUATIONS=['Chưa xử lý','Đã xử lý'];
   window.APP_ROOTS=window.APP_ROOTS||{};
   window.APP_ROOTS.dvvc=window.APP_ROOTS.dvvc||ROOT;
-  const state={started:false,saving:false,month:monthStr(),dateFilter:'',rows:[],statuses:DEFAULT_STATUSES.slice(),filterStatus:'Tất cả',filterSituation:'Tất cả',query:'',totalLogs:[],rowRef:null,rowCb:null,statusRef:null,statusCb:null};
+  const state={started:false,saving:false,month:monthStr(),fromDate:'',toDate:'',rows:[],statuses:DEFAULT_STATUSES.slice(),filterStatus:'Tất cả',filterSituation:'Tất cả',query:'',totalLogs:[],rowRef:null,rowCb:null,statusRef:null,statusCb:null};
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const toast=msg=>typeof showToast==='function'?showToast(msg):alert(msg);
@@ -529,6 +529,14 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function todayStr(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
   function monthText(m){const [y,mo]=String(m||'').split('-');return mo&&y?'Tháng '+Number(mo)+'/'+y:m}
   function dateText(v){const p=String(v||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v}
+  function scopeTitle(){
+    const title=[monthText(state.month)];
+    if(state.fromDate||state.toDate){
+      title.push('Từ Ngày '+(state.fromDate?dateText(state.fromDate):'...'));
+      title.push('Đến Ngày '+(state.toDate?dateText(state.toDate):'...'));
+    }
+    return title.join(' ');
+  }
   function timeText(ts){return ts?new Date(ts).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'}):''}
   function money(v){const n=Number(String(v??'').replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0}
   function moneyText(v){return money(v).toLocaleString('vi-VN')}
@@ -611,7 +619,8 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function currentMonthOf(row){return String(row.date||todayStr()).slice(0,7)}
   function scopedRows(ignoreStatus){
     let rows=state.rows.slice();
-    if(state.dateFilter)rows=rows.filter(r=>r.date===state.dateFilter);
+    if(state.fromDate)rows=rows.filter(r=>String(r.date||'')>=state.fromDate);
+    if(state.toDate)rows=rows.filter(r=>String(r.date||'')<=state.toDate);
     const q=String(state.query||'').trim().toLowerCase();
     if(q)rows=rows.filter(r=>[r.code,r.status,r.orderNote,r.situation,r.processNote,r.amount,r.doneAmount].join(' ').toLowerCase().includes(q));
     if(!ignoreStatus&&state.filterStatus!=='Tất cả')rows=rows.filter(r=>r.status===state.filterStatus);
@@ -684,9 +693,10 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
   function ensureStyle(){
     if($('dvvcStyle'))return;
     document.head.insertAdjacentHTML('beforeend',`<style id="dvvcStyle">
-      .dvvcToolbar{padding:12px;display:grid;grid-template-columns:150px 150px minmax(150px,.75fr) 140px 140px 112px 126px 104px 118px;gap:10px;align-items:end;margin-bottom:12px}
+      .dvvcToolbar{padding:12px;display:grid;grid-template-columns:130px 130px 130px minmax(120px,.8fr) 120px 120px 100px 118px 108px 112px;gap:10px;align-items:end;margin-bottom:12px}
       .dvvcToolbar input,.dvvcToolbar select{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff;font-weight:800}
       .dvvcToolbar .btn{white-space:nowrap;padding:0 12px;line-height:1.1}
+      .dvvcDateField{position:relative}.dvvcDateField span{position:absolute;left:12px;top:4px;font-size:10px;line-height:1;color:#64748b;font-weight:900;pointer-events:none}.dvvcDateField input{width:100%;padding-top:14px}
       .dvvcStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
       .dvvcStat{border:1px solid #dbe5f2;border-radius:12px;background:#fff;padding:10px;cursor:pointer;font-weight:900}
       .dvvcStat b{display:block;font-size:22px;color:#0f172a}.dvvcStat span{color:#64748b;font-size:12px}.dvvcStat strong{display:block;margin-top:5px;color:#15803d;font-size:20px;line-height:1.05}
@@ -720,7 +730,8 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     const rows=filteredRows();
     mount.innerHTML=`<div class="card dvvcToolbar">
       <input id="dvvcMonth" type="month" value="${esc(state.month)}" onchange="dvvcChangeMonth(this.value)">
-      <input id="dvvcDateFilter" type="date" value="${esc(state.dateFilter)}" title="Lọc theo ngày tạo" onchange="dvvcSetDateFilter(this.value)">
+      <label class="dvvcDateField"><span>Từ ngày</span><input id="dvvcFromDate" type="date" value="${esc(state.fromDate)}" onchange="dvvcSetDateRange('fromDate',this.value)"></label>
+      <label class="dvvcDateField"><span>Đến ngày</span><input id="dvvcToDate" type="date" value="${esc(state.toDate)}" onchange="dvvcSetDateRange('toDate',this.value)"></label>
       <input id="dvvcQuery" value="${esc(state.query)}" placeholder="Tìm mã vận đơn..." oninput="dvvcRememberQuery(this.value)" onkeydown="if(event.key==='Enter')dvvcSearchAllMonths()">
       <select onchange="dvvcSetStatusFilter(this.value)">${statusOptions}</select>
       <select onchange="dvvcSetSituationFilter(this.value)">${situationOptions}</select>
@@ -730,9 +741,9 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       <button class="btn blue" onclick="dvvcOpenForm()">+ Thêm mới</button>
     </div>
     <div class="card dvvcBox">
-      <div class="section-title" style="margin:0 0 8px"><h2>Danh sách Đơn Vấn Đề - ${esc(monthText(state.month))}</h2>${isAdmin()?'<button class="btn gray" onclick="dvvcOpenStatusSettings()">Trạng thái</button>':''}</div>
+      <div class="section-title" style="margin:0 0 8px"><h2>Danh sách Đơn Vấn Đề - ${esc(scopeTitle())}</h2>${isAdmin()?'<button class="btn gray" onclick="dvvcOpenStatusSettings()">Trạng thái</button>':''}</div>
       ${statsHtml()}
-      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Ảnh</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Tiền ĐXL</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="12" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu Đơn Vấn Đề trong tháng này</td></tr>'}</tbody></table></div>
+      <div class="dvvcTableWrap"><table class="dvvcTable"><thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Ảnh</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Tiền ĐXL</th><th>Ghi chú xử lý</th><th>Lịch sử</th><th>Thao tác</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>rowHtml(r,rows.length-i)).join(''):'<tr><td colspan="12" style="text-align:center;color:#94a3b8;font-weight:900;padding:18px">Chưa có dữ liệu Đơn Vấn Đề trong tháng này</td></tr>'}</tbody></table></div>
     </div>`;
   }
   function statsHtml(){
@@ -757,9 +768,9 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       <td data-label="Ảnh"><button class="dvvcImageBtn ${images.length?'':'empty'}" onclick="dvvcOpenImages('${esc(r.id)}')">${images.length?'📷 '+images.length+' ảnh':'Thêm ảnh'}</button></td>
       <td data-label="Trạng thái"><select class="dvvcSelect dvvcStatusSelect" style="${statusTextStyle(r.status)}" onchange="dvvcQuickSave('${esc(r.id)}','status',this.value)">${statusOpts}</select></td>
       <td data-label="Tiền Cần Xử Lý" class="dvvcMoney">${moneyText(r.amount)}</td>
-      <td data-label="Tiền ĐXL" class="dvvcMoney">${moneyText(r.doneAmount)}</td>
       <td data-label="Ghi chú đơn"><button class="dvvcNoteBtn ${r.orderNote?'':'empty'}" onclick="dvvcOpenNote('${esc(r.id)}','orderNote')">${esc(r.orderNote||'Ghi chú...')}</button></td>
       <td data-label="Tình trạng"><select class="dvvcSelect" onchange="dvvcQuickSave('${esc(r.id)}','situation',this.value)">${situationOpts}</select></td>
+      <td data-label="Tiền ĐXL" class="dvvcMoney">${moneyText(r.doneAmount)}</td>
       <td data-label="Ghi chú xử lý"><button class="dvvcNoteBtn ${r.processNote?'':'empty'}" onclick="dvvcOpenNote('${esc(r.id)}','processNote')">${esc(r.processNote||'Ghi chú...')}</button></td>
       <td data-label="Lịch sử"><button class="more" onclick="dvvcOpenRowHistory('${esc(r.id)}')">${r.logs.length||0} dòng</button></td>
       <td data-label="Thao tác"><div class="dvvcActions"><button class="dvvcMiniBtn edit" onclick="dvvcOpenForm('${esc(r.id)}')">Sửa</button>${isAdmin()?`<button class="dvvcMiniBtn del" onclick="dvvcDeleteRow('${esc(r.id)}')">Xóa</button>`:''}</div></td>
@@ -773,8 +784,13 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     b.innerHTML=html;
     openModal('detailModal');
   }
-  window.dvvcChangeMonth=function(v){ if(!v)return; state.dateFilter=''; listenMonth(v); };
-  window.dvvcSetDateFilter=function(v){ state.dateFilter=v||''; if(v&&String(v).slice(0,7)!==state.month)listenMonth(String(v).slice(0,7)); else render(); };
+  window.dvvcChangeMonth=function(v){ if(!v)return; state.fromDate=''; state.toDate=''; listenMonth(v); };
+  window.dvvcSetDateRange=function(key,v){
+    if(key!=='fromDate'&&key!=='toDate')return;
+    state[key]=v||'';
+    const target=v&&String(v).slice(0,7);
+    if(target&&target!==state.month)listenMonth(target); else render();
+  };
   window.dvvcRememberQuery=function(v){ state.query=v||''; };
   window.dvvcSetQuery=function(v){ state.query=v||''; render(); };
   window.dvvcSetStatusFilter=function(v){ state.filterStatus=v||'Tất cả'; render(); };
@@ -981,11 +997,12 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
     ensureStarted();
     const rows=filteredRows();
     if(!rows.length)return toast('Không có dữ liệu Đơn Vấn Đề để xuất');
-    const title='Danh sách Đơn Vấn Đề - '+(state.dateFilter?dateText(state.dateFilter):monthText(state.month));
+    const title='Danh sách Đơn Vấn Đề - '+scopeTitle();
     const total=rows.reduce((s,r)=>s+money(r.amount),0);
     const doneTotal=rows.reduce((s,r)=>s+money(r.doneAmount),0);
     const filterText=[
-      state.dateFilter?'Ngày: '+dateText(state.dateFilter):'',
+      state.fromDate?'Từ ngày: '+dateText(state.fromDate):'',
+      state.toDate?'Đến ngày: '+dateText(state.toDate):'',
       state.filterStatus&&state.filterStatus!=='Tất cả'?'Trạng thái: '+state.filterStatus:'',
       state.filterSituation&&state.filterSituation!=='Tất cả'?'Tình trạng: '+state.filterSituation:'',
       state.query?'Tìm kiếm: '+state.query:''
@@ -997,9 +1014,9 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
       <td>${list(r.images).length}</td>
       <td>${excelEsc(r.status)}</td>
       <td class="money">${money(r.amount)}</td>
-      <td class="money">${money(r.doneAmount)}</td>
       <td>${excelEsc(r.orderNote)}</td>
       <td>${excelEsc(r.situation)}</td>
+      <td class="money">${money(r.doneAmount)}</td>
       <td>${excelEsc(r.processNote)}</td>
       <td>${list(r.logs).length}</td>
     </tr>`).join('');
@@ -1022,13 +1039,13 @@ body.headerHidden .wrap{margin-top:8px!important}body.headerHidden .tablebox{max
         <tr><td><b>Thời gian xuất:</b> ${excelEsc(new Date().toLocaleString('vi-VN'))}</td></tr>
       </table>
       <table>
-        <thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Số ảnh</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Tiền ĐXL</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Ghi chú xử lý</th><th>Lịch sử</th></tr></thead>
+        <thead><tr><th>STT</th><th>Ngày</th><th>Mã Vận đơn</th><th>Số ảnh</th><th>Trạng thái</th><th>Tiền Cần Xử Lý</th><th>Ghi chú đơn</th><th>Tình trạng</th><th>Tiền ĐXL</th><th>Ghi chú xử lý</th><th>Lịch sử</th></tr></thead>
         <tbody>${bodyRows}</tbody>
       </table></body></html>`;
     const blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='don-van-de-'+(state.dateFilter||state.month)+'.xls';
+    a.download='don-van-de-'+(state.fromDate||state.toDate||state.month)+(state.toDate?'-den-'+state.toDate:'')+'.xls';
     document.body.appendChild(a);
     a.click();
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
